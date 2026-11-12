@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Operator,
   OperatorMonthlyData,
@@ -31,7 +31,15 @@ import {
   Info,
   CalendarCheck,
   Filter,
-  Users
+  Users,
+  Search,
+  CheckCheck,
+  SlidersHorizontal,
+  Flame,
+  Zap,
+  Target,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 
 interface AbsOperatorViewProps {
@@ -56,8 +64,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   onApply6x1Schedule
 }) => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
-  const [searchFilter, setSearchFilter] = useState('');
+  const [opSearchTerm, setOpSearchTerm] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [dayFilter, setDayFilter] = useState<'todos' | 'desvios' | 'faltas' | 'folgas' | 'fds'>('todos');
+  const [focusedDay, setFocusedDay] = useState<number | null>(null);
 
   // List of distinct supervisors from current operators
   const availableSupervisors = useMemo(() => {
@@ -73,11 +83,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     return counts;
   }, [operators]);
 
-  // Operators filtered by the supervisor filter
+  // Operators filtered by supervisor & search query
   const operatorsBySupervisor = useMemo(() => {
-    if (selectedSupervisor === 'todos') return operators;
-    return operators.filter(op => op.supervisor.toLowerCase() === selectedSupervisor.toLowerCase());
-  }, [operators, selectedSupervisor]);
+    let list = operators;
+    if (selectedSupervisor !== 'todos') {
+      list = list.filter(op => op.supervisor.toLowerCase() === selectedSupervisor.toLowerCase());
+    }
+    if (opSearchTerm.trim()) {
+      const term = opSearchTerm.toLowerCase();
+      list = list.filter(op => op.nome.toLowerCase().includes(term) || op.entrada.includes(term));
+    }
+    return list;
+  }, [operators, selectedSupervisor, opSearchTerm]);
 
   // Filtered index of active operator
   const currentFilteredIndex = useMemo(() => {
@@ -134,7 +151,6 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const handleStatusChange = (diaNum: number, newStatus: StatusType) => {
     const updated = dias.map(d => {
       if (d.dia === diaNum) {
-        // If switching from or to another status, adjust delay sensibly
         const nextAtraso = newStatus === 'dia ok/atraso' ? (d.atraso > 0 ? d.atraso : 15) : 0;
         return {
           ...d,
@@ -168,6 +184,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     onUpdateDays(operator.id, updated);
   };
 
+  // Batch action: fill all non-folga days with 'dia ok'
+  const handleBatchFillWorkingDaysOk = () => {
+    const updated = dias.map(d => {
+      if (d.status !== 'folga') {
+        return { ...d, status: 'dia ok' as StatusType, atraso: 0 };
+      }
+      return d;
+    });
+    onUpdateDays(operator.id, updated);
+    showToast('Todos os dias escalados foram definidos como "Dia OK"!');
+  };
+
   // Previous and Next Operator navigation (strictly within supervisor team)
   const handlePrevOperator = () => {
     if (operatorsBySupervisor.length === 0) return;
@@ -186,6 +214,85 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
       onSelectOperator(operatorsBySupervisor[0].id);
     }
   };
+
+  // Keyboard navigation shortcuts (ArrowLeft / ArrowRight)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevOperator();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextOperator();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentFilteredIndex, operatorsBySupervisor]);
+
+  // Jump to specific day row in the table
+  const handleScrollToDay = (diaNum: number) => {
+    setFocusedDay(diaNum);
+    setDayFilter('todos');
+    setTimeout(() => {
+      const el = document.getElementById(`dia-row-${diaNum}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+    setTimeout(() => setFocusedDay(null), 2500);
+  };
+
+  // Counts of days for interactive filter tabs
+  const countsByStatus = useMemo(() => {
+    const desvios = dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão').length;
+    const faltas = dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado').length;
+    const folgas = dias.filter(d => d.status === 'folga').length;
+    const fds = dias.filter(d => {
+      const dayOfWeekIdx = (d.dia % 7);
+      const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
+      return weekdayName === 'Dom' || weekdayName === 'Sáb';
+    }).length;
+    return { desvios, faltas, folgas, fds };
+  }, [dias]);
+
+  // Filtered days list for the table
+  const displayedDias = useMemo(() => {
+    if (dayFilter === 'todos') return dias;
+    if (dayFilter === 'desvios') {
+      return dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão');
+    }
+    if (dayFilter === 'faltas') {
+      return dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado');
+    }
+    if (dayFilter === 'folgas') {
+      return dias.filter(d => d.status === 'folga');
+    }
+    if (dayFilter === 'fds') {
+      return dias.filter(d => {
+        const dayOfWeekIdx = (d.dia % 7);
+        const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
+        return weekdayName === 'Dom' || weekdayName === 'Sáb';
+      });
+    }
+    return dias;
+  }, [dias, dayFilter]);
+
+  // Target WFM benchmark 3% metrics for the active operator
+  const targetAbsThreshold = 0.03; // 3.00%
+  const maxAllowedLostMinutes = Math.floor(operatorStats.minutosEscalados * targetAbsThreshold);
+  const minutesMargin = maxAllowedLostMinutes - operatorStats.minutosPerdidos;
+  const isOperatorWithinMeta = operatorStats.absMensal <= targetAbsThreshold;
+
+  // Percentage breakdown for visual composition bar
+  const totalDays = dias.length || 31;
+  const pctOk = Math.round((operatorStats.diasTrabalhados / totalDays) * 100);
+  const pctFolga = Math.round((operatorStats.diasFolga / totalDays) * 100);
+  const pctAtraso = Math.round((operatorStats.diasAtraso / totalDays) * 100);
+  const pctFalta = Math.round(((operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao) / totalDays) * 100);
 
   // Helper function to get status badge styling
   const getStatusBadgeClass = (status: StatusType) => {
@@ -210,51 +317,60 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-xs font-medium shadow-lg animate-fade-in border border-slate-700">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Top Section: Operator Selection & Supervisor ABS Card (Grid mimicking Sheet Header) */}
+      {/* Top Section: Operator Selection & Supervisor ABS Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Left 2 Cols: Sheet 2 Header (Cells A1:D4) */}
+        {/* Left 2 Cols: Dynamic Header & Operator Selection */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
+          
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
-                Aba 2: Apontamento Dinâmico (ABS OPERADOR)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+                  Apontamento Dinâmico (ABS OPERADOR)
+                </span>
+                <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-mono font-bold">
+                  Escala 6x1
+                </span>
+              </div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-                Controle de Apontamentos do Operador
+                {operator.nome}
               </h2>
             </div>
 
-            {/* Quick Navigation Between Operators */}
+            {/* Quick Navigation Between Operators + Keyboard Hints */}
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-slate-500 font-mono tabular-nums">
+              <span className="hidden sm:inline text-[11px] text-slate-400 font-mono">
+                Atalho: [← / →]
+              </span>
+              <span className="text-xs text-slate-500 font-mono tabular-nums px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
                 {currentFilteredIndex + 1} de {operatorsBySupervisor.length}
                 {selectedSupervisor !== 'todos' ? ` (${selectedSupervisor})` : ''}
               </span>
               <button
                 onClick={handlePrevOperator}
-                title="Operador anterior"
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Operador anterior (tecla ←)"
+                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={handleNextOperator}
-                title="Próximo operador"
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Próximo operador (tecla →)"
+                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Filtro por Supervisor - Seleciona supervisor para exibir apenas seus operadores abaixo */}
+          {/* Filtro por Supervisor */}
           <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
@@ -292,10 +408,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </div>
           </div>
 
-          {/* Form fields mimicking cells A1:D4 */}
+          {/* Form fields mimicking cells A1:D4 + Quick Search */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Cell B1: Seleção do Operador (Filtrada por Supervisor) */}
+            {/* Cell B1: Seleção do Operador */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -307,80 +423,194 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   </span>
                 )}
               </div>
-              <div className="relative">
-                <select
-                  value={operator?.id || ''}
-                  onChange={(e) => onSelectOperator(e.target.value)}
-                  className="w-full h-10 px-3 py-2 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 font-bold text-sm rounded-lg border border-emerald-300 dark:border-emerald-700/60 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/40 transition-all cursor-pointer truncate"
-                >
-                  {operatorsBySupervisor.map((op) => (
-                    <option key={op.id} value={op.id}>
-                      {op.nome} {selectedSupervisor === 'todos' ? `— ${op.supervisor}` : ''}
-                    </option>
-                  ))}
-                </select>
+              
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <select
+                    value={operator?.id || ''}
+                    onChange={(e) => onSelectOperator(e.target.value)}
+                    className="w-full h-10 px-3 py-2 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 font-bold text-sm rounded-lg border border-emerald-300 dark:border-emerald-700/60 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/40 transition-all cursor-pointer truncate"
+                  >
+                    {operatorsBySupervisor.map((op) => (
+                      <option key={op.id} value={op.id}>
+                        {op.nome} {selectedSupervisor === 'todos' ? `— ${op.supervisor}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Instant Search Bar */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    value={opSearchTerm}
+                    onChange={(e) => setOpSearchTerm(e.target.value)}
+                    placeholder="Filtrar por nome ou horário..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                  />
+                  {opSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setOpSearchTerm('')}
+                      className="absolute right-2 top-2 text-[10px] text-slate-400 hover:text-slate-600 px-1 bg-slate-200 dark:bg-slate-700 rounded"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Cell B2: Supervisor (VLOOKUP) */}
+            {/* Cell B2: Supervisor (PROCV) */}
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 B2: Supervisor (PROCV)
               </label>
-              <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center">
-                <UserCheck className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
-                <span className="truncate">{operator.supervisor}</span>
-              </div>
-            </div>
-
-            {/* Cells B3 & B4: Horários Entrada e Saída */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  B3: Horário Entrada
-                </label>
-                <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-400 shrink-0" />
-                  {operator.entrada}
+              <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center">
+                  <UserCheck className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
+                  <span className="truncate">{operator.supervisor}</span>
                 </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold">
+                  Meta Sup: ≤ 3.00%
+                </span>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  B4: Horário Saída
-                </label>
-                <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-400 shrink-0" />
-                  {operator.saida}
+              {/* Cells B3 & B4: Horários Entrada e Saída */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                    B3: Entrada
+                  </label>
+                  <div className="h-8 px-2.5 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                    <Clock className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
+                    {operator.entrada}
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Cell D3: Jornada Prevista (Minutos) */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                D3: Jornada Prevista (Minutos)
-              </label>
-              <div className="h-10 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 font-bold font-mono text-xs rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-between">
-                <span>Padrão WFM Call Center</span>
-                <span className="text-sm">{operator.jornadaMin} min (6h20)</span>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                    B4: Saída
+                  </label>
+                  <div className="h-8 px-2.5 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                    <Clock className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
+                    {operator.saida}
+                  </div>
+                </div>
               </div>
             </div>
 
           </div>
 
+          {/* Live Health & Target Tolerance Gauge Card */}
+          <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Termômetro de Tolerância WFM (Meta ≤ 3.00%)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
+                  isOperatorWithinMeta
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                }`}>
+                  {isOperatorWithinMeta ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima do Teto (> 3%)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Visual Tolerance Bar */}
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
+                <span className="text-slate-600 dark:text-slate-400">
+                  ABS Atual: <strong className="text-slate-900 dark:text-white font-bold">{formatPercent(operatorStats.absMensal)}</strong>
+                </span>
+                <span className="text-slate-500 font-medium">
+                  {minutesMargin >= 0 ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                      +{minutesMargin} min de margem livre
+                    </span>
+                  ) : (
+                    <span className="text-rose-600 dark:text-rose-400 font-bold">
+                      {Math.abs(minutesMargin)} min acima da tolerância
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              {/* Progress bar with 3% marker */}
+              <div className="relative h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 rounded-full ${
+                    operatorStats.absMensal === 0
+                      ? 'bg-emerald-500'
+                      : operatorStats.absMensal <= targetAbsThreshold
+                      ? 'bg-emerald-600'
+                      : 'bg-rose-500'
+                  }`}
+                  style={{
+                    width: `${Math.min(100, (operatorStats.absMensal / 0.06) * 100)}%`
+                  }}
+                />
+              </div>
+
+              {/* Scale reference labels */}
+              <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1">
+                <span>0.00%</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">Meta: 3.00%</span>
+                <span>6.00%+</span>
+              </div>
+            </div>
+
+            {/* Month Composition Breakdown Bar */}
+            <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3 flex-wrap text-[11px]">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                Distribuição:
+              </span>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <span>OK: <strong>{operatorStats.diasTrabalhados}d</strong> ({pctOk}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span>Atrasos: <strong>{operatorStats.diasAtraso}d</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+                <span>Faltas: <strong>{operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao}d</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
+                <span>Folgas: <strong>{operatorStats.diasFolga}d</strong> ({pctFolga}%)</span>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Toolbar for current operator */}
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => {
                   onSave();
                   showToast(`Apontamentos de ${operator.nome} salvos na base com sucesso!`);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-2xs"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Salvar Apontamentos</span>
+              </button>
+
+              <button
+                onClick={handleBatchFillWorkingDaysOk}
+                title="Define todos os dias úteis como OK sem alterar as folgas"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 rounded-lg transition-colors"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Todos Dias Úteis OK</span>
               </button>
 
               <button
@@ -389,7 +619,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   showToast('Escala 6x1 (4 folgas flexíveis em FDS) reaplicada aos 31 dias.');
                 }}
                 title="Aplica 4 folgas flexíveis em finais de semana (escala 6x1)"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
                 <span className="hidden sm:inline">Escala 6x1 (4 Folgas FDS)</span>
@@ -482,39 +712,136 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
       </div>
 
+      {/* Mini-Calendário Interativo de 31 Dias (Heatmap Strip) */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              Visão Mensal em 31 Dias (Clique no dia para rolar e editar)
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-500 font-medium">
+            Finais de semana em destaque laranja
+          </span>
+        </div>
+
+        {/* 31 Day Buttons Row */}
+        <div className="grid grid-cols-7 sm:grid-cols-11 md:grid-cols-16 lg:grid-cols-31 gap-1">
+          {dias.map((d) => {
+            const dayOfWeekIdx = (d.dia % 7);
+            const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
+            const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
+
+            // Status color dot
+            let dotColor = 'bg-emerald-500';
+            if (d.status === 'dia ok/atraso') dotColor = 'bg-amber-500';
+            if (d.status === 'falta') dotColor = 'bg-rose-500';
+            if (d.status === 'atestado') dotColor = 'bg-blue-500';
+            if (d.status === 'suspensão') dotColor = 'bg-purple-500';
+            if (d.status === 'folga') dotColor = 'bg-slate-400';
+
+            return (
+              <button
+                key={d.dia}
+                type="button"
+                onClick={() => handleScrollToDay(d.dia)}
+                title={`Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`}
+                className={`flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
+                  focusedDay === d.dia
+                    ? 'ring-2 ring-emerald-500 bg-emerald-100 dark:bg-emerald-950 border-emerald-500 shadow-md'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className={`text-[10px] font-bold font-mono ${
+                  isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'
+                }`}>
+                  {d.dia.toString().padStart(2, '0')}
+                </span>
+                <span className={`text-[8px] font-semibold ${
+                  isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'
+                }`}>
+                  {weekdayName}
+                </span>
+                <span className={`w-1.5 h-1.5 rounded-full mt-1 ${dotColor}`}></span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 31-Day Interactive Timesheet Table (matching Sheets B7:C37 and Col D) */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         
-        {/* Table Title and Quick Legend */}
+        {/* Table Title and Quick Filters */}
         <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Tabela de Apontamento Mensal (31 Dias)
+              Tabela de Apontamento Mensal
             </span>
             <span className="text-xs text-slate-500">·</span>
             <span className="text-xs text-slate-500 font-medium">
-              Altere status ou minutos de atraso em tempo real
+              Mostrando {displayedDias.length} de 31 dias
             </span>
           </div>
 
-          {/* Micro legend */}
-          <div className="flex items-center gap-2 text-[11px] text-slate-500">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Dia OK (0%)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-              Atraso
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-              Falta (100%)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-              Folga (Neutro)
-            </span>
+          {/* Quick Day Filter Pills */}
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs flex-wrap">
+            <button
+              type="button"
+              onClick={() => setDayFilter('todos')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'todos'
+                  ? 'bg-emerald-800 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Todos (31)
+            </button>
+            <button
+              type="button"
+              onClick={() => setDayFilter('desvios')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'desvios'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-amber-600'
+              }`}
+            >
+              Desvios / Atrasos ({countsByStatus.desvios})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDayFilter('faltas')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'faltas'
+                  ? 'bg-rose-700 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-rose-600'
+              }`}
+            >
+              Faltas ({countsByStatus.faltas})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDayFilter('folgas')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'folgas'
+                  ? 'bg-slate-700 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
+              }`}
+            >
+              Folgas ({countsByStatus.folgas})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDayFilter('fds')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'fds'
+                  ? 'bg-amber-700 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-amber-700'
+              }`}
+            >
+              Finais de Semana ({countsByStatus.fds})
+            </button>
           </div>
         </div>
 
@@ -541,18 +868,22 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {dias.map((d) => {
+              {displayedDias.map((d) => {
                 const dayOfWeekIdx = (d.dia % 7);
                 const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
                 // Apenas finais de semana (Sábado e Domingo) em laranja
                 const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
                 const dailyAbs = calculateDayAbs(d.status, d.atraso, operator.jornadaMin);
+                const isTargetRow = focusedDay === d.dia;
 
                 return (
                   <tr
+                    id={`dia-row-${d.dia}`}
                     key={d.dia}
-                    className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
-                      d.status === 'folga'
+                    className={`transition-all duration-300 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
+                      isTargetRow
+                        ? 'bg-emerald-100/80 dark:bg-emerald-950/70 ring-2 ring-emerald-500'
+                        : d.status === 'folga'
                         ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-80'
                         : d.status === 'falta'
                         ? 'bg-rose-50/30 dark:bg-rose-950/20'
