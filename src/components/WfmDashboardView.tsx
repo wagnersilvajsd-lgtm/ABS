@@ -84,7 +84,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
     return [...summary.supervisores].sort((a, b) => a.absPercent - b.absPercent);
   }, [summary.supervisores]);
 
-  const targetWfmAbs = 0.04; // 4.00% benchmark for call center
+  const targetWfmAbs = 0.03; // 3.00% meta solicitada de ABS WFM
   const isTargetMet = summary.absGeral <= targetWfmAbs;
 
   return (
@@ -108,7 +108,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           <div className="flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs">
               <span className="text-emerald-700 dark:text-emerald-300 font-medium">Meta WFM: </span>
-              <span className="font-bold font-mono text-emerald-900 dark:text-emerald-100">&le; 4.00%</span>
+              <span className="font-bold font-mono text-emerald-900 dark:text-emerald-100">&le; 3.00%</span>
             </div>
           </div>
         </div>
@@ -129,7 +129,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                 {formatPercent(summary.absGeral)}
               </div>
               <span className="text-[11px] text-emerald-200 block mt-0.5">
-                {isTargetMet ? 'Dentro da meta de 4.00%' : 'Acima da tolerância WFM'}
+                {isTargetMet ? 'Dentro da meta de 3.00%' : 'Acima da tolerância WFM (3.00%)'}
               </span>
             </div>
             <div className="text-[10px] text-emerald-300/80 border-t border-emerald-800/80 pt-2 font-mono">
@@ -248,12 +248,22 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                   </span>
 
                   <div className="mt-4 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
-                      ABS da Equipe
-                    </span>
-                    <div className="text-2xl font-extrabold font-mono text-emerald-800 dark:text-emerald-400 tabular-nums">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 uppercase block font-semibold">
+                        ABS da Equipe
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        Meta: ≤ 3.00%
+                      </span>
+                    </div>
+                    <div className="text-2xl font-extrabold font-mono text-emerald-800 dark:text-emerald-400 tabular-nums mt-1">
                       {formatPercent(sup.absPercent)}
                     </div>
+                    <span className={`text-[10px] font-bold block mt-1 ${
+                      sup.absPercent <= targetWfmAbs ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {sup.absPercent <= targetWfmAbs ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima da Meta (> 3%)'}
+                    </span>
                   </div>
                 </div>
 

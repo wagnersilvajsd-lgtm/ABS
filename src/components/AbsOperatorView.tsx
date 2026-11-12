@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Operator,
   OperatorMonthlyData,
@@ -29,7 +29,9 @@ import {
   CheckCircle2,
   TrendingDown,
   Info,
-  CalendarCheck
+  CalendarCheck,
+  Filter,
+  Users
 } from 'lucide-react';
 
 interface AbsOperatorViewProps {
@@ -53,16 +55,55 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   onResetOperatorMonth,
   onApply6x1Schedule
 }) => {
+  const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
   const [searchFilter, setSearchFilter] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Active operator
-  const operatorIndex = useMemo(() => {
-    const idx = operators.findIndex(op => op.id === currentOperatorId);
-    return idx >= 0 ? idx : 0;
-  }, [operators, currentOperatorId]);
+  // List of distinct supervisors from current operators
+  const availableSupervisors = useMemo(() => {
+    return Array.from(new Set(operators.map(op => op.supervisor).filter(Boolean))).sort();
+  }, [operators]);
 
-  const operator = operators[operatorIndex] || operators[0];
+  // Count of operators per supervisor
+  const supervisorCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    operators.forEach(op => {
+      counts[op.supervisor] = (counts[op.supervisor] || 0) + 1;
+    });
+    return counts;
+  }, [operators]);
+
+  // Operators filtered by the supervisor filter
+  const operatorsBySupervisor = useMemo(() => {
+    if (selectedSupervisor === 'todos') return operators;
+    return operators.filter(op => op.supervisor.toLowerCase() === selectedSupervisor.toLowerCase());
+  }, [operators, selectedSupervisor]);
+
+  // Filtered index of active operator
+  const currentFilteredIndex = useMemo(() => {
+    const idx = operatorsBySupervisor.findIndex(op => op.id === currentOperatorId);
+    return idx >= 0 ? idx : 0;
+  }, [operatorsBySupervisor, currentOperatorId]);
+
+  const operator = operatorsBySupervisor[currentFilteredIndex] || operatorsBySupervisor[0] || operators[0];
+
+  // Keep supervisor filter in sync if current operator changes externally
+  useEffect(() => {
+    if (operator && selectedSupervisor !== 'todos' && operator.supervisor.toLowerCase() !== selectedSupervisor.toLowerCase()) {
+      setSelectedSupervisor(operator.supervisor);
+    }
+  }, [currentOperatorId, operator, selectedSupervisor]);
+
+  // Switch supervisor filter and auto-select their first operator
+  const handleSupervisorFilterChange = (supervisor: string) => {
+    setSelectedSupervisor(supervisor);
+    if (supervisor !== 'todos') {
+      const matching = operators.filter(op => op.supervisor.toLowerCase() === supervisor.toLowerCase());
+      if (matching.length > 0 && (!operator || operator.supervisor.toLowerCase() !== supervisor.toLowerCase())) {
+        onSelectOperator(matching[0].id);
+      }
+    }
+  };
 
   // Operator monthly records (31 days)
   const opData = monthlyData[operator?.id] || {
@@ -82,18 +123,6 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     if (!operator) return null;
     return calculateSupervisorStats(operator.supervisor, operators, monthlyData);
   }, [operator, operators, monthlyData]);
-
-  // Filtered operator list for quick selection
-  const filteredOperators = useMemo(() => {
-    if (!searchFilter.trim()) return operators;
-    const term = searchFilter.toLowerCase();
-    return operators.filter(
-      op =>
-        op.nome.toLowerCase().includes(term) ||
-        op.supervisor.toLowerCase().includes(term) ||
-        op.entrada.includes(term)
-    );
-  }, [operators, searchFilter]);
 
   // Show temporary toast feedback
   const showToast = (msg: string) => {
@@ -139,20 +168,22 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     onUpdateDays(operator.id, updated);
   };
 
-  // Previous and Next Operator navigation
+  // Previous and Next Operator navigation (strictly within supervisor team)
   const handlePrevOperator = () => {
-    if (operatorIndex > 0) {
-      onSelectOperator(operators[operatorIndex - 1].id);
+    if (operatorsBySupervisor.length === 0) return;
+    if (currentFilteredIndex > 0) {
+      onSelectOperator(operatorsBySupervisor[currentFilteredIndex - 1].id);
     } else {
-      onSelectOperator(operators[operators.length - 1].id);
+      onSelectOperator(operatorsBySupervisor[operatorsBySupervisor.length - 1].id);
     }
   };
 
   const handleNextOperator = () => {
-    if (operatorIndex < operators.length - 1) {
-      onSelectOperator(operators[operatorIndex + 1].id);
+    if (operatorsBySupervisor.length === 0) return;
+    if (currentFilteredIndex < operatorsBySupervisor.length - 1) {
+      onSelectOperator(operatorsBySupervisor[currentFilteredIndex + 1].id);
     } else {
-      onSelectOperator(operators[0].id);
+      onSelectOperator(operatorsBySupervisor[0].id);
     }
   };
 
@@ -203,7 +234,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             {/* Quick Navigation Between Operators */}
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs text-slate-500 font-mono tabular-nums">
-                {operatorIndex + 1} de {operators.length}
+                {currentFilteredIndex + 1} de {operatorsBySupervisor.length}
+                {selectedSupervisor !== 'todos' ? ` (${selectedSupervisor})` : ''}
               </span>
               <button
                 onClick={handlePrevOperator}
@@ -222,23 +254,68 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </div>
           </div>
 
+          {/* Filtro por Supervisor - Seleciona supervisor para exibir apenas seus operadores abaixo */}
+          <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+                Filtro de Supervisor:
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleSupervisorFilterChange('todos')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  selectedSupervisor === 'todos'
+                    ? 'bg-emerald-800 text-white font-bold shadow-2xs'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                Todos ({operators.length})
+              </button>
+              {availableSupervisors.map((sup) => (
+                <button
+                  key={sup}
+                  type="button"
+                  onClick={() => handleSupervisorFilterChange(sup)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    selectedSupervisor.toLowerCase() === sup.toLowerCase()
+                      ? 'bg-emerald-800 text-white font-bold shadow-2xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {sup} ({supervisorCounts[sup] || 0})
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Form fields mimicking cells A1:D4 */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Cell B1: Seleção do Operador */}
+            {/* Cell B1: Seleção do Operador (Filtrada por Supervisor) */}
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                B1: Seleção do Operador
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  B1: Seleção do Operador
+                </label>
+                {selectedSupervisor !== 'todos' && (
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                    Equipe de {selectedSupervisor} ({operatorsBySupervisor.length})
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <select
-                  value={operator.id}
+                  value={operator?.id || ''}
                   onChange={(e) => onSelectOperator(e.target.value)}
                   className="w-full h-10 px-3 py-2 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 font-bold text-sm rounded-lg border border-emerald-300 dark:border-emerald-700/60 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/40 transition-all cursor-pointer truncate"
                 >
-                  {operators.map((op) => (
+                  {operatorsBySupervisor.map((op) => (
                     <option key={op.id} value={op.id}>
-                      {op.nome} — {op.supervisor}
+                      {op.nome} {selectedSupervisor === 'todos' ? `— ${op.supervisor}` : ''}
                     </option>
                   ))}
                 </select>
@@ -357,12 +434,26 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </p>
 
             <div className="mt-4 pt-4 border-t border-emerald-800/70">
-              <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-emerald-100">
-                {formatPercent(supervisorStats?.absPercent || 0)}
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-emerald-100">
+                  {formatPercent(supervisorStats?.absPercent || 0)}
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-200">
+                  Meta: ≤ 3.00%
+                </span>
               </div>
-              <span className="text-[11px] text-emerald-300 font-medium">
-                Índice Consolidado da Supervisão
-              </span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[11px] text-emerald-300 font-medium">
+                  Índice Consolidado da Supervisão
+                </span>
+                <span className={`text-[10px] font-bold ${
+                  (supervisorStats?.absPercent || 0) <= 0.03
+                    ? 'text-emerald-300'
+                    : 'text-amber-300'
+                }`}>
+                  {(supervisorStats?.absPercent || 0) <= 0.03 ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima de 3.00%'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -451,9 +542,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {dias.map((d) => {
-                const dayOfWeekIdx = (d.dia % 7); // 0 = Sáb, 1 = Dom, etc.
+                const dayOfWeekIdx = (d.dia % 7);
                 const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
-                const isWeekend = dayOfWeekIdx === 0 || dayOfWeekIdx === 1;
+                // Apenas finais de semana (Sábado e Domingo) em laranja
+                const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
                 const dailyAbs = calculateDayAbs(d.status, d.atraso, operator.jornadaMin);
 
                 return (
@@ -478,7 +570,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <span
                           className={`text-[10px] font-semibold px-1 rounded ${
                             isWeekend
-                              ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50'
+                              ? 'text-amber-800 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700/60 font-bold'
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >

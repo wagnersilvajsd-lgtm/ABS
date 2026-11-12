@@ -178,14 +178,15 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                 {/* Days 1 to 31 */}
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => {
                   const dayOfWeekIdx = dia % 7;
-                  const isWeekend = dayOfWeekIdx === 0 || dayOfWeekIdx === 1;
+                  const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
+                  const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
                   return (
                     <th
                       key={dia}
                       className={`py-2 px-1 text-center min-w-[34px] border-r border-slate-800 font-mono ${
-                        isWeekend ? 'bg-slate-800 text-amber-300' : ''
+                        isWeekend ? 'bg-amber-950/60 text-amber-400 font-bold' : ''
                       }`}
-                      title={`Dia ${dia} (${WEEKDAYS_ABBR[dayOfWeekIdx]})`}
+                      title={`Dia ${dia} (${weekdayName})`}
                     >
                       <div>{dia}</div>
                       <div className="text-[8px] opacity-70 font-sans">{WEEKDAYS_ABBR[dayOfWeekIdx]}</div>
@@ -233,7 +234,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                         className={
                           stats.absMensal === 0
                             ? 'text-emerald-700 dark:text-emerald-400'
-                            : stats.absMensal > 0.05
+                            : stats.absMensal > 0.03
                             ? 'text-rose-700 dark:text-rose-400 font-extrabold'
                             : 'text-amber-700 dark:text-amber-400'
                         }

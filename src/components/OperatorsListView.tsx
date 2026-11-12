@@ -76,9 +76,9 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
       if (absFilter === 'zero') {
         matchAbs = op.stats.absMensal === 0;
       } else if (absFilter === 'baixo') {
-        matchAbs = op.stats.absMensal > 0 && op.stats.absMensal <= 0.05;
+        matchAbs = op.stats.absMensal > 0 && op.stats.absMensal <= 0.03;
       } else if (absFilter === 'critico') {
-        matchAbs = op.stats.absMensal > 0.05;
+        matchAbs = op.stats.absMensal > 0.03;
       }
 
       return matchSearch && matchSupervisor && matchAbs;
@@ -252,8 +252,8 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
             >
               <option value="todos">Todos os índices</option>
               <option value="zero">0% (Sem faltas/atrasos)</option>
-              <option value="baixo">≤ 5.00% (Baixo)</option>
-              <option value="critico">&gt; 5.00% (Atenção / Crítico)</option>
+              <option value="baixo">≤ 3.00% (Baixo / Na Meta)</option>
+              <option value="critico">&gt; 3.00% (Atenção / Acima da Meta)</option>
             </select>
           </div>
 
@@ -340,7 +340,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                 </tr>
               ) : (
                 sortedOperators.map((op, idx) => {
-                  const isHighAbs = op.stats.absMensal > 0.05;
+                  const isHighAbs = op.stats.absMensal > 0.03;
                   const isZeroAbs = op.stats.absMensal === 0;
 
                   return (
