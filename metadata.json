@@ -1,0 +1,6 @@
+{
+  "name": "Sistema WFM - Controle de Absenteísmo",
+  "description": "Sistema automatizado de controle e cálculo de absenteísmo (ABS) em minutos para Call Center e operações de Workforce Management com integração ao Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
