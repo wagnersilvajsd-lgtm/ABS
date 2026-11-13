@@ -169,180 +169,171 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
   }, [sortedOperators]);
 
   return (
-    <div className="space-y-5">
-      
-      {/* Top Banner / Header */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
+    <div className="space-y-6">
+
+      {/* Header & Filter Bar */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
-              Aba 1: Cadastro &amp; Consolidação (OPERADORES)
-            </span>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-              Relação dos {operators.length} Operadores &amp; Escalas Contratuais
-            </h2>
+            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-slate-100">
+              Cadastro e Escalas de Operadores
+            </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Fórmulas ativas com cálculo em minutos de jornada (380 min) e índice de absenteísmo mensal consolidado.
+              {operators.length} colaborador(es) cadastrado(s) · Cálculo consolidado de minutos escalados, perdidos e ABS individual
             </p>
           </div>
 
-          {/* Quick Metrics Bar & Add Button */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={onAddOperator}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Adicionar Operador</span>
-            </button>
-
-            <div className="bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 px-3 py-1.5 rounded-lg text-center">
-              <span className="text-[10px] font-bold text-[#006772] dark:text-teal-300 uppercase block">
-                Operadores
-              </span>
-              <span className="text-base font-bold font-mono text-[#005059] dark:text-teal-100">
+          <div className="flex items-center gap-5 flex-wrap shrink-0">
+            <div className="text-right">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Exibidos</span>
+              <span className="text-base font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                 {aggregateStats.totalCount} / {operators.length}
               </span>
             </div>
 
-            <div className="bg-[#005059] text-white px-3.5 py-1.5 rounded-lg text-center">
-              <span className="text-[10px] font-bold text-teal-200 uppercase block">
-                ABS Médio
-              </span>
-              <span className="text-base font-extrabold font-mono text-white">
+            <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+
+            <div className="text-right">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">ABS Médio</span>
+              <span className="text-base font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf]">
                 {formatPercent(aggregateStats.avgAbs)}
               </span>
             </div>
+
+            <button
+              type="button"
+              onClick={onAddOperator}
+              className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Adicionar Operador</span>
+            </button>
           </div>
         </div>
 
-        {/* Filter Controls Row */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-          
-          {/* Search Box */}
+        {/* Symmetrical Filter Row */}
+        <div className="mt-5 pt-4 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar operador ou horário..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+              placeholder="Buscar operador, supervisor ou horário..."
+              className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
             />
           </div>
 
-          {/* Supervisor Filter Tabs */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-x-auto text-xs">
             <button
+              type="button"
               onClick={() => setSelectedSupervisor('todos')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
+              className={`h-7 px-3 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 selectedSupervisor === 'todos'
-                  ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] shadow-2xs font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Todos Supervisores
+              Todos
             </button>
             {supervisorsList.map((sup) => (
               <button
                 key={sup}
+                type="button"
                 onClick={() => setSelectedSupervisor(sup)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                className={`h-7 px-3 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   selectedSupervisor.toLowerCase() === sup.toLowerCase()
-                    ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] shadow-2xs font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
-                {sup.split(' ')[0]} ({sup.split(' ')[1] || ''})
+                {sup.split(' ').slice(0, 2).join(' ')}
               </button>
             ))}
           </div>
 
-          {/* ABS Status Filter */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">ABS:</span>
-            <select
-              value={absFilter}
-              onChange={(e) => setAbsFilter(e.target.value as any)}
-              className="py-1 px-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 cursor-pointer"
-            >
-              <option value="todos">Todos os índices</option>
-              <option value="zero">0% (Sem faltas/atrasos)</option>
-              <option value="baixo">≤ 3.00% (Baixo / Na Meta)</option>
-              <option value="critico">&gt; 3.00% (Atenção / Acima da Meta)</option>
-            </select>
-          </div>
-
+          <select
+            value={absFilter}
+            onChange={(e) => setAbsFilter(e.target.value as any)}
+            aria-label="Filtrar por faixa de ABS"
+            className="h-9 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-medium cursor-pointer"
+          >
+            <option value="todos">Todos os índices de ABS</option>
+            <option value="zero">0.00% (Sem faltas ou atrasos)</option>
+            <option value="baixo">≤ 3.00% (Dentro da meta)</option>
+            <option value="critico">&gt; 3.00% (Acima da meta)</option>
+          </select>
         </div>
-      </div>
+      </section>
 
       {/* Main Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-[#005059] text-white font-bold text-[10px] uppercase tracking-wider">
+            <thead className="bg-[#005059] text-white font-semibold text-[11px]">
               <tr>
+                <th className="py-3 px-4 w-12 text-center">#</th>
                 <th
                   onClick={() => handleToggleSort('nome')}
-                  className="py-3 px-4 cursor-pointer hover:bg-[#00383f] transition-colors select-none"
+                  className="py-3 px-4 cursor-pointer hover:bg-[#003e45] transition-colors select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>OPERADOR (A)</span>
+                    <span>Operador</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('supervisor')}
-                  className="py-3 px-4 cursor-pointer hover:bg-[#00383f] transition-colors select-none"
+                  className="py-3 px-4 cursor-pointer hover:bg-[#003e45] transition-colors select-none"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>SUPERVISOR (B)</span>
+                    <span>Supervisor</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('entrada')}
-                  className="py-3 px-3 text-center cursor-pointer hover:bg-[#00383f] transition-colors select-none w-28"
+                  className="py-3 px-3 text-center cursor-pointer hover:bg-[#003e45] transition-colors select-none w-24"
                 >
                   <div className="flex items-center justify-center gap-1">
-                    <span>ENTRADA (C)</span>
+                    <span>Entrada</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center w-28">
-                  SAÍDA (D)
+                <th className="py-3 px-3 text-center w-24">
+                  Saída
                 </th>
                 <th className="py-3 px-3 text-center w-24">
-                  JORNADA (E)
+                  Jornada
                 </th>
                 <th
                   onClick={() => handleToggleSort('minutosPerdidos')}
-                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#003e45] transition-colors select-none w-28"
                 >
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>PERDIDOS (F)</span>
+                    <span>Perdidos</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('minutosEscalados')}
-                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#003e45] transition-colors select-none w-28"
                 >
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>ESCALADOS (G)</span>
+                    <span>Escalados</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('absMensal')}
-                  className="py-3 px-4 text-center cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32 bg-[#00383f]"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#003036] transition-colors select-none w-28 bg-[#003e45]"
                 >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span>ABS MENSAL (H)</span>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>ABS</span>
                     <ArrowUpDown className="w-3 h-3 text-teal-100" />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center w-48">
+                <th className="py-3 px-4 text-center w-48">
                   Ações
                 </th>
               </tr>
@@ -350,7 +341,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {sortedOperators.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-500">
+                  <td colSpan={10} className="py-10 text-center text-slate-500 dark:text-slate-400">
                     Nenhum operador encontrado com os filtros aplicados.
                   </td>
                 </tr>
@@ -363,14 +354,14 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                   return (
                     <tr
                       key={op.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors group"
+                      className="h-11 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group"
                     >
-                      {/* Operador */}
+                      <td className="py-2.5 px-4 text-center font-mono tabular-nums text-[11px] text-slate-400">
+                        {(idx + 1).toString().padStart(2, '0')}
+                      </td>
+
                       <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">
-                            {(idx + 1).toString().padStart(2, '0')}
-                          </span>
                           <button
                             type="button"
                             onClick={() => onOpenProfile(op)}
@@ -382,16 +373,15 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                           {historyCount > 0 && (
                             <span
                               title={`${historyCount} registro(s) no histórico do perfil`}
-                              className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0"
+                              className="text-[11px] font-mono tabular-nums font-semibold text-amber-700 dark:text-amber-300 shrink-0"
                             >
-                              {historyCount}
+                              ({historyCount})
                             </span>
                           )}
                         </div>
                       </td>
 
-                      {/* Supervisor */}
-                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 text-xs">
+                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-1.5">
                           <span className="truncate">{op.supervisor}</span>
                           {onOpenEditSupervisor && (
@@ -412,61 +402,54 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Entrada */}
-                      <td className="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums text-slate-600 dark:text-slate-400">
                         {op.entrada}
                       </td>
 
-                      {/* Saída */}
-                      <td className="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums text-slate-600 dark:text-slate-400">
                         {op.saida}
                       </td>
 
-                      {/* Jornada */}
-                      <td className="py-2.5 px-3 text-center font-mono font-medium text-[#006772] dark:text-[#2dd4bf]">
-                        {op.jornadaMin}
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums font-medium text-[#006772] dark:text-[#2dd4bf]">
+                        {op.jornadaMin}m
                       </td>
 
-                      {/* Minutos Perdidos */}
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
                         <span
                           className={
                             op.stats.minutosPerdidos > 0
-                              ? 'text-rose-700 dark:text-rose-400 font-bold'
-                              : 'text-slate-500 dark:text-slate-400'
+                              ? 'text-rose-600 dark:text-rose-400 font-bold'
+                              : 'text-slate-400'
                           }
                         >
-                          {op.stats.minutosPerdidos.toLocaleString('pt-BR')}
+                          {op.stats.minutosPerdidos.toLocaleString('pt-BR')}m
                         </span>
                       </td>
 
-                      {/* Minutos Escalados */}
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                        {op.stats.minutosEscalados.toLocaleString('pt-BR')}
+                        {op.stats.minutosEscalados.toLocaleString('pt-BR')}m
                       </td>
 
-                      {/* ABS Mensal */}
-                      <td className="py-2.5 px-4 text-center font-mono font-bold tabular-nums">
+                      <td className="py-2.5 px-4 text-right font-mono font-bold tabular-nums">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs ${
+                          className={
                             isZeroAbs
-                              ? 'text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 font-bold'
+                              ? 'text-[#006772] dark:text-[#2dd4bf]'
                               : isHighAbs
-                              ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-extrabold'
-                              : 'text-[#d89627] dark:text-[#f0ad35] bg-amber-50 dark:bg-amber-950/40 font-bold'
-                          }`}
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-[#d89627] dark:text-amber-400'
+                          }
                         >
                           {formatPercent(op.stats.absMensal)}
                         </span>
                       </td>
 
-                      {/* Ações: Editar, Perfil, Transferir, Apontar, Excluir */}
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => onOpenEditOperator(op)}
-                            className="p-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                             title="Editar nome e horário do operador"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -475,7 +458,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenProfile(op)}
-                            className="p-1.5 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer"
                             title="Perfil, Histórico e Escala Pedagógica"
                           >
                             <ClipboardList className="w-3.5 h-3.5" />
@@ -484,7 +467,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenTransfer(op)}
-                            className="p-1.5 text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-[#006772] dark:text-[#2dd4bf] hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-md transition-colors cursor-pointer"
                             title="Transferir operador para outro supervisor"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -493,7 +476,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onSelectOperatorForAudit(op.id)}
-                            className="px-2 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                            className="h-7 px-2.5 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded-md transition-colors flex items-center gap-1 whitespace-nowrap cursor-pointer"
                             title="Abrir apontamento diário deste operador"
                           >
                             <span>Apontar</span>
@@ -503,7 +486,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenDelete(op)}
-                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                             title="Excluir operador"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -515,19 +498,18 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                 })
               )}
             </tbody>
-            {/* Table Footer */}
-            <tfoot className="bg-slate-100 dark:bg-slate-800/80 font-bold text-xs">
+            <tfoot className="bg-slate-50 dark:bg-slate-800/70 border-t border-slate-200 dark:border-slate-700 font-bold text-xs">
               <tr>
-                <td colSpan={5} className="py-3 px-4 text-slate-800 dark:text-slate-200">
-                  TOTAL CONSOLIDADO ({aggregateStats.totalCount} colaboradores exibidos)
+                <td colSpan={6} className="py-3 px-4 text-slate-700 dark:text-slate-200">
+                  Total Consolidado ({aggregateStats.totalCount} colaboradores)
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-rose-700 dark:text-rose-400">
-                  {aggregateStats.perdidos.toLocaleString('pt-BR')} min
+                <td className="py-3 px-4 text-right font-mono tabular-nums text-rose-600 dark:text-rose-400">
+                  {aggregateStats.perdidos.toLocaleString('pt-BR')}m
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                  {aggregateStats.escalados.toLocaleString('pt-BR')} min
+                <td className="py-3 px-4 text-right font-mono tabular-nums text-slate-800 dark:text-slate-200">
+                  {aggregateStats.escalados.toLocaleString('pt-BR')}m
                 </td>
-                <td className="py-3 px-4 text-center font-mono text-[#006772] dark:text-[#2dd4bf] text-sm font-extrabold">
+                <td className="py-3 px-4 text-right font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf] font-extrabold">
                   {formatPercent(aggregateStats.avgAbs)}
                 </td>
                 <td></td>
@@ -535,7 +517,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
             </tfoot>
           </table>
         </div>
-      </div>
+      </section>
 
     </div>
   );

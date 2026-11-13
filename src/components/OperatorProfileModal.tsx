@@ -250,8 +250,8 @@ export const OperatorProfileModal: React.FC<OperatorProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 overflow-y-auto animate-backdrop-in">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col animate-scale-in">
         
         {/* Top Profile Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-[#006772] via-[#005059] to-[#00383f] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">

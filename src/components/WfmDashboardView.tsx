@@ -127,200 +127,194 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
 
   return (
     <div className="space-y-6">
-      
-      {/* Executive Header */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+      {/* Executive Summary Header + Symmetrical 4-Column KPI Strip */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200/70 dark:border-slate-800">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
-              Painel de Gestão WFM (Workforce Management)
-            </span>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-              Consolidação Executiva &amp; Desempenho de Absenteísmo
-            </h2>
+            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-slate-100">
+              Painel Executivo WFM
+            </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Indicadores ponderados em minutos para análise de capacidade operacional, turnos e liderança.
+              Consolidado ponderado em minutos ({monthLabel}) · Capacidade operacional, lideranças e desvios críticos
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 text-xs">
-              <span className="text-[#006772] dark:text-teal-300 font-medium">Meta WFM: </span>
-              <span className="font-bold font-mono text-[#005059] dark:text-teal-100">&le; 3.00%</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs shrink-0">
+            <span className="text-slate-500 dark:text-slate-400">Meta operacional:</span>
+            <span className="font-mono tabular-nums font-bold text-[#006772] dark:text-[#2dd4bf]">
+              ABS &le; 3.00%
+            </span>
           </div>
         </div>
 
-        {/* 4 Primary KPI Strips */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
           {/* KPI 1: ABS Geral */}
-          <div className="bg-gradient-to-br from-[#006772] via-[#005059] to-[#00383f] text-white rounded-xl p-4 shadow-sm border border-[#004e57] flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-teal-200 uppercase tracking-wide">
-                ABS Geral da Operação
+          <div className="h-full bg-[#005059] text-white rounded-xl p-5 border border-[#003e45] flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-teal-100">
+                ABS Geral
               </span>
-              <Activity className="w-4 h-4 text-teal-200" />
+              <Activity className="w-4 h-4 text-teal-200 shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-3xl font-extrabold font-mono tabular-nums">
+            <div className="my-4">
+              <div className="text-3xl font-bold font-mono tabular-nums">
                 {formatPercent(summary.absGeral)}
               </div>
-              <span className="text-[11px] text-teal-200 block mt-0.5">
-                {isTargetMet ? 'Dentro da meta de 3.00%' : 'Acima da tolerância WFM (3.00%)'}
-              </span>
+              <p className={`text-xs mt-1 ${isTargetMet ? 'text-teal-200' : 'text-amber-300'}`}>
+                {isTargetMet ? 'Dentro da meta de 3.00%' : 'Acima da meta de 3.00%'}
+              </p>
             </div>
-            <div className="text-[10px] text-teal-300/80 border-t border-white/15 pt-2 font-mono">
-              Fórmula: Total Perdido / Total Escalado
+            <div className="text-xs text-teal-200/90 border-t border-white/15 pt-3 font-mono tabular-nums">
+              Perdido / Escalado
             </div>
           </div>
 
           {/* KPI 2: Minutos Perdidos */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Minutos Perdidos (Mês)
+          <div className="h-full bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Minutos Perdidos
               </span>
-              <Clock className="w-4 h-4 text-rose-500" />
+              <Clock className="w-4 h-4 text-rose-500 shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 tabular-nums">
+            <div className="my-4">
+              <div className="text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
                 {summary.totalMinutosPerdidos.toLocaleString('pt-BR')} min
               </div>
-              <span className="text-xs text-slate-600 dark:text-slate-400 block mt-0.5">
-                ≈ {formatMinutesToHours(summary.totalMinutosPerdidos)} de improdutividade
-              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono tabular-nums">
+                ≈ {formatMinutesToHours(summary.totalMinutosPerdidos)} de ausência
+              </p>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-2 flex items-center justify-between">
-              <span>Atrasos: {summary.totalMinutosAtraso} min</span>
+            <div className="text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-700/80 pt-3 flex items-center justify-between font-mono tabular-nums">
+              <span>Atrasos: {summary.totalMinutosAtraso}m</span>
               <span>Faltas: {summary.totalFaltas}</span>
             </div>
           </div>
 
           {/* KPI 3: Minutos Escalados */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Minutos Escalados (Mês)
+          <div className="h-full bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Minutos Escalados
               </span>
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold font-mono text-slate-800 dark:text-slate-200 tabular-nums">
+            <div className="my-4">
+              <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                 {summary.totalMinutosEscalados.toLocaleString('pt-BR')} min
               </div>
-              <span className="text-xs text-slate-600 dark:text-slate-400 block mt-0.5">
-                ≈ {formatMinutesToHours(summary.totalMinutosEscalados)} de escala ativa
-              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono tabular-nums">
+                ≈ {formatMinutesToHours(summary.totalMinutosEscalados)} de carga ativa
+              </p>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-2 font-mono">
-              Base: 380 min / operador / dia útil
+            <div className="text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-700/80 pt-3 font-mono tabular-nums">
+              Base: 380 min/dia útil
             </div>
           </div>
 
-          {/* KPI 4: Efetivo Ativo */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+          {/* KPI 4: Efetivo Total */}
+          <div className="h-full bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 Efetivo Total
               </span>
-              <Users className="w-4 h-4 text-slate-400" />
+              <Users className="w-4 h-4 text-slate-400 shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-bold font-mono text-slate-800 dark:text-slate-200 tabular-nums">
-                {summary.totalOperadores} Operadores
+            <div className="my-4">
+              <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+                {summary.totalOperadores} operadores
               </div>
-              <span className="text-xs text-slate-600 dark:text-slate-400 block mt-0.5">
-                Distribuídos em 3 equipes
-              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Em {supervisorsList.length} equipe(s) de supervisão
+              </p>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-2">
+            <div className="text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-700/80 pt-3">
               Regime 6x1 CLT (36h semanais)
             </div>
           </div>
-
         </div>
-      </div>
+      </section>
 
-      {/* Second Row: Supervisor Comparison Cards */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+      {/* Supervisor Comparison Grid */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200/70 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Desempenho por Supervisão (Coluna F Dinâmica)
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Comparativo das 3 equipes com ponderação real de minutos escalados e perdidos.
+            <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+              Desempenho por Supervisão
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Comparativo ordenado do menor para o maior índice de absenteísmo
             </p>
           </div>
-          <span className="text-xs font-mono text-slate-400">
-            {supervisorsList.length} Supervisores
+          <span className="text-xs font-mono tabular-nums text-slate-500 dark:text-slate-400">
+            {supervisorsList.length} supervisão(ões)
           </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
           {sortedSupervisors.map((sup, idx) => {
             const isBest = idx === 0;
+            const withinMeta = sup.absPercent <= targetWfmAbs;
+            const barPct = Math.min(100, (sup.absPercent / (targetWfmAbs * 2)) * 100);
             return (
               <div
                 key={sup.supervisor}
-                className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col justify-between"
+                className="h-full bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover-lift"
               >
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                      {isBest ? 'Líder de Aderência' : `Ranking #${idx + 1}`}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">
+                      #{idx + 1} · {sup.totalOperadores} colaboradores
                     </span>
                     {isBest && (
-                      <span className="text-[10px] bg-teal-100 text-[#006772] dark:bg-teal-950/60 dark:text-teal-300 font-bold px-2 py-0.5 rounded">
+                      <span className="font-semibold text-[#006772] dark:text-[#2dd4bf]">
                         Menor ABS
                       </span>
                     )}
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1.5 truncate">
                     {sup.supervisor}
-                  </h4>
-                  <span className="text-xs text-slate-500 block">
-                    {sup.totalOperadores} colaboradores vinculados
-                  </span>
+                  </h3>
 
-                  <div className="mt-4 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase block font-semibold">
-                        ABS da Equipe
-                      </span>
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                        Meta: ≤ 3.00%
-                      </span>
-                    </div>
-                    <div className="text-2xl font-extrabold font-mono text-[#006772] dark:text-[#2dd4bf] tabular-nums mt-1">
+                  <div className="mt-4 flex items-baseline justify-between gap-2">
+                    <span className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                       {formatPercent(sup.absPercent)}
-                    </div>
-                    <span className={`text-[10px] font-bold block mt-1 ${
-                      sup.absPercent <= targetWfmAbs ? 'text-[#006772] dark:text-[#2dd4bf]' : 'text-amber-600 dark:text-amber-400'
-                    }`}>
-                      {sup.absPercent <= targetWfmAbs ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima da Meta (> 3%)'}
                     </span>
+                    <span className={`text-xs font-semibold ${
+                      withinMeta ? 'text-[#006772] dark:text-[#2dd4bf]' : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {withinMeta ? 'Dentro da meta' : 'Acima da meta'}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      style={{ width: `${barPct}%` }}
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        withinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
+                      }`}
+                    />
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700/80 grid grid-cols-2 gap-2 text-xs">
+                <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-700/80 grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Perdidos</span>
-                    <span className="font-bold font-mono text-rose-600 dark:text-rose-400">
+                    <span className="text-slate-500 dark:text-slate-400 block">Min. Perdidos</span>
+                    <span className="font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
                       {sup.minutosPerdidos.toLocaleString('pt-BR')} min
                     </span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[11px] text-slate-400 font-mono tabular-nums block">
                       ≈ {formatMinutesToHours(sup.minutosPerdidos)}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Escalados</span>
-                    <span className="font-bold font-mono text-slate-700 dark:text-slate-300">
+                  <div className="text-right">
+                    <span className="text-slate-500 dark:text-slate-400 block">Min. Escalados</span>
+                    <span className="font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200">
                       {sup.minutosEscalados.toLocaleString('pt-BR')} min
                     </span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[11px] text-slate-400 font-mono tabular-nums block">
                       ≈ {formatMinutesToHours(sup.minutosEscalados)}
                     </span>
                   </div>
@@ -329,26 +323,29 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* Third Row: Daily Loss Chart & Top 5 Outliers */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        
-        {/* Daily Loss Curve (2 Cols) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      {/* Third Row: Balanced Daily Loss Curve (2 Cols) + Top 5 Outliers (1 Col) */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        {/* Daily Loss Curve */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200/70 dark:border-slate-800">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Curva Diária de Minutos Perdidos ({monthLabel} · {displayedDayNumbers.length < totalDays ? `${displayedDayNumbers.length} dias selecionados` : `Dias 1 a ${totalDays}`})
-              </h3>
-              <p className="text-xs text-slate-500">
-                Identifique os dias de maior impacto operacional e ausências concentradas.
+              <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
+                Curva Diária de Minutos Perdidos
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {monthLabel} · {displayedDayNumbers.length < totalDays ? `${displayedDayNumbers.length} dias selecionados` : `Dias 1 a ${totalDays}`} · Passe o cursor para detalhes
               </p>
             </div>
-            <Calendar className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-rose-500" /> &gt; 380m</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-amber-500" /> ≤ 380m</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-teal-300 dark:bg-teal-900" /> 0m</span>
+            </div>
           </div>
 
-          <div className="mt-6 flex items-end justify-between gap-1 h-44 pt-4 px-2">
+          <div className="mt-6 flex items-end justify-between gap-1 h-48 pt-6 px-1">
             {dailyLossCurve.days.map((item) => {
               const heightPercent = Math.max(
                 4,
@@ -359,27 +356,24 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
               return (
                 <div
                   key={item.dia}
-                  className="flex-1 flex flex-col items-center gap-1 group relative h-full justify-end"
+                  className="flex-1 flex flex-col items-center gap-1.5 group relative h-full justify-end"
                 >
-                  {/* Tooltip */}
-                  <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute bottom-full mb-2 bg-slate-900 text-white text-[10px] font-mono py-1 px-2 rounded whitespace-nowrap z-30 shadow-md">
-                    Dia {item.dia} ({item.weekday}): {item.minutosPerdidos} min ({item.ocorrencias} ocorrências)
+                  <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute bottom-full mb-2 bg-slate-900 text-white text-[10px] font-mono py-1 px-2 rounded whitespace-nowrap z-30 shadow-md transition-opacity">
+                    Dia {item.dia} ({item.weekday}): {item.minutosPerdidos} min ({item.ocorrencias} ocorr.)
                   </div>
 
-                  {/* Bar */}
                   <div
                     style={{ height: `${heightPercent}%` }}
-                    className={`w-full max-w-[14px] rounded-t transition-all ${
+                    className={`w-full max-w-[14px] rounded-t transition-colors animate-bar-up ${
                       hasLoss
                         ? item.minutosPerdidos > 380
                           ? 'bg-rose-500 hover:bg-rose-600'
                           : 'bg-amber-500 hover:bg-amber-600'
-                        : 'bg-teal-200 dark:bg-teal-950/60'
+                        : 'bg-teal-200 dark:bg-teal-900/60'
                     }`}
                   />
 
-                  {/* Day label */}
-                  <span className={`text-[9px] font-mono ${
+                  <span className={`text-[9px] font-mono tabular-nums ${
                     item.isWeekend ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
                   }`}>
                     {item.dia}
@@ -388,60 +382,63 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
               );
             })}
           </div>
-          <div className="mt-2 text-center text-[10px] text-slate-400 font-medium">
-            {monthLabel} ({displayedDayNumbers.length} {displayedDayNumbers.length === 1 ? 'dia' : 'dias'}) · Números em laranja indicam Sábado/Domingo
+
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Números em laranja indicam Sábado e Domingo</span>
+            <span className="font-mono tabular-nums">Pico diário: {dailyLossCurve.maxLoss > 1 ? `${dailyLossCurve.maxLoss} min` : '0 min'}</span>
           </div>
         </div>
 
-        {/* Top 5 Critical ABS Outliers (1 Col) */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs flex flex-col justify-between">
+        {/* Top 5 Critical ABS Outliers */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-slate-800">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Top 5 Absenteísmo (Pareto)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Colaboradores com maior impacto no mês.
+                <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
+                  Top 5 Maior Impacto
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Colaboradores com maior ABS no recorte
                 </p>
               </div>
-              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
             </div>
 
             <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
               {topAbsOperators.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  Nenhum operador com faltas ou atrasos registrados.
+                <div className="py-10 text-center text-xs text-slate-400">
+                  Nenhum operador com faltas ou atrasos registrados neste período.
                 </div>
               ) : (
                 topAbsOperators.map((op, idx) => (
                   <div
                     key={op.id}
-                    className="py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded px-1 transition-colors"
+                    className="py-3 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-slate-400">
-                          #{idx + 1}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono tabular-nums text-slate-400 w-5 shrink-0">
+                          0{idx + 1}
                         </span>
                         <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate block">
                           {op.nome}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 truncate block">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block pl-7 font-mono tabular-nums">
                         {op.supervisor.split(' ')[0]} · {op.stats.minutosPerdidos} min perdidos
                       </span>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-xs font-bold font-mono text-rose-600 dark:text-rose-400 block">
+                      <span className="text-xs font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 block">
                         {formatPercent(op.stats.absMensal)}
                       </span>
                       <button
+                        type="button"
                         onClick={() => onSelectOperatorForAudit(op.id)}
-                        className="text-[10px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-bold cursor-pointer"
+                        className="text-[11px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-semibold cursor-pointer"
                       >
-                        Auditar &rarr;
+                        Auditar →
                       </button>
                     </div>
                   </div>
@@ -450,16 +447,14 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between flex-wrap gap-2">
-            <span>Faltas: {summary.totalFaltas} d</span>
-            <span>Atestados: {summary.totalAtestados} d</span>
-            <span>Atrasos: {summary.totalMinutosAtraso} min</span>
-            <span>Decl. (ABS): {summary.totalDiasAbono} d ({summary.totalMinutosAbonados}m)</span>
-            <span>BH / Aniv.: {summary.totalDiasAbonoLegal + summary.totalBancoHorasIntegral + summary.totalFolgaAniversario} d</span>
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between flex-wrap gap-2 font-mono tabular-nums">
+            <span>Faltas: {summary.totalFaltas}d</span>
+            <span>Atest.: {summary.totalAtestados}d</span>
+            <span>Decl. ABS: {summary.totalDiasAbono}d</span>
+            <span>BH/Aniv.: {summary.totalDiasAbonoLegal + summary.totalBancoHorasIntegral + summary.totalFolgaAniversario}d</span>
           </div>
         </div>
-
-      </div>
+      </section>
 
     </div>
   );

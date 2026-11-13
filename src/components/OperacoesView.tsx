@@ -305,29 +305,29 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
   return (
     <div className="space-y-6">
-      
-      {/* Top Banner with JSD Branding & Operation Switcher */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
-          
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 dark:border-slate-700 p-1.5 shadow-sm shrink-0 flex items-center justify-center">
+
+      {/* Operation Header & Switcher */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-5 border-b border-slate-200/70 dark:border-slate-800">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1.5 shrink-0 flex items-center justify-center overflow-hidden">
               <img
                 src={activeOp?.logoUrl || '/assets/aistudio/image_def6497f.png'}
                 alt={activeOp?.nome || 'Operação'}
-                className="w-full h-full object-contain rounded-xl"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-contain rounded-lg"
               />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf] font-mono">
-                  GESTÃO DE OPERAÇÕES · JSD TELECOM
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-[#d89627] border border-amber-300 dark:border-amber-700 font-mono">
-                  Meta ABS: ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%
-                </span>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                <span className="font-medium text-slate-700 dark:text-slate-300">{activeOp?.cliente || 'JSD Telecom'}</span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono tabular-nums">Meta ABS ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%</span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono tabular-nums">Jornada {activeOp?.jornadaPadraoMin || 380} min</span>
               </div>
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-0.5">
+              <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight mt-0.5 truncate">
                 {activeOp?.nome || 'Operação CAERN'}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
@@ -336,14 +336,15 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Symmetrical Action Toolbar */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             <button
+              type="button"
               onClick={handleOpenEdit}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Edit2 className="w-3.5 h-3.5" />
-              <span>Editar Operação</span>
+              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+              <span>Editar</span>
             </button>
 
             <button
@@ -355,316 +356,303 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                   ? 'É necessário manter pelo menos 1 operação cadastrada'
                   : `Excluir ${activeOp?.nome}`
               }
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/50 rounded-xl transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Excluir Operação</span>
+              <span>Excluir</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setIsAddSupModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-xl transition-colors cursor-pointer"
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <UserCheck className="w-3.5 h-3.5 text-[#006772]" />
-              <span>+ Adicionar Supervisor</span>
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Novo Supervisor</span>
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setNewOpOperatorSup(activeSupervisors[0] || '');
                 setIsAddOperatorModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-xl transition-colors shadow-2xs cursor-pointer"
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Adicionar Operador</span>
+              <span>Novo Operador</span>
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setUploadError(null);
                 setIsAddOpModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#d89627] hover:bg-[#b37718] rounded-xl transition-colors shadow-2xs cursor-pointer"
+              className="h-9 px-4 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#d89627] hover:bg-[#b87b18] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Nova Operação</span>
             </button>
           </div>
-
         </div>
 
-        {/* Operation Selector Tabs */}
-        <div className="mt-5 flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wide shrink-0 mr-2 flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-[#006772]" />
-            Operações:
+        {/* Operation Switcher */}
+        <div className="pt-4 flex items-center gap-2 overflow-x-auto">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0 mr-1">
+            Operações cadastradas:
           </span>
           {operations.map(op => {
             const isSelected = op.id === selectedOperationId;
             return (
               <button
                 key={op.id}
+                type="button"
                 onClick={() => onSelectOperation(op.id)}
-                className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
+                className={`h-9 flex items-center gap-2 px-3.5 rounded-lg text-xs font-semibold btn-press whitespace-nowrap shrink-0 cursor-pointer border ${
                   isSelected
-                    ? 'bg-[#006772] text-white border-[#006772] shadow-sm font-bold'
-                    : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    ? 'bg-[#006772] text-white border-[#006772]'
+                    : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 {op.logoUrl && (
                   <img
                     src={op.logoUrl}
                     alt={op.nome}
-                    className="w-5 h-5 object-contain rounded bg-white p-0.5"
+                    referrerPolicy="no-referrer"
+                    className="w-4 h-4 object-contain rounded bg-white p-0.5 shrink-0"
                   />
                 )}
                 <span>{op.nome}</span>
-                {isSelected && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/20 text-teal-100">
-                    Ativa
-                  </span>
-                )}
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* 4 Core Metrics Cards for Active Operation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* KPI 1: ABS Consolidado da Operação */}
-        <div className="bg-gradient-to-br from-[#006772] via-[#005059] to-[#00383f] text-white rounded-2xl p-5 shadow-sm border border-[#004e57] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-200">
+      {/* Symmetrical 4-Column KPI Strip */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+        {/* KPI 1: ABS da Operação */}
+        <div className="h-full bg-[#005059] text-white rounded-xl p-5 border border-[#003e45] flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-teal-100">
               ABS da Operação
             </span>
-            <Target className="w-4 h-4 text-teal-200" />
+            <Target className="w-4 h-4 text-teal-200 shrink-0" />
           </div>
-          <div className="my-3">
-            <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight">
+          <div className="my-4">
+            <div className="text-3xl font-bold font-mono tabular-nums tracking-tight">
               {formatPercent(opStats.absPercent)}
             </div>
-            <span className={`text-[11px] font-semibold mt-1 block ${
-              opStats.absPercent <= (activeOp?.metaAbs || 0.03) ? 'text-teal-200' : 'text-[#d89627]'
+            <p className={`text-xs font-medium mt-1 ${
+              opStats.absPercent <= (activeOp?.metaAbs || 0.03) ? 'text-teal-200' : 'text-amber-300'
             }`}>
               {opStats.absPercent <= (activeOp?.metaAbs || 0.03)
-                ? '✓ Dentro da Meta Contratual'
-                : '⚠ Acima do Teto de Tolerância'}
-            </span>
+                ? 'Dentro da meta contratual'
+                : 'Acima do teto de tolerância'}
+            </p>
           </div>
-          <div className="pt-3 border-t border-white/15 text-[11px] font-mono text-teal-300/90 flex justify-between">
-            <span>Meta: ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%</span>
-            <span>Perdidos: {opStats.minutosPerdidos}m</span>
+          <div className="pt-3 border-t border-white/15 text-xs font-mono tabular-nums text-teal-200 flex items-center justify-between">
+            <span>Meta ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%</span>
+            <span>{opStats.minutosPerdidos.toLocaleString('pt-BR')} min perd.</span>
           </div>
         </div>
 
-        {/* KPI 2: Total de Colaboradores */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Colaboradores
+        {/* KPI 2: Colaboradores */}
+        <div className="h-full bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Colaboradores Ativos
             </span>
-            <Users className="w-4 h-4 text-[#006772]" />
+            <Users className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
           </div>
-          <div className="my-3">
-            <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-slate-100 tabular-nums">
+          <div className="my-4">
+            <div className="text-3xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
               {opStats.totalOperadores}
             </div>
-            <span className="text-xs text-slate-500 mt-1 block">
-              Operadores vinculados a {activeOp?.nome}
-            </span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+              Vinculados a {activeOp?.nome}
+            </p>
           </div>
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-mono">
-            Jornada diária padrão: {activeOp?.jornadaPadraoMin || 380} min
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-mono tabular-nums text-slate-500 dark:text-slate-400">
+            Jornada padrão: {activeOp?.jornadaPadraoMin || 380} min/dia
           </div>
         </div>
 
-        {/* KPI 3: Supervisores Ativos */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Supervisores
+        {/* KPI 3: Supervisores */}
+        <div className="h-full bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Equipes de Supervisão
             </span>
-            <UserCheck className="w-4 h-4 text-[#d89627]" />
+            <UserCheck className="w-4 h-4 text-[#d89627] shrink-0" />
           </div>
-          <div className="my-3">
-            <div className="text-3xl font-extrabold font-mono text-slate-900 dark:text-slate-100 tabular-nums">
+          <div className="my-4">
+            <div className="text-3xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
               {activeSupervisors.length}
             </div>
-            <span className="text-xs text-slate-500 mt-1 block">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Lideranças ativas na operação
-            </span>
+            </p>
           </div>
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400">
-            {activeSupervisors.slice(0, 2).map(s => s.split(' ')[0]).join(', ')}
-            {activeSupervisors.length > 2 ? ` +${activeSupervisors.length - 2}` : ''}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 truncate">
+            {activeSupervisors.length > 0
+              ? activeSupervisors.map(s => s.split(' ')[0]).join(' · ')
+              : 'Nenhuma liderança cadastrada'}
           </div>
         </div>
 
-        {/* KPI 4: Minutos Escalados Mês */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        {/* KPI 4: Minutos Escalados */}
+        <div className="h-full bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Minutos Escalados
             </span>
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
           </div>
-          <div className="my-3">
-            <div className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100 tabular-nums">
+          <div className="my-4">
+            <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
               {opStats.minutosEscalados.toLocaleString('pt-BR')} min
             </div>
-            <span className="text-xs text-slate-500 mt-1 block">
-              ≈ {formatMinutesToHours(opStats.minutosEscalados)} de escala ativa
-            </span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono tabular-nums">
+              ≈ {formatMinutesToHours(opStats.minutosEscalados)} de carga prevista
+            </p>
           </div>
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-mono">
-            Escala contratual 6x1 (folgas FDS flexíveis por mês)
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+            Escala 6x1 CLT (36h semanais)
           </div>
         </div>
+      </section>
 
-      </div>
-
-      {/* Supervisors Grid in Active Operation */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+      {/* Symmetrical Supervisors Grid */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70 dark:border-slate-800">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
-                EQUIPES DE SUPERVISÃO
-              </span>
-              <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                {activeSupervisors.length} lideranças
-              </span>
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+            <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
               Supervisores da {activeOp?.nome}
-            </h3>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {activeSupervisors.length} liderança(s) ativa(s) · Comparativo de absenteísmo ponderado por equipe
+            </p>
           </div>
 
           <button
+            type="button"
             onClick={() => setIsAddSupModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors cursor-pointer"
+            className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Adicionar Supervisor</span>
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {supervisorStatsList.map((sup) => {
-            const isWithinMeta = sup.absPercent <= (activeOp?.metaAbs || 0.03);
-            return (
-              <div
-                key={sup.supervisor}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-[#006772]/40 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                      Supervisão
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                        isWithinMeta
-                          ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/80 dark:text-teal-300'
-                          : 'bg-amber-100 text-[#d89627] dark:bg-amber-950/80'
-                      }`}>
-                        {isWithinMeta ? '✓ Na Meta' : '⚠ Acima'}
-                      </span>
+        {supervisorStatsList.length === 0 ? (
+          <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+            Nenhum supervisor cadastrado nesta operação. Clique em "Adicionar Supervisor" para começar.
+          </div>
+        ) : (
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+            {supervisorStatsList.map((sup) => {
+              const metaLimit = activeOp?.metaAbs || 0.03;
+              const isWithinMeta = sup.absPercent <= metaLimit;
+              const barPct = Math.min(100, (sup.absPercent / (metaLimit * 2)) * 100);
+              return (
+                <div
+                  key={sup.supervisor}
+                  className="h-full p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 flex flex-col justify-between hover-lift"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {sup.supervisor}
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono tabular-nums">
+                          {sup.totalOperadores} colaborador(es)
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => onOpenEditSupervisor(sup.supervisor, sup.totalOperadores)}
                         title="Editar nome deste supervisor"
-                        className="p-1 text-slate-500 hover:text-[#006772] dark:text-slate-400 dark:hover:text-[#2dd4bf] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md hover:border-[#006772]/40 transition-colors cursor-pointer"
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-[#006772] dark:hover:text-[#2dd4bf] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors shrink-0 cursor-pointer"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Edit2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-2 mt-1">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                      {sup.supervisor}
-                    </h4>
-                  </div>
-                  <span className="text-xs text-slate-500 block">
-                    {sup.totalOperadores} colaboradores vinculados
-                  </span>
-
-                  <div className="mt-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700/80">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500 uppercase font-semibold">
-                        ABS da Supervisão
+                    <div className="mt-4 flex items-baseline justify-between gap-2">
+                      <span className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+                        {formatPercent(sup.absPercent)}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        Meta ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%
+                      <span className={`text-xs font-semibold ${
+                        isWithinMeta
+                          ? 'text-[#006772] dark:text-[#2dd4bf]'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {isWithinMeta ? 'Dentro da meta' : 'Acima da meta'}
                       </span>
                     </div>
-                    <div className="text-2xl font-extrabold font-mono text-[#006772] dark:text-[#2dd4bf] tabular-nums mt-0.5">
-                      {formatPercent(sup.absPercent)}
+
+                    <div className="mt-2 h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${barPct}%` }}
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isWithinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-700/80 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400 block">Min. Perdidos</span>
+                      <span className="font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
+                        {sup.minutosPerdidos.toLocaleString('pt-BR')} min
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 dark:text-slate-400 block">Min. Escalados</span>
+                      <span className="font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200">
+                        {sup.minutosEscalados.toLocaleString('pt-BR')} min
+                      </span>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/80 grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Perdidos</span>
-                    <span className="font-bold font-mono text-rose-600 dark:text-rose-400">
-                      {sup.minutosPerdidos.toLocaleString('pt-BR')} min
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Escalados</span>
-                    <span className="font-bold font-mono text-slate-700 dark:text-slate-300">
-                      {sup.minutosEscalados.toLocaleString('pt-BR')} min
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Operators List for Active Operation */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-        
-        {/* Controls Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="p-6 border-b border-slate-200/70 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
-                COLABORADORES DA OPERAÇÃO
-              </span>
-              <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                {filteredOperators.length} listados
-              </span>
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-              Escala e Apontamento Individual
-            </h3>
+            <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+              Colaboradores da Operação
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono tabular-nums">
+              {filteredOperators.length} de {opOperators.length} operador(es) exibido(s)
+            </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Search */}
-            <div className="relative min-w-[200px]">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="relative min-w-[220px] flex-1 sm:flex-initial">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={opSearchTerm}
                 onChange={(e) => setOpSearchTerm(e.target.value)}
                 placeholder="Buscar por nome ou horário..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
               />
             </div>
 
-            {/* Filter by Supervisor */}
             <select
               value={selectedSupFilter}
               onChange={(e) => setSelectedSupFilter(e.target.value)}
-              className="py-1.5 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 cursor-pointer font-medium"
+              className="h-9 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 cursor-pointer font-medium"
             >
               <option value="todos">Todos os Supervisores</option>
               {activeSupervisors.map(sup => (
@@ -675,11 +663,12 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </select>
 
             <button
+              type="button"
               onClick={() => {
                 setNewOpOperatorSup(activeSupervisors[0] || '');
                 setIsAddOperatorModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Novo Operador</span>
@@ -687,26 +676,26 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
           </div>
         </div>
 
-        {/* Operators Table */}
         <div className="overflow-x-auto max-h-[580px]">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-[#005059] text-white font-bold text-[10px] uppercase tracking-wider">
+            <thead className="sticky top-0 z-10 bg-[#005059] text-white font-semibold text-[11px]">
               <tr>
+                <th className="py-3 px-4 w-12 text-center">#</th>
                 <th className="py-3 px-4">Operador</th>
                 <th className="py-3 px-4">Supervisor</th>
                 <th className="py-3 px-3 text-center">Entrada</th>
                 <th className="py-3 px-3 text-center">Saída</th>
                 <th className="py-3 px-3 text-center">Jornada</th>
-                <th className="py-3 px-4 text-right">Min. Perdidos</th>
-                <th className="py-3 px-4 text-right">Min. Escalados</th>
-                <th className="py-3 px-4 text-center bg-[#00383f]">ABS Mensal</th>
-                <th className="py-3 px-3 text-center w-48">Ações</th>
+                <th className="py-3 px-4 text-right">Perdidos</th>
+                <th className="py-3 px-4 text-right">Escalados</th>
+                <th className="py-3 px-4 text-right bg-[#003e45]">ABS</th>
+                <th className="py-3 px-4 text-center w-48">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {filteredOperators.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-500">
+                  <td colSpan={10} className="py-10 text-center text-slate-500 dark:text-slate-400">
                     Nenhum colaborador encontrado nesta operação com os filtros aplicados.
                   </td>
                 </tr>
@@ -720,13 +709,13 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                   return (
                     <tr
                       key={op.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                      className="h-11 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
                     >
+                      <td className="py-2.5 px-4 text-center font-mono tabular-nums text-[11px] text-slate-400">
+                        {(idx + 1).toString().padStart(2, '0')}
+                      </td>
                       <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">
-                            {(idx + 1).toString().padStart(2, '0')}
-                          </span>
                           <button
                             type="button"
                             onClick={() => onOpenProfile(op)}
@@ -738,50 +727,50 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           {historyCount > 0 && (
                             <span
                               title={`${historyCount} registro(s) no histórico`}
-                              className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0"
+                              className="text-[11px] font-mono tabular-nums font-semibold text-amber-700 dark:text-amber-300 shrink-0"
                             >
-                              {historyCount}
+                              ({historyCount})
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 text-xs">
+                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">
                         {op.supervisor}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums text-slate-600 dark:text-slate-400">
                         {op.entrada}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums text-slate-600 dark:text-slate-400">
                         {op.saida}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-mono text-[#006772] dark:text-[#2dd4bf] font-medium">
-                        {op.jornadaMin}
+                      <td className="py-2.5 px-3 text-center font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf] font-medium">
+                        {op.jornadaMin}m
                       </td>
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
-                        <span className={st.minutosPerdidos > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}>
-                          {st.minutosPerdidos.toLocaleString('pt-BR')}
+                        <span className={st.minutosPerdidos > 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'}>
+                          {st.minutosPerdidos.toLocaleString('pt-BR')}m
                         </span>
                       </td>
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
-                        {st.minutosEscalados.toLocaleString('pt-BR')}
+                        {st.minutosEscalados.toLocaleString('pt-BR')}m
                       </td>
-                      <td className="py-2.5 px-4 text-center font-mono font-bold tabular-nums">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                      <td className="py-2.5 px-4 text-right font-mono font-bold tabular-nums">
+                        <span className={
                           st.absMensal === 0
-                            ? 'text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 font-bold'
+                            ? 'text-[#006772] dark:text-[#2dd4bf]'
                             : isHigh
-                            ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-extrabold'
-                            : 'text-[#d89627] dark:text-[#f0ad35] bg-amber-50 dark:bg-amber-950/40 font-bold'
-                        }`}>
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-[#d89627] dark:text-amber-400'
+                        }>
                           {formatPercent(st.absMensal)}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => onOpenEditOperator(op)}
-                            className="p-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                             title="Editar nome e horário do operador"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -789,7 +778,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenProfile(op)}
-                            className="p-1.5 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer"
                             title="Perfil, Histórico e Escala Pedagógica"
                           >
                             <ClipboardList className="w-3.5 h-3.5" />
@@ -797,7 +786,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenTransfer(op)}
-                            className="p-1.5 text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-[#006772] dark:text-[#2dd4bf] hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-md transition-colors cursor-pointer"
                             title="Transferir operador para outro supervisor"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -805,7 +794,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onSelectOperatorForAudit(op.id)}
-                            className="px-2 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                            className="h-7 px-2.5 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded-md transition-colors flex items-center gap-1 whitespace-nowrap cursor-pointer"
                             title="Abrir folha mensal deste operador"
                           >
                             <span>Apontar</span>
@@ -814,7 +803,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenDelete(op)}
-                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded transition-colors cursor-pointer"
+                            className="w-7 h-7 flex items-center justify-center text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                             title="Excluir operador"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -828,12 +817,11 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </tbody>
           </table>
         </div>
-
-      </div>
+      </section>
 
       {/* Modal: Criar Nova Operação */}
       {isAddOpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-backdrop-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl p-6 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -999,7 +987,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
       {/* Modal: Editar Operação */}
       {isEditOpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-backdrop-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl p-6 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -1160,7 +1148,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
       {/* Modal: Confirmar Exclusão de Operação */}
       {isDeleteOpConfirmOpen && activeOp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-backdrop-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-rose-200 dark:border-rose-900 w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
             <div className="px-6 py-4 bg-rose-50 dark:bg-rose-950/50 border-b border-rose-100 dark:border-rose-900/60 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -1228,7 +1216,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
       {/* Modal: Adicionar Supervisor */}
       {isAddSupModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-backdrop-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-6 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -1283,7 +1271,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
       {/* Modal: Adicionar Operador na Operação */}
       {isAddOperatorModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-backdrop-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl p-6 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">

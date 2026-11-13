@@ -25,28 +25,18 @@ import {
 } from '../utils/calculations';
 import {
   Save,
-  RotateCcw,
   Eraser,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
   UserCheck,
-  AlertTriangle,
   CheckCircle2,
-  TrendingDown,
-  Info,
   CalendarCheck,
-  Filter,
   Users,
   Search,
-  CheckCheck,
-  SlidersHorizontal,
-  Flame,
   Zap,
   Target,
-  ArrowRight,
-  ArrowLeft,
   ClipboardList,
   ArrowRightLeft,
   Edit2
@@ -147,7 +137,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     }
   };
 
-  // Operator monthly records (31 days)
+  // Operator monthly records
   const opData = monthlyData[operator?.id] || {
     operatorId: operator?.id,
     dias: []
@@ -155,12 +145,12 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
   const dias = opData.dias;
 
-  // Real-time calculations matching Google Sheets
+  // Real-time calculations
   const operatorStats = useMemo(() => {
     return calculateOperatorStats(dias, operator?.jornadaMin || 380);
   }, [dias, operator?.jornadaMin]);
 
-  // Supervisor ABS (Coluna F in Google Sheets)
+  // Supervisor ABS
   const supervisorStats = useMemo(() => {
     if (!operator) return null;
     return calculateSupervisorStats(operator.supervisor, operators, monthlyData);
@@ -269,7 +259,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     showToast('Todos os dias escalados foram definidos como "Dia OK"!');
   };
 
-  // Previous and Next Operator navigation (strictly within supervisor team)
+  // Previous and Next Operator navigation
   const handlePrevOperator = () => {
     if (operatorsBySupervisor.length === 0) return;
     if (currentFilteredIndex > 0) {
@@ -385,11 +375,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const maxAllowedLostMinutes = Math.floor(operatorStats.minutosEscalados * targetAbsThreshold);
   const minutesMargin = maxAllowedLostMinutes - operatorStats.minutosPerdidos;
   const isOperatorWithinMeta = operatorStats.absMensal <= targetAbsThreshold;
+  const isSupervisorWithinMeta = (supervisorStats?.absPercent || 0) <= targetAbsThreshold;
 
-  // Percentage breakdown for visual composition bar
   const totalDays = dias.length || monthWeekends.totalDays;
-  const pctOk = Math.round((operatorStats.diasTrabalhados / totalDays) * 100);
-  const pctFolga = Math.round((operatorStats.diasFolga / totalDays) * 100);
+  const pctOk = totalDays > 0 ? Math.round((operatorStats.diasTrabalhados / totalDays) * 100) : 0;
 
   // Helper function to get status badge styling
   const getStatusBadgeClass = (status: StatusType) => {
@@ -419,9 +408,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
   if (!operator) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-10 text-center shadow-xs">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-10 text-center">
         <Users className="w-10 h-10 text-[#006772] mx-auto mb-3 opacity-80" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+        <h3 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
           Nenhum operador cadastrado nesta operação
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
@@ -433,7 +422,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
   return (
     <div className="space-y-6">
-      
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700 animate-fade-in">
@@ -442,477 +431,402 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         </div>
       )}
 
-      {/* Top Section: Operator Selection & Supervisor ABS Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        
-        {/* Left 2 Cols: Dynamic Header & Operator Selection */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
-                  Apontamento Dinâmico (ABS OPERADOR)
-                </span>
-                <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                  Escala 6x1
-                </span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {operator.nome}
-                </h2>
-                {onOpenEditOperator && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenEditOperator(operator)}
-                    title="Editar nome e horário deste operador"
-                    className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    <span>Editar Nome</span>
-                  </button>
-                )}
-                {onOpenProfile && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenProfile(operator)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    <span>Perfil &amp; Escala Pedagógica</span>
-                    {operatorHistoryCount > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[10px] font-mono">
-                        {operatorHistoryCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-                {onOpenTransfer && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenTransfer(operator)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 border border-teal-200 dark:border-teal-800 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <ArrowRightLeft className="w-3.5 h-3.5" />
-                    <span>Transferir Supervisor</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Navigation Between Operators + Keyboard Hints */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="hidden sm:inline text-[11px] text-slate-400 font-mono">
-                Atalho: [← / →]
-              </span>
-              <span className="text-xs text-slate-500 font-mono tabular-nums px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                {currentFilteredIndex + 1} de {operatorsBySupervisor.length}
-                {selectedSupervisor !== 'todos' ? ` (${selectedSupervisor})` : ''}
-              </span>
+      {/* Bar 1: Supervisor Filter, Operator Selector & Prev/Next Navigation */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Supervisor Segmented Filter */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1">
+              Equipe:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSupervisorFilterChange('todos')}
+              className={`h-8 px-3 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                selectedSupervisor === 'todos'
+                  ? 'bg-[#006772] text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Todos ({operators.length})
+            </button>
+            {availableSupervisors.map((sup) => (
               <button
-                onClick={handlePrevOperator}
-                title="Operador anterior (tecla ←)"
-                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleNextOperator}
-                title="Próximo operador (tecla →)"
-                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Filtro por Supervisor */}
-          <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
-                Filtro de Supervisor:
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
+                key={sup}
                 type="button"
-                onClick={() => handleSupervisorFilterChange('todos')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  selectedSupervisor === 'todos'
-                    ? 'bg-[#006772] text-white font-bold shadow-2xs'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                onClick={() => handleSupervisorFilterChange(sup)}
+                className={`h-8 px-3 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  selectedSupervisor.toLowerCase() === sup.toLowerCase()
+                    ? 'bg-[#006772] text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                Todos ({operators.length})
+                {sup} ({supervisorCounts[sup] || 0})
               </button>
-              {availableSupervisors.map((sup) => (
-                <button
-                  key={sup}
-                  type="button"
-                  onClick={() => handleSupervisorFilterChange(sup)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    selectedSupervisor.toLowerCase() === sup.toLowerCase()
-                      ? 'bg-[#006772] text-white font-bold shadow-2xs'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {sup} ({supervisorCounts[sup] || 0})
-                </button>
+            ))}
+          </div>
+
+          {/* Prev/Next Navigation */}
+          <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
+            <span className="hidden sm:inline text-[11px] text-slate-400 font-mono">
+              [← / →]
+            </span>
+            <span className="h-9 px-3 inline-flex items-center text-xs text-slate-600 dark:text-slate-300 font-mono tabular-nums bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+              {currentFilteredIndex + 1} / {operatorsBySupervisor.length}
+            </span>
+            <button
+              type="button"
+              onClick={handlePrevOperator}
+              title="Operador anterior (tecla ←)"
+              className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNextOperator}
+              title="Próximo operador (tecla →)"
+              className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Selector & Search */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="md:col-span-7">
+            <label className="sr-only" htmlFor="abs-operator-select">
+              Selecionar Colaborador
+            </label>
+            <select
+              id="abs-operator-select"
+              value={operator?.id || ''}
+              onChange={(e) => onSelectOperator(e.target.value)}
+              className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/40 transition-colors cursor-pointer truncate"
+            >
+              {operatorsBySupervisor.map((op) => (
+                <option key={op.id} value={op.id}>
+                  {op.nome} {selectedSupervisor === 'todos' ? `— ${op.supervisor}` : ''} ({op.entrada}–{op.saida})
+                </option>
               ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-5 relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={opSearchTerm}
+              onChange={(e) => setOpSearchTerm(e.target.value)}
+              placeholder="Buscar colaborador por nome ou turno..."
+              className="w-full h-9 pl-9 pr-14 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+            />
+            {opSearchTerm && (
+              <button
+                type="button"
+                onClick={() => setOpSearchTerm('')}
+                className="absolute right-2 top-1.5 px-2 py-1 text-[10px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-200/80 dark:bg-slate-700 rounded cursor-pointer"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Bar 2: Symmetrical 3-Column Summary Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+
+        {/* Card 1: Colaborador & Turno */}
+        <div className="h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Colaborador · Escala 6x1
+                </span>
+                <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100 truncate mt-0.5">
+                  {operator.nome}
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono tabular-nums text-slate-400 shrink-0">
+                {operatorStats.diasTrabalhados}d OK ({pctOk}%)
+              </span>
+            </div>
+
+            {/* Supervisor inline row */}
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+              <UserCheck className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
+              <span className="text-slate-400">Supervisão:</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                {operator.supervisor}
+              </span>
+              {onOpenEditSupervisor && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onOpenEditSupervisor(
+                      operator.supervisor,
+                      supervisorCounts[operator.supervisor] || 0
+                    )
+                  }
+                  title="Editar nome deste supervisor"
+                  className="p-1 text-slate-400 hover:text-[#006772] dark:hover:text-[#2dd4bf] rounded transition-colors cursor-pointer shrink-0"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Schedule 3-column hairline strip */}
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block">Entrada</span>
+                <span className="text-xs font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 inline-flex items-center gap-1 mt-0.5">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  {operator.entrada}
+                </span>
+              </div>
+              <div className="border-x border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block">Saída</span>
+                <span className="text-xs font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 inline-flex items-center gap-1 mt-0.5">
+                  {operator.saida}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block">Jornada</span>
+                <span className="text-xs font-bold font-mono tabular-nums text-slate-800 dark:text-slate-200 mt-0.5 block">
+                  {operator.jornadaMin}m/dia
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Form fields mimicking cells A1:D4 + Quick Search */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Cell B1: Seleção do Operador */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  B1: Seleção do Operador
-                </label>
-                {selectedSupervisor !== 'todos' && (
-                  <span className="text-[10px] text-[#006772] dark:text-[#2dd4bf] font-semibold bg-teal-50 dark:bg-teal-950/50 px-1.5 py-0.5 rounded">
-                    Equipe de {selectedSupervisor} ({operatorsBySupervisor.length})
+          {/* 3-Button Action Footer */}
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 flex-wrap">
+            {onOpenEditOperator && (
+              <button
+                type="button"
+                onClick={() => onOpenEditOperator(operator)}
+                title="Editar nome e horário deste operador"
+                className="h-8 flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Editar</span>
+              </button>
+            )}
+            {onOpenProfile && (
+              <button
+                type="button"
+                onClick={() => onOpenProfile(operator)}
+                className="h-8 flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg cursor-pointer transition-colors"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span>Perfil</span>
+                {operatorHistoryCount > 0 && (
+                  <span className="px-1.5 rounded-full bg-amber-600 text-white text-[10px] font-mono">
+                    {operatorHistoryCount}
                   </span>
                 )}
-              </div>
-              
-              <div className="space-y-1.5">
-                <div className="relative">
-                  <select
-                    value={operator?.id || ''}
-                    onChange={(e) => onSelectOperator(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-teal-50/70 dark:bg-teal-950/30 text-teal-950 dark:text-teal-200 font-bold text-sm rounded-lg border border-teal-300 dark:border-teal-700/60 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/40 transition-all cursor-pointer truncate"
-                  >
-                    {operatorsBySupervisor.map((op) => (
-                      <option key={op.id} value={op.id}>
-                        {op.nome} {selectedSupervisor === 'todos' ? `— ${op.supervisor}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Instant Search Bar */}
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                  <input
-                    type="text"
-                    value={opSearchTerm}
-                    onChange={(e) => setOpSearchTerm(e.target.value)}
-                    placeholder="Filtrar por nome ou horário..."
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-                  />
-                  {opSearchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setOpSearchTerm('')}
-                      className="absolute right-2 top-2 text-[10px] text-slate-400 hover:text-slate-600 px-1 bg-slate-200 dark:bg-slate-700 rounded"
-                    >
-                      Limpar
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Cell B2: Supervisor (PROCV) */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                B2: Supervisor (PROCV)
-              </label>
-              <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-                <div className="flex items-center min-w-0">
-                  <UserCheck className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
-                  <span className="truncate">{operator.supervisor}</span>
-                  {onOpenEditSupervisor && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onOpenEditSupervisor(
-                          operator.supervisor,
-                          supervisorCounts[operator.supervisor] || 0
-                        )
-                      }
-                      title="Editar nome deste supervisor"
-                      className="ml-1.5 p-1 text-slate-400 hover:text-[#006772] dark:hover:text-[#2dd4bf] rounded transition-colors cursor-pointer shrink-0"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 font-bold shrink-0">
-                  Meta Sup: ≤ 3.00%
-                </span>
-              </div>
-
-              {/* Cells B3 & B4: Horários Entrada e Saída */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                    B3: Entrada
-                  </label>
-                  <div className="h-8 px-2.5 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                    <Clock className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
-                    {operator.entrada}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                    B4: Saída
-                  </label>
-                  <div className="h-8 px-2.5 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-mono text-xs rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                    <Clock className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
-                    {operator.saida}
-                  </div>
-                </div>
-              </div>
-            </div>
-
+              </button>
+            )}
+            {onOpenTransfer && (
+              <button
+                type="button"
+                onClick={() => onOpenTransfer(operator)}
+                className="h-8 flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800 rounded-lg cursor-pointer transition-colors"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                <span>Transferir</span>
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Live Health & Target Tolerance Gauge Card */}
-          <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/60">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Termômetro de Tolerância WFM (Meta ≤ 3.00%)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
+        {/* Card 2: ABS Individual & Tolerância */}
+        <div className="h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 inline-flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                ABS Individual · Meta ≤ 3.00%
+              </span>
+              <span
+                className={`text-[11px] font-semibold ${
                   isOperatorWithinMeta
-                    ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/80 dark:text-teal-300'
-                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                }`}>
-                  {isOperatorWithinMeta ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima do Teto (> 3%)'}
-                </span>
-              </div>
+                    ? 'text-[#006772] dark:text-[#2dd4bf]'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {isOperatorWithinMeta ? 'Dentro da meta' : 'Acima da meta'}
+              </span>
             </div>
 
-            {/* Visual Tolerance Bar */}
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-[11px] mb-1 font-mono">
-                <span className="text-slate-600 dark:text-slate-400">
-                  ABS Atual: <strong className="text-slate-900 dark:text-white font-bold">{formatPercent(operatorStats.absMensal)}</strong>
-                </span>
-                <span className="text-slate-500 font-medium">
-                  {minutesMargin >= 0 ? (
-                    <span className="text-[#006772] dark:text-[#2dd4bf] font-bold">
-                      +{minutesMargin} min de margem livre
-                    </span>
-                  ) : (
-                    <span className="text-rose-600 dark:text-rose-400 font-bold">
-                      {Math.abs(minutesMargin)} min acima da tolerância
-                    </span>
-                  )}
-                </span>
+            <div className="mt-2 flex items-baseline justify-between gap-2">
+              <div
+                className={`font-display text-3xl font-bold font-mono tabular-nums tracking-tight ${
+                  isOperatorWithinMeta
+                    ? 'text-slate-900 dark:text-white'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {formatPercent(operatorStats.absMensal)}
               </div>
+              <span
+                className={`text-xs font-mono font-semibold ${
+                  minutesMargin >= 0
+                    ? 'text-[#006772] dark:text-[#2dd4bf]'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {minutesMargin >= 0
+                  ? `+${minutesMargin} min livres`
+                  : `${Math.abs(minutesMargin)} min excedentes`}
+              </span>
+            </div>
 
-              {/* Progress bar with 3% marker */}
-              <div className="relative h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            {/* Tolerance Bar (0% - 3% - 6%) */}
+            <div className="mt-3">
+              <div className="relative h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-500 rounded-full ${
-                    operatorStats.absMensal === 0
-                      ? 'bg-[#006772]'
-                      : operatorStats.absMensal <= targetAbsThreshold
-                      ? 'bg-[#006772]'
-                      : 'bg-rose-500'
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isOperatorWithinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
                   }`}
-                  style={{
-                    width: `${Math.min(100, (operatorStats.absMensal / 0.06) * 100)}%`
-                  }}
+                  style={{ width: `${Math.min(100, (operatorStats.absMensal / 0.06) * 100)}%` }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-slate-400/70 dark:bg-slate-500"
+                  title="Teto 3.00%"
                 />
               </div>
-
-              {/* Scale reference labels */}
-              <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1">
+              <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
                 <span>0.00%</span>
-                <span className="font-bold text-[#006772] dark:text-[#2dd4bf]">Meta: 3.00%</span>
+                <span className="font-semibold text-[#006772] dark:text-[#2dd4bf]">3.00%</span>
                 <span>6.00%+</span>
               </div>
             </div>
+          </div>
 
-            {/* Month Composition Breakdown Bar */}
-            <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3 flex-wrap text-[11px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                Distribuição:
+          {/* Crisp Distribution Footer */}
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#006772]"></span>OK
               </span>
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#006772] shrink-0"></span>
-                <span>OK: <strong>{operatorStats.diasTrabalhados}d</strong> ({pctOk}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#d89627] shrink-0"></span>
-                <span>Atrasos: <strong>{operatorStats.diasAtraso}d</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                <span>Decl./Falt. (ABS): <strong>{operatorStats.diasAbono}d</strong> ({operatorStats.minutosAbonados}m)</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shrink-0"></span>
-                <span>Abono Legal/BH: <strong>{operatorStats.diasAbonoLegal + operatorStats.diasBancoHorasIntegral}d</strong></span>
-              </div>
-              {operatorStats.diasFolgaAniversario > 0 && (
-                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span>Aniversário: <strong>{operatorStats.diasFolgaAniversario}d</strong></span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
-                <span>Faltas: <strong>{operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao}d</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
-                <span>Folgas DSR: <strong>{operatorStats.diasFolga}d</strong> ({pctFolga}%)</span>
-              </div>
+              <strong className="font-mono tabular-nums">{operatorStats.diasTrabalhados}d</strong>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#d89627]"></span>Atraso
+              </span>
+              <strong className="font-mono tabular-nums">{operatorStats.diasAtraso}d</strong>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-orange-500"></span>Decl.
+              </span>
+              <strong className="font-mono tabular-nums">{operatorStats.diasAbono}d</strong>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-500"></span>BH/Aniv.
+              </span>
+              <strong className="font-mono tabular-nums">
+                {operatorStats.diasAbonoLegal +
+                  operatorStats.diasBancoHorasIntegral +
+                  operatorStats.diasFolgaAniversario}d
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>Faltas
+              </span>
+              <strong className="font-mono tabular-nums">
+                {operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao}d
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-slate-400"></span>DSR
+              </span>
+              <strong className="font-mono tabular-nums">{operatorStats.diasFolga}d</strong>
             </div>
           </div>
-
-          {/* Quick Toolbar for current operator */}
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => {
-                  onSave();
-                  showToast(`Apontamentos de ${operator.nome} (${monthLabel}) salvos com sucesso!`);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Salvar Apontamentos</span>
-              </button>
-
-              <button
-                onClick={handleBatchFillWorkingDaysOk}
-                title="Define todos os dias úteis como OK sem alterar as folgas"
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5 text-[#006772]" />
-                <span>Todos Dias Úteis OK</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onApply6x1Schedule(operator.id, 'auto');
-                  showToast(`Escala 6x1 de ${monthLabel} (${totalDays} dias) aplicada!`);
-                }}
-                title="Aplica automaticamente a escala 6x1 pelos finais de semana reais do mês"
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
-              >
-                <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Escala 6x1 ({monthLabel.split('/')[0].trim()})</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onApply6x1Schedule(operator.id, '3-dom');
-                  showToast(`3 folgas de FDS aplicadas em ${monthLabel} (${totalDays - 3} dias escalados).`);
-                }}
-                title="Aplica 3 folgas de final de semana neste mês (ideal para meses com 3 FDS)"
-                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-lg transition-colors cursor-pointer"
-              >
-                <span>3 Folgas FDS</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onApply6x1Schedule(operator.id, '4-dom');
-                  showToast(`Até 4 folgas de FDS aplicadas em ${monthLabel}.`);
-                }}
-                title="Aplica até 4 folgas de final de semana neste mês"
-                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
-              >
-                <span>4 Folgas FDS</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (window.confirm(`Deseja limpar todos os apontamentos de ${monthLabel} de ${operator.nome}? Os dias escalados voltarão para 'dia ok' e atrasos para 0.`)) {
-                    onResetOperatorMonth(operator.id);
-                    showToast('Mês do operador reiniciado.');
-                  }
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
-              >
-                <Eraser className="w-3.5 h-3.5" />
-                <span>Limpar Mês</span>
-              </button>
-            </div>
-          </div>
-
         </div>
 
-        {/* Right Col: Coluna F (ABS SUPERVISOR - JSD Telecom Deep Teal gradient card) */}
-        <div className="bg-gradient-to-br from-[#006772] via-[#005059] to-[#00383f] text-white rounded-xl p-5 shadow-sm flex flex-col justify-between border border-[#004750]">
+        {/* Card 3: ABS da Supervisão */}
+        <div className="h-full bg-[#005059] text-white rounded-xl border border-[#004148] p-5 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-teal-200">
-                Coluna F: ABS SUPERVISOR
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-teal-200">
+                ABS da Supervisão
               </span>
-              <span className="text-[10px] bg-white/10 text-teal-100 px-2 py-0.5 rounded font-mono border border-white/15">
-                SUMIF Ponderado
+              <span
+                className={`text-[11px] font-semibold ${
+                  isSupervisorWithinMeta ? 'text-teal-200' : 'text-amber-300'
+                }`}
+              >
+                {isSupervisorWithinMeta ? 'Dentro da meta' : 'Acima de 3.00%'}
               </span>
             </div>
 
-            <h3 className="text-base font-bold text-white mt-1">
-              {operator.supervisor}
-            </h3>
-            <p className="text-xs text-teal-200/80 mt-0.5">
-              Equipe de {supervisorStats?.totalOperadores || 0} operadores vinculados
-            </p>
+            <div className="mt-1 flex items-baseline justify-between gap-2">
+              <h3 className="font-display text-base font-bold text-white truncate">
+                {operator.supervisor}
+              </h3>
+              <span className="text-xs text-teal-200/80 font-mono shrink-0">
+                {supervisorStats?.totalOperadores || 0} operadores
+              </span>
+            </div>
 
-            <div className="mt-4 pt-4 border-t border-white/15">
-              <div className="flex items-baseline justify-between">
-                <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-white">
-                  {formatPercent(supervisorStats?.absPercent || 0)}
-                </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/20 border border-white/20 text-teal-200">
-                  Meta: ≤ 3.00%
-                </span>
+            <div className="mt-2 flex items-baseline justify-between gap-2">
+              <div className="font-display text-3xl font-bold font-mono tabular-nums tracking-tight text-white">
+                {formatPercent(supervisorStats?.absPercent || 0)}
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[11px] text-teal-200 font-medium">
-                  Índice Consolidado da Supervisão
-                </span>
-                <span className={`text-[10px] font-bold ${
-                  (supervisorStats?.absPercent || 0) <= 0.03
-                    ? 'text-teal-200'
-                    : 'text-[#d89627]'
-                }`}>
-                  {(supervisorStats?.absPercent || 0) <= 0.03 ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima de 3.00%'}
-                </span>
+              <span className="text-xs font-mono text-teal-200/80">
+                Meta ≤ 3.00%
+              </span>
+            </div>
+
+            <div className="mt-3">
+              <div className="relative h-2 bg-white/15 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isSupervisorWithinMeta ? 'bg-[#2dd4bf]' : 'bg-[#d89627]'
+                  }`}
+                  style={{
+                    width: `${Math.min(100, ((supervisorStats?.absPercent || 0) / 0.06) * 100)}%`
+                  }}
+                />
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/40" />
               </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-3 border-t border-white/15 grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-[#002e33]/60 p-2.5 rounded-lg border border-white/10">
-              <span className="text-[10px] text-teal-200 block uppercase">Min. Perdidos</span>
-              <span className="font-bold font-mono tabular-nums text-white">
+          {/* Symmetrical 2-column hairline stats */}
+          <div className="mt-4 pt-3 border-t border-white/15 grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className="text-[10px] text-teal-200/80 uppercase tracking-wider block">
+                Min. Perdidos
+              </span>
+              <span className="font-bold font-mono tabular-nums text-sm text-white block mt-0.5">
                 {(supervisorStats?.minutosPerdidos || 0).toLocaleString('pt-BR')} min
               </span>
-              <span className="text-[10px] text-teal-300 block">
-                ≈ {formatMinutesToHours(supervisorStats?.minutosPerdidos || 0)}
+              <span className="text-[11px] text-teal-200/75 font-mono">
+                {formatMinutesToHours(supervisorStats?.minutosPerdidos || 0)}
               </span>
             </div>
 
-            <div className="bg-[#002e33]/60 p-2.5 rounded-lg border border-white/10">
-              <span className="text-[10px] text-teal-200 block uppercase">Min. Escalados</span>
-              <span className="font-bold font-mono tabular-nums text-white">
+            <div className="border-l border-white/15 pl-4">
+              <span className="text-[10px] text-teal-200/80 uppercase tracking-wider block">
+                Min. Escalados
+              </span>
+              <span className="font-bold font-mono tabular-nums text-sm text-white block mt-0.5">
                 {(supervisorStats?.minutosEscalados || 0).toLocaleString('pt-BR')} min
               </span>
-              <span className="text-[10px] text-teal-300 block">
-                ≈ {formatMinutesToHours(supervisorStats?.minutosEscalados || 0)}
+              <span className="text-[11px] text-teal-200/75 font-mono">
+                {formatMinutesToHours(supervisorStats?.minutosEscalados || 0)}
               </span>
             </div>
           </div>
@@ -920,27 +834,25 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
       </div>
 
-      {/* Mini-Calendário Interativo do Mês Selecionado */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
+      {/* Bar 3: Interactive Month Day Strip */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              Visão de {monthLabel} — {totalDays} Dias ({operatorStats.diasFolga} folgas / {totalDays - operatorStats.diasFolga} escalados)
+              Mapa de {monthLabel} · {totalDays} dias ({totalDays - operatorStats.diasFolga} escalados · {operatorStats.diasFolga} folgas)
             </span>
           </div>
-          <span className="text-[11px] text-slate-500 font-medium">
-            Finais de semana reais (Sáb/Dom) em destaque laranja
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            Clique em um dia para ir direto à linha · Sáb/Dom em âmbar
           </span>
         </div>
 
-        {/* Month Day Buttons Row */}
         <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 lg:flex lg:gap-1 gap-1">
           {dias.map((d) => {
             const weekdayName = getWeekdayAbbr(year, month, d.dia);
             const isWeekend = isWeekendDate(year, month, d.dia);
 
-            // Status color dot
             let dotColor = 'bg-[#006772]';
             if (d.status === 'dia ok/atraso') dotColor = 'bg-[#d89627]';
             if (d.status === 'abono') dotColor = 'bg-orange-500';
@@ -969,18 +881,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 type="button"
                 onClick={() => handleScrollToDay(d.dia)}
                 title={dotTitle}
-                className={`lg:flex-1 flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
+                className={`lg:flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-lg border text-center btn-press cursor-pointer ${
                   focusedDay === d.dia
-                    ? 'ring-2 ring-[#006772] bg-teal-100 dark:bg-teal-950 border-[#006772] shadow-md'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700'
+                    ? 'ring-2 ring-[#006772] bg-teal-50 dark:bg-teal-950 border-[#006772]'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800'
                 }`}
               >
-                <span className={`text-[10px] font-bold font-mono ${
+                <span className={`text-[10px] font-bold font-mono tabular-nums ${
                   isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'
                 }`}>
                   {d.dia.toString().padStart(2, '0')}
                 </span>
-                <span className={`text-[8px] font-semibold ${
+                <span className={`text-[9px] font-medium ${
                   isWeekend ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'
                 }`}>
                   {weekdayName}
@@ -990,32 +902,108 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* Month Interactive Timesheet Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
-        
-        {/* Table Title and Quick Filters */}
-        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Tabela de Apontamento Mensal ({monthLabel})
-            </span>
-            <span className="text-xs text-slate-500">·</span>
-            <span className="text-xs text-slate-500 font-medium">
-              Mostrando {displayedDias.length} de {totalDays} dias
-            </span>
+      {/* Bar 4: Interactive Timesheet Sheet */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+
+        {/* Batch Actions & Title Toolbar */}
+        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
+              Folha de Apontamento Mensal · {monthLabel}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Exibindo {displayedDias.length} de {totalDays} dias
+            </p>
           </div>
 
-          {/* Quick Day Filter Pills */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                onSave();
+                showToast(`Apontamentos de ${operator.nome} (${monthLabel}) salvos com sucesso!`);
+              }}
+              className="h-9 inline-flex items-center gap-1.5 px-3.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Salvar Apontamentos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBatchFillWorkingDaysOk}
+              title="Define todos os dias úteis como OK sem alterar as folgas"
+              className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Dias Úteis OK</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onApply6x1Schedule(operator.id, 'auto');
+                showToast(`Escala 6x1 de ${monthLabel} (${totalDays} dias) aplicada!`);
+              }}
+              title="Aplica automaticamente a escala 6x1 pelos finais de semana reais do mês"
+              className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            >
+              <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
+              <span>Escala 6x1</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onApply6x1Schedule(operator.id, '3-dom');
+                showToast(`3 folgas de FDS aplicadas em ${monthLabel} (${totalDays - 3} dias escalados).`);
+              }}
+              title="Aplica 3 folgas de final de semana neste mês"
+              className="h-9 inline-flex items-center px-3 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-lg transition-colors cursor-pointer"
+            >
+              3 Folgas FDS
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onApply6x1Schedule(operator.id, '4-dom');
+                showToast(`Até 4 folgas de FDS aplicadas em ${monthLabel}.`);
+              }}
+              title="Aplica até 4 folgas de final de semana neste mês"
+              className="h-9 inline-flex items-center px-3 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            >
+              4 Folgas FDS
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Deseja limpar todos os apontamentos de ${monthLabel} de ${operator.nome}? Os dias escalados voltarão para 'dia ok' e atrasos para 0.`)) {
+                  onResetOperatorMonth(operator.id);
+                  showToast('Mês do operador reiniciado.');
+                }
+              }}
+              className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 rounded-lg transition-colors cursor-pointer"
+            >
+              <Eraser className="w-3.5 h-3.5" />
+              <span>Limpar Mês</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status Filter Segmented Strip */}
+        <div className="px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap text-xs">
             <button
               type="button"
               onClick={() => setDayFilter('todos')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'todos'
-                  ? 'bg-[#006772] text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-[#006772] text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Todos ({totalDays})
@@ -1023,10 +1011,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <button
               type="button"
               onClick={() => setDayFilter('desvios')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'desvios'
-                  ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-amber-600'
+                  ? 'bg-amber-600 text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Desvios / Atrasos ({countsByStatus.desvios})
@@ -1034,10 +1022,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <button
               type="button"
               onClick={() => setDayFilter('faltas')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'faltas'
-                  ? 'bg-rose-700 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-rose-600'
+                  ? 'bg-rose-700 text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Faltas ({countsByStatus.faltas})
@@ -1045,10 +1033,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <button
               type="button"
               onClick={() => setDayFilter('abonos')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'abonos'
-                  ? 'bg-cyan-700 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-cyan-700'
+                  ? 'bg-cyan-700 text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Abonos ({countsByStatus.abonos})
@@ -1056,10 +1044,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <button
               type="button"
               onClick={() => setDayFilter('folgas')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'folgas'
-                  ? 'bg-slate-700 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
+                  ? 'bg-slate-700 text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Folgas ({countsByStatus.folgas})
@@ -1067,10 +1055,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <button
               type="button"
               onClick={() => setDayFilter('fds')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+              className={`h-8 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                 dayFilter === 'fds'
-                  ? 'bg-amber-700 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-amber-700'
+                  ? 'bg-amber-700 text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               Finais de Semana ({countsByStatus.fds})
@@ -1081,29 +1069,28 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         {/* Scrollable table container */}
         <div className="overflow-x-auto max-h-[640px]">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-20 bg-[#005059] text-white font-bold text-[11px] tracking-wide">
+            <thead className="sticky top-0 z-20 bg-[#005059] text-white font-semibold text-[11px] uppercase tracking-wider">
               <tr>
-                <th className="py-2.5 px-4 w-24 text-center border-r border-[#00383f]">
-                  dias (A)
+                <th className="py-3 px-4 w-24 text-center border-r border-[#00383f]">
+                  Dia
                 </th>
-                <th className="py-2.5 px-4 w-52 text-center border-r border-[#00383f]">
-                  status (B)
+                <th className="py-3 px-4 w-56 text-left border-r border-[#00383f]">
+                  Status do Dia
                 </th>
-                <th className="py-2.5 px-4 w-64 text-center border-r border-[#00383f]">
-                  atraso / abono em min (C)
+                <th className="py-3 px-4 w-72 text-center border-r border-[#00383f]">
+                  Ocorrência / Minutos
                 </th>
-                <th className="py-2.5 px-4 w-40 text-center border-r border-[#00383f]">
-                  ABS diario (D)
+                <th className="py-3 px-4 w-36 text-right border-r border-[#00383f]">
+                  ABS Diário
                 </th>
-                <th className="py-2.5 px-4 text-center">
-                  Ações Rápidas de Linha
+                <th className="py-3 px-4 text-center">
+                  Ações Rápidas
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {displayedDias.map((d) => {
                 const weekdayName = getWeekdayAbbr(year, month, d.dia);
-                // Apenas finais de semana (Sábado e Domingo) em laranja
                 const isWeekend = isWeekendDate(year, month, d.dia);
                 const validAbono = Math.max(0, Math.min(operator.jornadaMin, Number(d.abonoMin) || 0));
                 const workedMinAbono = Math.max(0, operator.jornadaMin - validAbono);
@@ -1114,19 +1101,19 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   <tr
                     id={`dia-row-${d.dia}`}
                     key={d.dia}
-                    className={`transition-all duration-300 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
+                    className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
                       isTargetRow
                         ? 'bg-teal-100/80 dark:bg-teal-950/70 ring-2 ring-[#006772]'
                         : d.status === 'folga'
-                        ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-80'
+                        ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-85'
                         : d.status === 'abono'
-                        ? 'bg-orange-50/40 dark:bg-orange-950/20'
+                        ? 'bg-orange-50/35 dark:bg-orange-950/20'
                         : d.status === 'abono_legal'
-                        ? 'bg-cyan-50/40 dark:bg-cyan-950/20'
+                        ? 'bg-cyan-50/35 dark:bg-cyan-950/20'
                         : d.status === 'banco_horas_integral'
-                        ? 'bg-indigo-50/40 dark:bg-indigo-950/20'
+                        ? 'bg-indigo-50/35 dark:bg-indigo-950/20'
                         : d.status === 'folga_aniversario'
-                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20'
+                        ? 'bg-emerald-50/35 dark:bg-emerald-950/20'
                         : d.status === 'falta'
                         ? 'bg-rose-50/30 dark:bg-rose-950/20'
                         : d.status === 'dia ok/atraso'
@@ -1134,16 +1121,16 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         : ''
                     }`}
                   >
-                    {/* Dia (Coluna A) */}
+                    {/* Dia */}
                     <td className="py-2 px-3 text-center border-r border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center justify-center gap-1.5 font-mono">
+                      <div className="flex items-center justify-center gap-1.5 font-mono tabular-nums">
                         <span className="font-bold text-slate-800 dark:text-slate-200">
                           {d.dia.toString().padStart(2, '0')}
                         </span>
                         <span
-                          className={`text-[10px] font-semibold px-1 rounded ${
+                          className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                             isWeekend
-                              ? 'text-amber-800 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700/60 font-bold'
+                              ? 'text-amber-800 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 font-bold'
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
@@ -1152,12 +1139,12 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       </div>
                     </td>
 
-                    {/* Status (Coluna B) */}
+                    {/* Status */}
                     <td className="py-1.5 px-3 border-r border-slate-100 dark:border-slate-800">
                       <select
                         value={d.status}
                         onChange={(e) => handleStatusChange(d.dia, e.target.value as StatusType)}
-                        className={`w-full py-1 px-2.5 text-xs font-semibold rounded-md border text-center transition-all cursor-pointer ${getStatusBadgeClass(
+                        className={`w-full h-8 px-2.5 text-xs font-semibold rounded-md border transition-colors cursor-pointer ${getStatusBadgeClass(
                           d.status
                         )}`}
                       >
@@ -1169,7 +1156,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       </select>
                     </td>
 
-                    {/* Atraso / Abono / BH em Minutos (Coluna C) */}
+                    {/* Ocorrência / Minutos */}
                     <td className="py-1.5 px-3 text-center border-r border-slate-100 dark:border-slate-800">
                       {d.status === 'abono' || d.status === 'abono_legal' ? (
                         <div className="flex flex-col items-center gap-1">
@@ -1196,7 +1183,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                                 )
                               }
                               title="Informe quantos minutos o colaborador trabalhou/logou no dia"
-                              className={`w-16 text-center font-mono py-1 px-1.5 text-xs rounded border font-bold ${
+                              className={`w-16 text-center font-mono h-7 px-1.5 text-xs rounded border font-bold ${
                                 d.status === 'abono'
                                   ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-950 dark:text-orange-100 border-orange-300 dark:border-orange-700'
                                   : 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-950 dark:text-cyan-100 border-cyan-300 dark:border-cyan-700'
@@ -1215,7 +1202,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                                       d.status as 'abono' | 'abono_legal'
                                     )
                                   }
-                                  className={`px-1 py-0.5 text-[10px] font-mono rounded cursor-pointer transition-colors ${
+                                  className={`px-1.5 py-0.5 text-[10px] font-mono rounded cursor-pointer transition-colors ${
                                     workedMinAbono === Math.min(operator.jornadaMin, mins)
                                       ? d.status === 'abono'
                                         ? 'bg-orange-600 text-white font-bold'
@@ -1242,11 +1229,11 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           )}
                         </div>
                       ) : d.status === 'banco_horas_integral' ? (
-                        <span className="inline-block px-2 py-1 text-[11px] font-mono font-semibold rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
+                        <span className="inline-block px-2.5 py-1 text-[11px] font-mono font-semibold rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
                           BH Integral ({operator.jornadaMin}m · sem ABS)
                         </span>
                       ) : d.status === 'folga_aniversario' ? (
-                        <span className="inline-block px-2 py-1 text-[11px] font-mono font-semibold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                        <span className="inline-block px-2.5 py-1 text-[11px] font-mono font-semibold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
                           Folga Aniversário (sem ABS)
                         </span>
                       ) : (
@@ -1258,7 +1245,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                             value={d.status === 'dia ok/atraso' ? d.atraso : 0}
                             disabled={d.status !== 'dia ok/atraso'}
                             onChange={(e) => handleAtrasoChange(d.dia, parseInt(e.target.value) || 0)}
-                            className={`w-20 text-center font-mono py-1 px-2 text-xs rounded border transition-colors ${
+                            className={`w-20 text-center font-mono h-7 px-2 text-xs rounded border transition-colors ${
                               d.status === 'dia ok/atraso'
                                 ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold border-amber-300 dark:border-amber-700'
                                 : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed'
@@ -1272,7 +1259,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleAtrasoChange(d.dia, d.atraso + 15)}
-                                className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
+                                className="px-1.5 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
                                 title="+15 minutos"
                               >
                                 +15
@@ -1280,7 +1267,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleAtrasoChange(d.dia, d.atraso + 30)}
-                                className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
+                                className="px-1.5 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
                                 title="+30 minutos"
                               >
                                 +30
@@ -1291,46 +1278,46 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       )}
                     </td>
 
-                    {/* ABS Diário (Coluna D - Fórmula) */}
-                    <td className="py-2 px-3 text-center border-r border-slate-100 dark:border-slate-800 font-mono tabular-nums">
+                    {/* ABS Diário */}
+                    <td className="py-2 px-4 text-right border-r border-slate-100 dark:border-slate-800 font-mono tabular-nums">
                       {d.status === 'abono' ? (
                         <div>
                           <span className="text-orange-700 dark:text-orange-300 font-bold block">
                             {((dailyAbs || 0) * 100).toFixed(2)}%
                           </span>
-                          <span className="text-[9px] text-orange-600 dark:text-orange-400 font-sans block">
-                            Decl. {validAbono}m falt. · {workedMinAbono}m trab.
+                          <span className="text-[10px] text-orange-600 dark:text-orange-400 font-sans block">
+                            {validAbono}m falt. · {workedMinAbono}m trab.
                           </span>
                         </div>
                       ) : d.status === 'abono_legal' ? (
                         dailyAbs === null ? (
                           <span className="text-cyan-700 dark:text-cyan-300 font-medium text-[11px]">
-                            — (BH integral)
+                            — (BH)
                           </span>
                         ) : (
                           <div>
                             <span className="text-cyan-700 dark:text-cyan-300 font-bold block">
                               0.00%
                             </span>
-                            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans block">
-                              Abono Legal {validAbono}m BH · {workedMinAbono}m trab.
+                            <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-sans block">
+                              {validAbono}m BH · {workedMinAbono}m trab.
                             </span>
                           </div>
                         )
                       ) : d.status === 'banco_horas_integral' ? (
-                        <span className="text-indigo-600 dark:text-indigo-300 font-normal italic" title="Banco de Horas Integral não gera ABS">
-                          — (BH integral)
+                        <span className="text-indigo-600 dark:text-indigo-300 font-normal" title="Banco de Horas Integral não gera ABS">
+                          — (BH)
                         </span>
                       ) : d.status === 'folga_aniversario' ? (
-                        <span className="text-emerald-600 dark:text-emerald-300 font-normal italic" title="Folga Aniversário não gera ABS">
-                          — (aniversário)
+                        <span className="text-emerald-600 dark:text-emerald-300 font-normal" title="Folga Aniversário não gera ABS">
+                          — (aniv.)
                         </span>
                       ) : dailyAbs === null ? (
-                        <span className="text-slate-400 font-normal italic" title="Folga não pontua e não distorce o cálculo">
+                        <span className="text-slate-400 font-normal" title="Folga não pontua e não distorce o cálculo">
                           — (folga)
                         </span>
                       ) : dailyAbs === 0 ? (
-                        <span className="text-[#006772] dark:text-[#2dd4bf] font-medium">
+                        <span className="text-[#006772] dark:text-[#2dd4bf] font-semibold">
                           0.00%
                         </span>
                       ) : dailyAbs === 1 ? (
@@ -1350,7 +1337,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'dia ok', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'dia ok'
                               ? 'bg-[#006772] text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-teal-100 dark:hover:bg-teal-950/60'
@@ -1363,7 +1350,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'abono', 0)}
                           title="Abono por declaração médica/universidade (horas faltantes geram ABS)"
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'abono'
                               ? 'bg-orange-600 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-orange-100 dark:hover:bg-orange-950/60'
@@ -1376,7 +1363,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'abono_legal', 0)}
                           title="Abono Legal — Saída antecipada programada com Banco de Horas (não gera ABS)"
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'abono_legal'
                               ? 'bg-cyan-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-100 dark:hover:bg-cyan-950/60'
@@ -1389,7 +1376,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'banco_horas_integral', 0)}
                           title="Banco de Horas Integral (não gera ABS)"
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'banco_horas_integral'
                               ? 'bg-indigo-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/60'
@@ -1402,7 +1389,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'folga_aniversario', 0)}
                           title="Folga Aniversário (não gera ABS)"
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'folga_aniversario'
                               ? 'bg-emerald-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
@@ -1414,7 +1401,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'folga', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'folga'
                               ? 'bg-slate-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1426,7 +1413,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'falta', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'falta'
                               ? 'bg-rose-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-rose-100 dark:hover:bg-rose-950/60'
@@ -1438,7 +1425,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'atestado', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'atestado'
                               ? 'bg-blue-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-950/60'
@@ -1456,56 +1443,47 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
           </table>
         </div>
 
-        {/* Consolidado Footer (Matching Sheets Rows 38 to 40) */}
-        <div className="bg-[#00383f] text-white p-5 border-t border-[#002e33] grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-          
-          {/* Row 39: Minutos Perdidos */}
-          <div className="bg-[#002e33]/70 p-3.5 rounded-lg border border-[#004e57]">
-            <span className="text-[11px] font-bold text-teal-200 block uppercase tracking-wide">
-              Linha 39: Minutos Perdidos (Mês)
+        {/* Consolidado Footer (Symmetrical 3-Column Strip) */}
+        <div className="bg-[#00383f] text-white border-t border-[#002e33] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
+          <div className="p-5">
+            <span className="text-[11px] font-semibold text-teal-200/80 block uppercase tracking-wider">
+              Minutos Perdidos no Mês
             </span>
-            <div className="text-xl font-bold font-mono tabular-nums text-white mt-1">
+            <div className="font-display text-2xl font-bold font-mono tabular-nums text-white mt-1">
               {operatorStats.minutosPerdidos.toLocaleString('pt-BR')} min
             </div>
-            <span className="text-xs text-teal-300/80 mt-0.5 block">
+            <span className="text-xs text-teal-200/75 mt-0.5 block font-mono">
               Equivalente a {formatMinutesToHours(operatorStats.minutosPerdidos)}
             </span>
           </div>
 
-          {/* Row 40: Minutos Escalados */}
-          <div className="bg-[#002e33]/70 p-3.5 rounded-lg border border-[#004e57]">
-            <span className="text-[11px] font-bold text-teal-200 block uppercase tracking-wide">
-              Linha 40: Minutos Escalados (Mês)
+          <div className="p-5">
+            <span className="text-[11px] font-semibold text-teal-200/80 block uppercase tracking-wider">
+              Minutos Escalados no Mês
             </span>
-            <div className="text-xl font-bold font-mono tabular-nums text-white mt-1">
+            <div className="font-display text-2xl font-bold font-mono tabular-nums text-white mt-1">
               {operatorStats.minutosEscalados.toLocaleString('pt-BR')} min
             </div>
-            <span className="text-[11px] text-teal-300/80 mt-0.5 block font-mono">
-              = (Dias Úteis × {operator.jornadaMin}) − {operatorStats.minutosAbonoLegal}m BH Legal
-            </span>
-            <span className="text-[11px] text-teal-300 mt-0.5 block">
-              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias ativos ({operatorStats.diasFolga} DSR
-              {operatorStats.diasFolgaAniversario > 0 ? ` · ${operatorStats.diasFolgaAniversario}d aniv.` : ''}
-              {operatorStats.diasBancoHorasIntegral > 0 ? ` · ${operatorStats.diasBancoHorasIntegral}d BH int.` : ''})
+            <span className="text-xs text-teal-200/75 mt-0.5 block">
+              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias ativos · {operatorStats.diasFolga} DSR
+              {operatorStats.minutosAbonoLegal > 0 ? ` · −${operatorStats.minutosAbonoLegal}m BH Legal` : ''}
             </span>
           </div>
 
-          {/* Row 38: ABS CONSOLIDADO (D39 / D40) */}
-          <div className="bg-[#006772] p-3.5 rounded-lg border border-[#2dd4bf]/40 text-center shadow-sm">
-            <span className="text-[11px] font-bold text-teal-100 block uppercase tracking-wide">
-              Linha 38: ABS CONSOLIDADO (Mês)
+          <div className="p-5 bg-[#005059]">
+            <span className="text-[11px] font-semibold text-teal-100 block uppercase tracking-wider">
+              ABS Consolidado do Mês
             </span>
-            <div className="text-2xl font-extrabold font-mono tabular-nums text-white mt-1">
+            <div className="font-display text-2xl font-extrabold font-mono tabular-nums text-white mt-1">
               {formatPercent(operatorStats.absMensal)}
             </div>
-            <span className="text-[11px] text-teal-100 mt-0.5 block">
-              = Minutos Perdidos / Minutos Escalados
+            <span className="text-xs text-teal-200/85 mt-0.5 block">
+              {isOperatorWithinMeta ? 'Dentro da meta (≤ 3.00%)' : 'Acima da meta (> 3.00%)'}
             </span>
           </div>
-
         </div>
 
-      </div>
+      </section>
 
     </div>
   );

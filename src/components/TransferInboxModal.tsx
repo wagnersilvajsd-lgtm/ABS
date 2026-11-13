@@ -45,7 +45,7 @@ export const TransferInboxModal: React.FC<TransferInboxModalProps> = ({
     current.fromJornadaMin !== current.toJornadaMin;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-backdrop-in">
       <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-[#d89627] w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in">
         
         {/* Alert Banner Header */}

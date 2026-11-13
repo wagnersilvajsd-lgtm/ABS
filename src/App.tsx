@@ -904,7 +904,7 @@ export default function App() {
 
       {/* Action / Transfer Toast */}
       {actionToast && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-md bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-[#006772] flex items-center gap-3">
+        <div className="fixed bottom-5 right-5 z-50 max-w-md bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-[#006772] flex items-center gap-3 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-[#2dd4bf] shrink-0" />
           <div className="flex-1 text-xs">
             <p className="font-semibold">{actionToast.message}</p>
@@ -938,29 +938,29 @@ export default function App() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {selectedPeriodDays && selectedPeriodDays.length > 0 && (
-          <div className="mb-5 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="mb-5 px-4 py-2.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fade-in">
             <div className="flex items-center gap-2 text-[#005059] dark:text-teal-200">
               <CalendarRange className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
               <span>
-                Filtro por Período ativo:{' '}
+                Período filtrado:{' '}
                 <strong className="font-mono">
                   {formatPeriodSummary(selectedPeriodDays, selectedMonthKey)}
                 </strong>{' '}
-                — Índices de ABS, minutos e tabelas exibem apenas os dias selecionados.
+                — Índices e tabelas exibem apenas os dias selecionados.
               </span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setPeriodOpenTrigger(c => c + 1)}
-                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-[#006772] dark:text-[#2dd4bf] font-semibold hover:bg-teal-100/70 cursor-pointer"
+                className="h-8 px-3 rounded-lg bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-[#006772] dark:text-[#2dd4bf] font-semibold hover:bg-teal-100/70 transition-colors cursor-pointer"
               >
                 Alterar Dias
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedPeriodDays(null)}
-                className="px-2.5 py-1 rounded-lg bg-[#006772] text-white font-semibold hover:bg-[#005059] cursor-pointer"
+                className="h-8 px-3 rounded-lg bg-[#006772] text-white font-semibold hover:bg-[#005059] transition-colors cursor-pointer"
               >
                 Ver Mês Inteiro
               </button>
@@ -968,6 +968,7 @@ export default function App() {
           </div>
         )}
         
+        <div key={activeTab} className="animate-view-enter">
         {activeTab === 'operacoes' && (
           <OperacoesView
             operations={operations}
@@ -1044,6 +1045,7 @@ export default function App() {
             selectedPeriodDays={selectedPeriodDays}
           />
         )}
+        </div>
 
       </main>
 
@@ -1117,8 +1119,8 @@ export default function App() {
 
       {/* Reset Defaults Confirmation Modal */}
       {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-backdrop-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-6 space-y-4 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-rose-600" />
