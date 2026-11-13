@@ -51,7 +51,8 @@ import { TransferInboxModal } from './components/TransferInboxModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { EditOperatorModal } from './components/EditOperatorModal';
 import { EditSupervisorModal } from './components/EditSupervisorModal';
-import { BellRing, CheckCircle2, X, RotateCcw } from 'lucide-react';
+import { formatPeriodSummary } from './components/PeriodCalendarPopover';
+import { BellRing, CheckCircle2, X, RotateCcw, CalendarRange } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -87,10 +88,12 @@ export default function App() {
     loadStoredSelectedOperationId()
   );
 
-  // Active Month/Year Key (2025-01 through 2030-12)
+  // Active Month/Year Key (2025-01 through 2030-12) and optional Period Days Filter
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>(() =>
     loadStoredSelectedMonthKey()
   );
+  const [selectedPeriodDays, setSelectedPeriodDays] = useState<number[] | null>(null);
+  const [periodOpenTrigger, setPeriodOpenTrigger] = useState(0);
 
   // Core application data (Operators & multi-month records up to 2030)
   const [operators, setOperators] = useState<Operator[]>(() => loadStoredOperators());
@@ -153,9 +156,27 @@ export default function App() {
     return resolved;
   }, [monthlyDataByMonth, selectedMonthKey, operators]);
 
+  // Period-filtered view of monthlyData (preserves full monthlyData in storage)
+  const filteredMonthlyData = useMemo(() => {
+    if (!selectedPeriodDays || selectedPeriodDays.length === 0) {
+      return monthlyData;
+    }
+    const daySet = new Set(selectedPeriodDays);
+    const resolved: Record<string, OperatorMonthlyData> = {};
+    Object.keys(monthlyData).forEach(opId => {
+      const full = monthlyData[opId];
+      resolved[opId] = {
+        operatorId: opId,
+        dias: full.dias.filter(d => daySet.has(d.dia))
+      };
+    });
+    return resolved;
+  }, [monthlyData, selectedPeriodDays]);
+
   // Switch active Month/Year and lazily persist initial calendar dataset if first visit to that month
   const handleSelectMonthKey = (newMonthKey: string) => {
     setSelectedMonthKey(newMonthKey);
+    setSelectedPeriodDays(null);
     saveStoredSelectedMonthKey(newMonthKey);
 
     if (!monthlyDataByMonth[newMonthKey]) {
@@ -616,13 +637,19 @@ export default function App() {
     setActiveTab('abs-operador');
   };
 
-  // Update days for an operator in the active month
+  // Update days for an operator in the active month (merges safely when period filter is active)
   const handleUpdateDays = (operatorId: string, dias: DayRecord[]) => {
     setMonthlyDataByMonth(prev => {
       const currentMonthMap = prev[selectedMonthKey] ? { ...prev[selectedMonthKey] } : { ...monthlyData };
+      const existingFullDias = (currentMonthMap[operatorId]?.dias || monthlyData[operatorId]?.dias || []);
+      let finalDias = dias;
+      if (existingFullDias.length > 0 && dias.length < existingFullDias.length) {
+        const updatedByDia = new Map(dias.map(d => [d.dia, d]));
+        finalDias = existingFullDias.map(d => updatedByDia.get(d.dia) || d);
+      }
       currentMonthMap[operatorId] = {
         operatorId,
-        dias
+        dias: finalDias
       };
       const updated = {
         ...prev,
@@ -845,10 +872,10 @@ export default function App() {
     }
   };
 
-  // Global operation calculation for the navbar
+  // Global operation calculation for the navbar (respecting active period filter)
   const globalSummary = useMemo(() => {
-    return calculateOperationSummary(activeOperationOperators, monthlyData, currentSupervisors);
-  }, [activeOperationOperators, monthlyData, currentSupervisors]);
+    return calculateOperationSummary(activeOperationOperators, filteredMonthlyData, currentSupervisors);
+  }, [activeOperationOperators, filteredMonthlyData, currentSupervisors]);
 
   return (
     <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
@@ -865,6 +892,9 @@ export default function App() {
         activeOperationName={activeOperation?.nome}
         selectedMonthKey={selectedMonthKey}
         onSelectMonthKey={handleSelectMonthKey}
+        selectedPeriodDays={selectedPeriodDays}
+        onApplyPeriod={setSelectedPeriodDays}
+        periodOpenTrigger={periodOpenTrigger}
         supervisorsList={currentSupervisors}
         activeSupervisorView={activeSupervisorView}
         onChangeSupervisorView={handleChangeSupervisorView}
@@ -907,6 +937,36 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {selectedPeriodDays && selectedPeriodDays.length > 0 && (
+          <div className="mb-5 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-[#005059] dark:text-teal-200">
+              <CalendarRange className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
+              <span>
+                Filtro por Período ativo:{' '}
+                <strong className="font-mono">
+                  {formatPeriodSummary(selectedPeriodDays, selectedMonthKey)}
+                </strong>{' '}
+                — Índices de ABS, minutos e tabelas exibem apenas os dias selecionados.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPeriodOpenTrigger(c => c + 1)}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-[#006772] dark:text-[#2dd4bf] font-semibold hover:bg-teal-100/70 cursor-pointer"
+              >
+                Alterar Dias
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPeriodDays(null)}
+                className="px-2.5 py-1 rounded-lg bg-[#006772] text-white font-semibold hover:bg-[#005059] cursor-pointer"
+              >
+                Ver Mês Inteiro
+              </button>
+            </div>
+          </div>
+        )}
         
         {activeTab === 'operacoes' && (
           <OperacoesView
@@ -917,7 +977,7 @@ export default function App() {
             onUpdateOperation={handleUpdateOperation}
             onDeleteOperation={handleDeleteOperation}
             operators={operators}
-            monthlyData={monthlyData}
+            monthlyData={filteredMonthlyData}
             onAddSupervisorToOperation={handleAddSupervisorToOperation}
             onAddOperatorToOperation={handleAddOperatorToOperation}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
@@ -935,7 +995,7 @@ export default function App() {
             operators={activeOperationOperators}
             currentOperatorId={selectedOperatorId}
             onSelectOperator={handleSelectOperator}
-            monthlyData={monthlyData}
+            monthlyData={filteredMonthlyData}
             onUpdateDays={handleUpdateDays}
             onSave={handleSaveCurrent}
             onResetOperatorMonth={handleResetOperatorMonth}
@@ -952,7 +1012,7 @@ export default function App() {
         {activeTab === 'operadores' && (
           <OperatorsListView
             operators={activeOperationOperators}
-            monthlyData={monthlyData}
+            monthlyData={filteredMonthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             onAddOperator={() => setIsAddOperatorModalOpen(true)}
             onOpenProfile={(op) => setProfileOperatorId(op.id)}
@@ -967,19 +1027,21 @@ export default function App() {
         {activeTab === 'base-apontamentos' && (
           <BaseApontamentosView
             operators={activeOperationOperators}
-            monthlyData={monthlyData}
+            monthlyData={filteredMonthlyData}
             onUpdateDays={handleUpdateDays}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             selectedMonthKey={selectedMonthKey}
+            selectedPeriodDays={selectedPeriodDays}
           />
         )}
 
         {activeTab === 'painel-wfm' && (
           <WfmDashboardView
             operators={activeOperationOperators}
-            monthlyData={monthlyData}
+            monthlyData={filteredMonthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             selectedMonthKey={selectedMonthKey}
+            selectedPeriodDays={selectedPeriodDays}
           />
         )}
 

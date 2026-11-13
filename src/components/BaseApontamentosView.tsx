@@ -11,6 +11,7 @@ interface BaseApontamentosViewProps {
   onUpdateDays: (operatorId: string, dias: DayRecord[]) => void;
   onSelectOperatorForAudit: (operatorId: string) => void;
   selectedMonthKey: string;
+  selectedPeriodDays?: number[] | null;
 }
 
 export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
@@ -18,11 +19,19 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
   monthlyData,
   onUpdateDays,
   onSelectOperatorForAudit,
-  selectedMonthKey
+  selectedMonthKey,
+  selectedPeriodDays = null
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
+
+  const displayedDayNumbers = useMemo(() => {
+    if (selectedPeriodDays && selectedPeriodDays.length > 0) {
+      return selectedPeriodDays.filter(d => d >= 1 && d <= totalDays);
+    }
+    return Array.from({ length: totalDays }, (_, i) => i + 1);
+  }, [selectedPeriodDays, totalDays]);
 
   const supervisorsList = useMemo(() => {
     const set = new Set<string>();
@@ -121,7 +130,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               Aba 3: Repositório Central (BASE_APONTAMENTOS)
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-              Matriz Geral ({operators.length} Colaboradores × {totalDays} Dias · {monthLabel})
+              Matriz Geral ({operators.length} Colaboradores × {displayedDayNumbers.length} {displayedDayNumbers.length < totalDays ? `de ${totalDays} ` : ''}Dias · {monthLabel})
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Visualize toda a equipe em lote. Clique em qualquer célula diária para edição rápida direta.
@@ -196,8 +205,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                   ABS %
                 </th>
 
-                {/* Days 1 to totalDays */}
-                {Array.from({ length: totalDays }, (_, i) => i + 1).map((dia) => {
+                {/* Days filtered by period */}
+                {displayedDayNumbers.map((dia) => {
                   const weekdayName = getWeekdayAbbr(year, month, dia);
                   const isWeekend = isWeekendDate(year, month, dia);
                   return (
@@ -263,8 +272,13 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Days D1 to D{totalDays} */}
-                    {opData.dias.slice(0, totalDays).map((d) => {
+                    {/* Days filtered by period */}
+                    {displayedDayNumbers.map((diaNum) => {
+                      const d = opData.dias.find(item => item.dia === diaNum) || {
+                        dia: diaNum,
+                        status: 'dia ok' as StatusType,
+                        atraso: 0
+                      };
                       const isOk = d.status === 'dia ok';
                       const isAtraso = d.status === 'dia ok/atraso';
                       const isAbono = d.status === 'abono';

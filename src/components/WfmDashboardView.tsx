@@ -25,17 +25,26 @@ interface WfmDashboardViewProps {
   monthlyData: Record<string, OperatorMonthlyData>;
   onSelectOperatorForAudit: (operatorId: string) => void;
   selectedMonthKey: string;
+  selectedPeriodDays?: number[] | null;
 }
 
 export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
   operators,
   monthlyData,
   onSelectOperatorForAudit,
-  selectedMonthKey
+  selectedMonthKey,
+  selectedPeriodDays = null
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
+
+  const displayedDayNumbers = useMemo(() => {
+    if (selectedPeriodDays && selectedPeriodDays.length > 0) {
+      return selectedPeriodDays.filter(d => d >= 1 && d <= totalDays);
+    }
+    return Array.from({ length: totalDays }, (_, i) => i + 1);
+  }, [selectedPeriodDays, totalDays]);
 
   const supervisorsList = useMemo(() => {
     const set = new Set<string>();
@@ -66,32 +75,37 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
       .slice(0, 5);
   }, [operators, monthlyData]);
 
-  // Daily loss curve (sum of lost minutes for day 1..totalDays across entire operation)
+  // Daily loss curve (sum of lost minutes across displayedDayNumbers)
   const dailyLossCurve = useMemo(() => {
-    const days = Array.from({ length: totalDays }, (_, i) => ({
-      dia: i + 1,
-      weekday: getWeekdayAbbr(year, month, i + 1),
-      isWeekend: isWeekendDate(year, month, i + 1),
-      minutosPerdidos: 0,
-      ocorrencias: 0
-    }));
+    const dayIndexMap = new Map<number, number>();
+    const days = displayedDayNumbers.map((diaNum, idx) => {
+      dayIndexMap.set(diaNum, idx);
+      return {
+        dia: diaNum,
+        weekday: getWeekdayAbbr(year, month, diaNum),
+        isWeekend: isWeekendDate(year, month, diaNum),
+        minutosPerdidos: 0,
+        ocorrencias: 0
+      };
+    });
 
     operators.forEach(op => {
       const opData = monthlyData[op.id];
       if (opData) {
         opData.dias.forEach(d => {
-          if (d.dia >= 1 && d.dia <= totalDays) {
+          const targetIdx = dayIndexMap.get(d.dia);
+          if (targetIdx !== undefined) {
             if (d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão') {
-              days[d.dia - 1].minutosPerdidos += op.jornadaMin;
-              days[d.dia - 1].ocorrencias += 1;
+              days[targetIdx].minutosPerdidos += op.jornadaMin;
+              days[targetIdx].ocorrencias += 1;
             } else if (d.status === 'dia ok/atraso') {
-              days[d.dia - 1].minutosPerdidos += Math.max(0, Math.min(op.jornadaMin, d.atraso || 0));
-              days[d.dia - 1].ocorrencias += 1;
+              days[targetIdx].minutosPerdidos += Math.max(0, Math.min(op.jornadaMin, d.atraso || 0));
+              days[targetIdx].ocorrencias += 1;
             } else if (d.status === 'abono') {
               const missingMin = Math.max(0, Math.min(op.jornadaMin, Number(d.abonoMin) || 0));
               if (missingMin > 0) {
-                days[d.dia - 1].minutosPerdidos += missingMin;
-                days[d.dia - 1].ocorrencias += 1;
+                days[targetIdx].minutosPerdidos += missingMin;
+                days[targetIdx].ocorrencias += 1;
               }
             }
           }
@@ -101,7 +115,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
 
     const maxLoss = Math.max(...days.map(d => d.minutosPerdidos), 1);
     return { days, maxLoss };
-  }, [operators, monthlyData, totalDays, year, month]);
+  }, [operators, monthlyData, displayedDayNumbers, year, month]);
 
   // Supervisor sorted ranking
   const sortedSupervisors = useMemo(() => {
@@ -325,7 +339,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Curva Diária de Minutos Perdidos ({monthLabel} · Dias 1 a {totalDays})
+                Curva Diária de Minutos Perdidos ({monthLabel} · {displayedDayNumbers.length < totalDays ? `${displayedDayNumbers.length} dias selecionados` : `Dias 1 a ${totalDays}`})
               </h3>
               <p className="text-xs text-slate-500">
                 Identifique os dias de maior impacto operacional e ausências concentradas.
@@ -375,7 +389,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             })}
           </div>
           <div className="mt-2 text-center text-[10px] text-slate-400 font-medium">
-            Dias de {monthLabel} (1 a {totalDays}) · Números em laranja indicam Sábado/Domingo
+            {monthLabel} ({displayedDayNumbers.length} {displayedDayNumbers.length === 1 ? 'dia' : 'dias'}) · Números em laranja indicam Sábado/Domingo
           </div>
         </div>
 

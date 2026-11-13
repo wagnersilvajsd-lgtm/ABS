@@ -25,6 +25,7 @@ import {
   getPrevMonthKey,
   parseMonthKey
 } from '../utils/calendar';
+import { PeriodCalendarPopover } from './PeriodCalendarPopover';
 
 interface NavbarProps {
   activeTab: 'operacoes' | 'abs-operador' | 'operadores' | 'base-apontamentos' | 'painel-wfm';
@@ -37,6 +38,9 @@ interface NavbarProps {
   activeOperationName?: string;
   selectedMonthKey: string;
   onSelectMonthKey: (monthKey: string) => void;
+  selectedPeriodDays?: number[] | null;
+  onApplyPeriod?: (days: number[] | null) => void;
+  periodOpenTrigger?: number;
   supervisorsList?: string[];
   activeSupervisorView?: string;
   onChangeSupervisorView?: (sup: string) => void;
@@ -55,6 +59,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeOperationName = 'Operação CAERN',
   selectedMonthKey,
   onSelectMonthKey,
+  selectedPeriodDays = null,
+  onApplyPeriod,
+  periodOpenTrigger = 0,
   supervisorsList = [],
   activeSupervisorView = 'gestor',
   onChangeSupervisorView,
@@ -330,6 +337,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               )}
             </div>
+
+            {onApplyPeriod && (
+              <div className="pl-1 sm:pl-2 sm:border-l border-slate-200 dark:border-slate-700">
+                <PeriodCalendarPopover
+                  selectedMonthKey={selectedMonthKey}
+                  selectedPeriodDays={selectedPeriodDays}
+                  onApplyPeriod={onApplyPeriod}
+                  externalOpenTrigger={periodOpenTrigger}
+                />
+              </div>
+            )}
           </div>
 
           {/* Supervisor Session Switcher, Transfer Inbox & Calendar Info */}
