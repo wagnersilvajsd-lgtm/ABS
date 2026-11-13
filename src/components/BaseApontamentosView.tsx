@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Operator, OperatorMonthlyData, StatusType, DayRecord } from '../types/abs';
-import { SUPERVISORES_LIST, STATUS_OPTIONS, WEEKDAYS_ABBR } from '../data/initialData';
+import { STATUS_OPTIONS } from '../data/initialData';
+import { formatMonthLabel, getDaysInMonth, getWeekdayAbbr, isWeekendDate, parseMonthKey } from '../utils/calendar';
 import { calculateOperatorStats, formatPercent } from '../utils/calculations';
 import { Search, Filter, Calendar, Edit3, X, Check } from 'lucide-react';
 
@@ -9,14 +10,28 @@ interface BaseApontamentosViewProps {
   monthlyData: Record<string, OperatorMonthlyData>;
   onUpdateDays: (operatorId: string, dias: DayRecord[]) => void;
   onSelectOperatorForAudit: (operatorId: string) => void;
+  selectedMonthKey: string;
 }
 
 export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
   operators,
   monthlyData,
   onUpdateDays,
-  onSelectOperatorForAudit
+  onSelectOperatorForAudit,
+  selectedMonthKey
 }) => {
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const totalDays = getDaysInMonth(year, month);
+  const monthLabel = formatMonthLabel(selectedMonthKey);
+
+  const supervisorsList = useMemo(() => {
+    const set = new Set<string>();
+    operators.forEach(op => {
+      if (op.supervisor) set.add(op.supervisor);
+    });
+    return Array.from(set);
+  }, [operators]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
   const [editingCell, setEditingCell] = useState<{
@@ -100,7 +115,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               Aba 3: Repositório Central (BASE_APONTAMENTOS)
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-              Matriz Geral de Apontamentos (44 Colaboradores × 31 Dias)
+              Matriz Geral ({operators.length} Colaboradores × {totalDays} Dias · {monthLabel})
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Visualize toda a equipe em lote. Clique em qualquer célula diária para edição rápida direta.
@@ -139,14 +154,14 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
             >
               Todos
             </button>
-            {SUPERVISORES_LIST.map((sup) => (
+            {supervisorsList.map((sup) => (
               <button
                 key={sup}
                 onClick={() => setSelectedSupervisor(sup)}
                 className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   selectedSupervisor.toLowerCase() === sup.toLowerCase()
                     ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] font-bold shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400'
+                    : 'text-slate-600 dark:text-slate-400'
                 }`}
               >
                 {sup.split(' ')[0]}
@@ -175,11 +190,10 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                   ABS %
                 </th>
 
-                {/* Days 1 to 31 */}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => {
-                  const dayOfWeekIdx = dia % 7;
-                  const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
-                  const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
+                {/* Days 1 to totalDays */}
+                {Array.from({ length: totalDays }, (_, i) => i + 1).map((dia) => {
+                  const weekdayName = getWeekdayAbbr(year, month, dia);
+                  const isWeekend = isWeekendDate(year, month, dia);
                   return (
                     <th
                       key={dia}
@@ -189,7 +203,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       title={`Dia ${dia} (${weekdayName})`}
                     >
                       <div>{dia}</div>
-                      <div className="text-[8px] opacity-70 font-sans">{WEEKDAYS_ABBR[dayOfWeekIdx]}</div>
+                      <div className="text-[8px] opacity-70 font-sans">{weekdayName}</div>
                     </th>
                   );
                 })}
@@ -243,8 +257,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Days D1 to D31 */}
-                    {opData.dias.map((d) => {
+                    {/* Days D1 to D{totalDays} */}
+                    {opData.dias.slice(0, totalDays).map((d) => {
                       const isFolga = d.status === 'folga';
                       const isOk = d.status === 'dia ok';
                       const isAtraso = d.status === 'dia ok/atraso';

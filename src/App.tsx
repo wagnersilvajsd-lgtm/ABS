@@ -10,16 +10,24 @@ import {
   saveStoredOperations,
   loadStoredSelectedOperationId,
   saveStoredSelectedOperationId,
+  loadStoredSelectedMonthKey,
+  saveStoredSelectedMonthKey,
   loadStoredOperators,
   saveStoredOperators,
-  loadStoredMonthlyData,
-  saveStoredMonthlyData,
+  loadStoredMonthlyDataByMonth,
+  saveStoredMonthlyDataByMonth,
   loadStoredSelectedOperatorId,
   saveStoredSelectedOperatorId,
   resetToDefaults
 } from './utils/storage';
+import {
+  generateMonthDays,
+  generateMonthDatasetForOperators,
+  normalizeOperatorMonthlyDays,
+  parseMonthKey,
+  WeekendFolgaMode
+} from './utils/calendar';
 import { calculateOperationSummary } from './utils/calculations';
-import { SUPERVISORES_LIST } from './data/initialData';
 import { Navbar } from './components/Navbar';
 import { OperacoesView } from './components/OperacoesView';
 import { AbsOperatorView } from './components/AbsOperatorView';
@@ -63,14 +71,51 @@ export default function App() {
     loadStoredSelectedOperationId()
   );
 
-  // Core application data (Operators & 31-day records)
-  const [operators, setOperators] = useState<Operator[]>(() => loadStoredOperators());
-  const [monthlyData, setMonthlyData] = useState<Record<string, OperatorMonthlyData>>(() =>
-    loadStoredMonthlyData(operators)
+  // Active Month/Year Key (2025-01 through 2030-12)
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(() =>
+    loadStoredSelectedMonthKey()
   );
+
+  // Core application data (Operators & multi-month records up to 2030)
+  const [operators, setOperators] = useState<Operator[]>(() => loadStoredOperators());
+  const [monthlyDataByMonth, setMonthlyDataByMonth] = useState<
+    Record<string, Record<string, OperatorMonthlyData>>
+  >(() => loadStoredMonthlyDataByMonth(operators));
   const [selectedOperatorId, setSelectedOperatorId] = useState<string>(() =>
     loadStoredSelectedOperatorId()
   );
+
+  // Derived monthlyData for the currently selected month, guaranteed normalized to exact daysInMonth (28/29/30/31)
+  const monthlyData = useMemo(() => {
+    const { year, month } = parseMonthKey(selectedMonthKey);
+    const rawMonth = monthlyDataByMonth[selectedMonthKey] || {};
+    const resolved: Record<string, OperatorMonthlyData> = {};
+
+    operators.forEach((op, idx) => {
+      resolved[op.id] = normalizeOperatorMonthlyDays(rawMonth[op.id], op.id, year, month, idx);
+    });
+
+    return resolved;
+  }, [monthlyDataByMonth, selectedMonthKey, operators]);
+
+  // Switch active Month/Year and lazily persist initial calendar dataset if first visit to that month
+  const handleSelectMonthKey = (newMonthKey: string) => {
+    setSelectedMonthKey(newMonthKey);
+    saveStoredSelectedMonthKey(newMonthKey);
+
+    if (!monthlyDataByMonth[newMonthKey]) {
+      const { year, month } = parseMonthKey(newMonthKey);
+      const generated = generateMonthDatasetForOperators(operators, year, month, false);
+      setMonthlyDataByMonth(prev => {
+        const updated = {
+          ...prev,
+          [newMonthKey]: generated
+        };
+        saveStoredMonthlyDataByMonth(updated);
+        return updated;
+      });
+    }
+  };
 
   // Active operation entity
   const activeOperation = useMemo(() => {
@@ -106,12 +151,14 @@ export default function App() {
       saveStoredOperators(updated);
       return updated;
     });
-    setMonthlyData(prev => {
+    setMonthlyDataByMonth(prev => {
+      const monthMap = prev[selectedMonthKey] ? { ...prev[selectedMonthKey] } : { ...monthlyData };
+      monthMap[newOperator.id] = newMonthlyData;
       const updated = {
         ...prev,
-        [newOperator.id]: newMonthlyData
+        [selectedMonthKey]: monthMap
       };
-      saveStoredMonthlyData(updated);
+      saveStoredMonthlyDataByMonth(updated);
       return updated;
     });
     setSelectedOperatorId(newOperator.id);
@@ -129,24 +176,31 @@ export default function App() {
     setActiveTab('abs-operador');
   };
 
-  // Update days for an operator (Acts like the Google Sheets onEdit trigger!)
+  // Update days for an operator in the active month
   const handleUpdateDays = (operatorId: string, dias: DayRecord[]) => {
-    setMonthlyData(prev => {
+    setMonthlyDataByMonth(prev => {
+      const currentMonthMap = prev[selectedMonthKey] ? { ...prev[selectedMonthKey] } : { ...monthlyData };
+      currentMonthMap[operatorId] = {
+        operatorId,
+        dias
+      };
       const updated = {
         ...prev,
-        [operatorId]: {
-          operatorId,
-          dias
-        }
+        [selectedMonthKey]: currentMonthMap
       };
-      saveStoredMonthlyData(updated);
+      saveStoredMonthlyDataByMonth(updated);
       return updated;
     });
   };
 
   // Explicit save action
   const handleSaveCurrent = () => {
-    saveStoredMonthlyData(monthlyData);
+    const nextByMonth = {
+      ...monthlyDataByMonth,
+      [selectedMonthKey]: monthlyData
+    };
+    setMonthlyDataByMonth(nextByMonth);
+    saveStoredMonthlyDataByMonth(nextByMonth);
     saveStoredOperators(operators);
   };
 
@@ -165,25 +219,13 @@ export default function App() {
     handleUpdateDays(operatorId, dias);
   };
 
-  // Reapply standard 6x1 schedule with 4 flexible weekend folgas
-  const handleApply6x1Schedule = (operatorId: string) => {
+  // Reapply 6x1 weekend folga schedule using exact real calendar dates for selectedMonthKey
+  const handleApply6x1Schedule = (operatorId: string, mode: WeekendFolgaMode = 'auto') => {
     const opIdx = operators.findIndex(o => o.id === operatorId);
     if (opIdx === -1) return;
 
-    // Escala 6x1 com 4 folgas flexíveis em finais de semana (Domingos [7, 14, 21, 28] ou Sábados [6, 13, 20, 27])
-    const fdsFolgas = (opIdx % 2 === 0) ? [7, 14, 21, 28] : [6, 13, 20, 27];
-
-    const dias: DayRecord[] = Array.from({ length: 31 }, (_, i) => {
-      const dayNum = i + 1;
-      const isFolga = fdsFolgas.indexOf(dayNum) !== -1;
-
-      return {
-        dia: dayNum,
-        status: isFolga ? ('folga' as StatusType) : ('dia ok' as StatusType),
-        atraso: 0
-      };
-    });
-
+    const { year, month } = parseMonthKey(selectedMonthKey);
+    const dias = generateMonthDays(year, month, opIdx, mode);
     handleUpdateDays(operatorId, dias);
   };
 
@@ -243,11 +285,8 @@ export default function App() {
       ...opData,
       id: newId
     };
-    const newDias: DayRecord[] = Array.from({ length: 31 }, (_, i) => ({
-      dia: i + 1,
-      status: (i + 1 === 7 || i + 1 === 14 || i + 1 === 21 || i + 1 === 28) ? ('folga' as StatusType) : ('dia ok' as StatusType),
-      atraso: 0
-    }));
+    const { year, month } = parseMonthKey(selectedMonthKey);
+    const newDias = generateMonthDays(year, month, operators.length, 'auto');
     handleAddOperator(newOperator, { operatorId: newId, dias: newDias });
   };
 
@@ -261,7 +300,8 @@ export default function App() {
       const reset = resetToDefaults();
       setOperations(reset.operations);
       setOperators(reset.operators);
-      setMonthlyData(reset.monthlyData);
+      setSelectedMonthKey(reset.selectedMonthKey);
+      setMonthlyDataByMonth(reset.monthlyDataByMonth);
       setSelectedOperationId(reset.operations[0].id);
       setSelectedOperatorId(reset.operators[0].id);
     }
@@ -273,9 +313,15 @@ export default function App() {
     newMonthlyData: Record<string, OperatorMonthlyData>
   ) => {
     setOperators(newOperators);
-    setMonthlyData(newMonthlyData);
     saveStoredOperators(newOperators);
-    saveStoredMonthlyData(newMonthlyData);
+    setMonthlyDataByMonth(prev => {
+      const updated = {
+        ...prev,
+        [selectedMonthKey]: newMonthlyData
+      };
+      saveStoredMonthlyDataByMonth(updated);
+      return updated;
+    });
     if (newOperators.length > 0) {
       setSelectedOperatorId(newOperators[0].id);
     }
@@ -289,7 +335,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
       
-      {/* Top Navigation */}
+      {/* Top Navigation & Global Calendar Bar (2025 - 2030) */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -299,6 +345,8 @@ export default function App() {
         onOpenExportImport={() => setIsExportModalOpen(true)}
         absGeral={globalSummary.absGeral}
         activeOperationName={activeOperation?.nome}
+        selectedMonthKey={selectedMonthKey}
+        onSelectMonthKey={handleSelectMonthKey}
       />
 
       {/* Main Container */}
@@ -329,6 +377,7 @@ export default function App() {
             onSave={handleSaveCurrent}
             onResetOperatorMonth={handleResetOperatorMonth}
             onApply6x1Schedule={handleApply6x1Schedule}
+            selectedMonthKey={selectedMonthKey}
           />
         )}
 
@@ -347,6 +396,7 @@ export default function App() {
             monthlyData={monthlyData}
             onUpdateDays={handleUpdateDays}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
+            selectedMonthKey={selectedMonthKey}
           />
         )}
 
@@ -355,6 +405,7 @@ export default function App() {
             operators={activeOperationOperators}
             monthlyData={monthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
+            selectedMonthKey={selectedMonthKey}
           />
         )}
 
@@ -367,6 +418,7 @@ export default function App() {
         onAddOperator={handleAddOperator}
         existingSupervisors={currentSupervisors}
         activeOperationId={activeOperation?.id}
+        selectedMonthKey={selectedMonthKey}
       />
 
       {/* Export & Import Modal */}
@@ -376,16 +428,17 @@ export default function App() {
         operators={activeOperationOperators}
         monthlyData={monthlyData}
         onImportData={handleImportData}
+        selectedMonthKey={selectedMonthKey}
       />
 
       {/* Quiet Corporate Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            Sistema Automatizado de Controle de Absenteísmo (ABS) em Minutos · WFM &amp; Engenharia de Dados
+            JSD Telecom · Sistema Automatizado de Controle de Absenteísmo (ABS) em Minutos · WFM
           </span>
           <span className="font-mono text-[11px] text-slate-400">
-            Regra CLT 36h / 380 min diários · 100% Otimizado em Lote
+            Calendário Real 2025–2030 · Regra CLT 36h / 380 min diários
           </span>
         </div>
       </footer>

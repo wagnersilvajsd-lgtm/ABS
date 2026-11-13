@@ -1,5 +1,28 @@
 import React from 'react';
-import { Calendar, Users, Table, BarChart3, RotateCcw, Download, Moon, Sun, Building2 } from 'lucide-react';
+import {
+  Calendar,
+  Users,
+  Table,
+  BarChart3,
+  RotateCcw,
+  Download,
+  Moon,
+  Sun,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays
+} from 'lucide-react';
+import {
+  AVAILABLE_YEARS,
+  MONTH_NAMES_PT,
+  formatMonthKey,
+  getDefaultMonthKey,
+  getMonthWeekends,
+  getNextMonthKey,
+  getPrevMonthKey,
+  parseMonthKey
+} from '../utils/calendar';
 
 interface NavbarProps {
   activeTab: 'operacoes' | 'abs-operador' | 'operadores' | 'base-apontamentos' | 'painel-wfm';
@@ -10,6 +33,8 @@ interface NavbarProps {
   onOpenExportImport: () => void;
   absGeral: number;
   activeOperationName?: string;
+  selectedMonthKey: string;
+  onSelectMonthKey: (monthKey: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,14 +45,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetDefaults,
   onOpenExportImport,
   absGeral,
-  activeOperationName = 'Operação CAERN'
+  activeOperationName = 'Operação CAERN',
+  selectedMonthKey,
+  onSelectMonthKey
 }) => {
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const { totalDays, saturdays, sundays, completeWeekendsCount } = getMonthWeekends(year, month);
+  const prevMonthKey = getPrevMonthKey(selectedMonthKey);
+  const nextMonthKey = getNextMonthKey(selectedMonthKey);
+  const defaultMonthKey = getDefaultMonthKey();
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           
-          {/* Brand Wordmark with JSD Telecom Logo (replaces green square) */}
+          {/* Brand Wordmark with JSD Telecom Logo */}
           <div className="flex items-center gap-3 shrink-0">
             <img
               src="/assets/aistudio/image_def6497f.png"
@@ -76,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>ABS Operador (31 Dias)</span>
+              <span>ABS Operador ({totalDays}d)</span>
             </button>
 
             <button
@@ -121,7 +154,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             {/* Quick ABS Badge */}
             <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/40">
-              <span className="text-[11px] font-medium text-teal-900 dark:text-teal-300">ABS {activeOperationName.split(' ')[1] || 'Operação'}:</span>
+              <span className="text-[11px] font-medium text-teal-900 dark:text-teal-300">
+                ABS {activeOperationName.split(' ')[1] || 'Operação'}:
+              </span>
               <span className="text-xs font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf]">
                 {(absGeral * 100).toFixed(2)}%
               </span>
@@ -180,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800'
             }`}
           >
-            ABS Operador
+            ABS ({totalDays}d)
           </button>
           <button
             onClick={() => setActiveTab('operadores')}
@@ -214,6 +249,88 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
+      </div>
+
+      {/* Persistent Global Calendar Bar (2025 - 2030) */}
+      <div className="bg-slate-50/90 dark:bg-slate-950/60 border-t border-slate-200/80 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-3">
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#006772] dark:text-[#2dd4bf]">
+              <CalendarDays className="w-4 h-4 text-[#d89627]" />
+              <span className="uppercase tracking-wider text-[11px]">Competência:</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={!prevMonthKey}
+                onClick={() => prevMonthKey && onSelectMonthKey(prevMonthKey)}
+                title="Mês anterior"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <select
+                value={month}
+                onChange={(e) => onSelectMonthKey(formatMonthKey(year, parseInt(e.target.value, 10)))}
+                aria-label="Selecionar mês"
+                className="h-8 px-2.5 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
+              >
+                {MONTH_NAMES_PT.map((name, idx) => (
+                  <option key={name} value={idx + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={year}
+                onChange={(e) => onSelectMonthKey(formatMonthKey(parseInt(e.target.value, 10), month))}
+                aria-label="Selecionar ano"
+                className="h-8 px-2.5 text-xs font-bold font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[#006772] dark:text-[#2dd4bf] focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
+              >
+                {AVAILABLE_YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                disabled={!nextMonthKey}
+                onClick={() => nextMonthKey && onSelectMonthKey(nextMonthKey)}
+                title="Próximo mês"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              {selectedMonthKey !== defaultMonthKey && (
+                <button
+                  type="button"
+                  onClick={() => onSelectMonthKey(defaultMonthKey)}
+                  className="ml-1 px-2 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 rounded-md hover:bg-teal-100 cursor-pointer"
+                >
+                  Mês Atual
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Calendar Weekend & Days Info */}
+          <div className="flex items-center gap-2 flex-wrap text-[11px] font-mono">
+            <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+              {totalDays} dias{month === 2 && totalDays === 29 ? ' (Bissexto)' : ''}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-semibold">
+              {saturdays.length} Sáb · {sundays.length} Dom ({completeWeekendsCount} FDS completos)
+            </span>
+          </div>
+
+        </div>
       </div>
     </header>
   );

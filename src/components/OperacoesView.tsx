@@ -418,7 +418,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </span>
           </div>
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 font-mono">
-            Escala contratual 6x1 (4 folgas flexíveis)
+            Escala contratual 6x1 (folgas FDS flexíveis por mês)
           </div>
         </div>
 
@@ -650,7 +650,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                         <button
                           onClick={() => onSelectOperatorForAudit(op.id)}
                           className="px-2.5 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
-                          title="Abrir folha de 31 dias deste operador"
+                          title="Abrir folha mensal deste operador"
                         >
                           <span>Apontar</span>
                           <ExternalLink className="w-3 h-3" />

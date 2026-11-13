@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Operator, OperatorMonthlyData } from '../types/abs';
 import { calculateOperatorStats } from '../utils/calculations';
+import { formatMonthLabel, getDaysInMonth, parseMonthKey } from '../utils/calendar';
 import { X, Download, Copy, Check, FileSpreadsheet, Upload, AlertCircle, Code } from 'lucide-react';
 import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleAppsScriptCode';
 
@@ -10,6 +11,7 @@ interface ExportImportModalProps {
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   onImportData: (operators: Operator[], monthlyData: Record<string, OperatorMonthlyData>) => void;
+  selectedMonthKey: string;
 }
 
 export const ExportImportModal: React.FC<ExportImportModalProps> = ({
@@ -17,8 +19,12 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   onClose,
   operators,
   monthlyData,
-  onImportData
+  onImportData,
+  selectedMonthKey
 }) => {
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const totalDays = getDaysInMonth(year, month);
+  const monthLabel = formatMonthLabel(selectedMonthKey);
   const [activeTab, setActiveTab] = useState<'export' | 'appscript' | 'import'>('export');
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [importJsonText, setImportJsonText] = useState('');
@@ -58,7 +64,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   // Generate CSV for Tab 3: BASE_APONTAMENTOS
   const generateBaseApontamentosCsv = () => {
     const headers = ['OPERADOR', 'MINUTOS_PERDIDOS', 'MINUTOS_ESCALADOS'];
-    for (let d = 1; d <= 31; d++) {
+    for (let d = 1; d <= totalDays; d++) {
       headers.push(`D${d}_STATUS`);
       headers.push(`D${d}_ATRASO`);
     }
@@ -71,7 +77,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         stats.minutosPerdidos,
         stats.minutosEscalados
       ];
-      for (let d = 1; d <= 31; d++) {
+      for (let d = 1; d <= totalDays; d++) {
         const record = opData.dias.find(item => item.dia === d);
         rowVals.push(`"${record ? record.status : 'dia ok'}"`);
         rowVals.push(record ? record.atraso : 0);
@@ -246,7 +252,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Aba 1: OPERADORES (44 Colaboradores)
+                    Aba 1: OPERADORES ({operators.length} Colaboradores · {monthLabel})
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Nome, Supervisor, Horários, Minutos Perdidos, Escalados e ABS Mensal.
@@ -261,7 +267,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     <span>{copiedType === 'operadores' ? 'Copiado!' : 'Copiar p/ Sheets'}</span>
                   </button>
                   <button
-                    onClick={() => handleDownloadCsv(generateOperadoresCsv(), 'OPERADORES_ABS_WFM.csv')}
+                    onClick={() => handleDownloadCsv(generateOperadoresCsv(), `OPERADORES_ABS_WFM_${selectedMonthKey}.csv`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -274,10 +280,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Aba 3: BASE_APONTAMENTOS (Matriz 31 Dias)
+                    Aba 3: BASE_APONTAMENTOS (Matriz {totalDays} Dias · {monthLabel})
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Histórico diário completo de todos os 44 colaboradores com status e atrasos D1 a D31.
+                    Histórico diário completo de todos os {operators.length} colaboradores com status e atrasos D1 a D{totalDays}.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -289,7 +295,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     <span>{copiedType === 'base' ? 'Copiado!' : 'Copiar p/ Sheets'}</span>
                   </button>
                   <button
-                    onClick={() => handleDownloadCsv(generateBaseApontamentosCsv(), 'BASE_APONTAMENTOS_WFM.csv')}
+                    onClick={() => handleDownloadCsv(generateBaseApontamentosCsv(), `BASE_APONTAMENTOS_WFM_${selectedMonthKey}.csv`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -305,7 +311,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                     Backup Completo da Base (JSON)
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Arquivo estruturado com operadores, configurações e apontamentos dos 31 dias.
+                    Arquivo estruturado com operadores, configurações e apontamentos dos {totalDays} dias de {monthLabel}.
                   </p>
                 </div>
                 <button

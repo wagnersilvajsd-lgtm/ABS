@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Operator, OperatorMonthlyData, DayRecord, StatusType } from '../types/abs';
+import { Operator, OperatorMonthlyData } from '../types/abs';
 import { SUPERVISORES_LIST } from '../data/initialData';
-import { X, UserPlus, Clock, UserCheck, CalendarCheck, Check } from 'lucide-react';
+import { generateMonthDays, getDaysInMonth, getDefaultMonthKey, parseMonthKey, WeekendFolgaMode } from '../utils/calendar';
+import { X, UserPlus, Clock, Check } from 'lucide-react';
 
 interface AddOperatorModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface AddOperatorModalProps {
   onAddOperator: (operator: Operator, monthlyData: OperatorMonthlyData) => void;
   existingSupervisors: string[];
   activeOperationId?: string;
+  selectedMonthKey?: string;
 }
 
 export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
@@ -16,8 +18,13 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   onClose,
   onAddOperator,
   existingSupervisors,
-  activeOperationId = 'caern'
+  activeOperationId = 'caern',
+  selectedMonthKey
 }) => {
+  const activeMonthKey = selectedMonthKey || getDefaultMonthKey();
+  const { year, month } = parseMonthKey(activeMonthKey);
+  const totalDays = getDaysInMonth(year, month);
+
   const [nome, setNome] = useState('');
   const [supervisor, setSupervisor] = useState(existingSupervisors[0] || SUPERVISORES_LIST[0]);
   const [isCustomSupervisor, setIsCustomSupervisor] = useState(false);
@@ -25,7 +32,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   const [entrada, setEntrada] = useState('08:00:00');
   const [saida, setSaida] = useState('14:20:00');
   const [jornadaMin, setJornadaMin] = useState(380);
-  const [folgaFdsType, setFolgaFdsType] = useState<'domingo' | 'sabado'>('domingo');
+  const [folgaFdsType, setFolgaFdsType] = useState<WeekendFolgaMode>('auto');
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -70,9 +77,6 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
     // Generate unique ID
     const newId = `op-${Date.now()}`;
 
-    // Determine weekend off days [7, 14, 21, 28] for Domingos or [6, 13, 20, 27] for Sábados
-    const fdsFolgas = folgaFdsType === 'domingo' ? [7, 14, 21, 28] : [6, 13, 20, 27];
-
     const newOperator: Operator = {
       id: newId,
       nome: trimmedNome,
@@ -80,20 +84,12 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
       entrada: entrada.trim(),
       saida: saida.trim(),
       jornadaMin: Number(jornadaMin) || 380,
-      offDayOfWeek: folgaFdsType === 'domingo' ? 1 : 7,
+      offDayOfWeek: folgaFdsType.includes('sab') ? 7 : 1,
       operacaoId: activeOperationId
     };
 
-    // Initialize 31 days with 4 flexible weekend folgas and 27 'dia ok'
-    const dias: DayRecord[] = Array.from({ length: 31 }, (_, i) => {
-      const dayNum = i + 1;
-      const isFolga = fdsFolgas.indexOf(dayNum) !== -1;
-      return {
-        dia: dayNum,
-        status: isFolga ? ('folga' as StatusType) : ('dia ok' as StatusType),
-        atraso: 0
-      };
-    });
+    // Initialize exact days of active month using real weekend calendar
+    const dias = generateMonthDays(year, month, 0, folgaFdsType);
 
     const newMonthlyData: OperatorMonthlyData = {
       operatorId: newId,
@@ -257,18 +253,23 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
 
             <div>
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                4 Folgas FDS (Escala 6x1):
+                Folgas FDS no Mês (6x1):
               </label>
               <select
                 value={folgaFdsType}
-                onChange={(e) => setFolgaFdsType(e.target.value as any)}
+                onChange={(e) => setFolgaFdsType(e.target.value as WeekendFolgaMode)}
                 className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
               >
-                <option value="domingo">Domingos (Dias 7, 14, 21, 28)</option>
-                <option value="sabado">Sábados (Dias 6, 13, 20, 27)</option>
+                <option value="auto">Automático do Mês (Real)</option>
+                <option value="3-dom">3 Domingos do Mês (3 Folgas)</option>
+                <option value="3-sab">3 Sábados do Mês (3 Folgas)</option>
+                <option value="4-dom">4 Domingos do Mês (4 Folgas)</option>
+                <option value="4-sab">4 Sábados do Mês (4 Folgas)</option>
+                <option value="all-dom">Todos Domingos do Mês</option>
+                <option value="all-sab">Todos Sábados do Mês</option>
               </select>
               <span className="text-[10px] text-slate-400 mt-0.5 block">
-                Total: 4 folgas / 27 dias úteis
+                Calendário de {totalDays} dias neste mês
               </span>
             </div>
           </div>

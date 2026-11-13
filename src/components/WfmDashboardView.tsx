@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Operator, OperatorMonthlyData } from '../types/abs';
-import { SUPERVISORES_LIST } from '../data/initialData';
+import { formatMonthLabel, getDaysInMonth, getWeekdayAbbr, isWeekendDate, parseMonthKey } from '../utils/calendar';
 import {
   calculateOperationSummary,
   calculateOperatorStats,
@@ -24,17 +24,31 @@ interface WfmDashboardViewProps {
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   onSelectOperatorForAudit: (operatorId: string) => void;
+  selectedMonthKey: string;
 }
 
 export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
   operators,
   monthlyData,
-  onSelectOperatorForAudit
+  onSelectOperatorForAudit,
+  selectedMonthKey
 }) => {
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const totalDays = getDaysInMonth(year, month);
+  const monthLabel = formatMonthLabel(selectedMonthKey);
+
+  const supervisorsList = useMemo(() => {
+    const set = new Set<string>();
+    operators.forEach(op => {
+      if (op.supervisor) set.add(op.supervisor);
+    });
+    return Array.from(set);
+  }, [operators]);
+
   // Global calculation summary
   const summary = useMemo(() => {
-    return calculateOperationSummary(operators, monthlyData, SUPERVISORES_LIST);
-  }, [operators, monthlyData]);
+    return calculateOperationSummary(operators, monthlyData, supervisorsList);
+  }, [operators, monthlyData, supervisorsList]);
 
   // Operator ranking (Top 5 highest ABS)
   const topAbsOperators = useMemo(() => {
@@ -52,10 +66,12 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
       .slice(0, 5);
   }, [operators, monthlyData]);
 
-  // Daily loss curve (sum of lost minutes for day 1..31 across entire operation)
+  // Daily loss curve (sum of lost minutes for day 1..totalDays across entire operation)
   const dailyLossCurve = useMemo(() => {
-    const days = Array.from({ length: 31 }, (_, i) => ({
+    const days = Array.from({ length: totalDays }, (_, i) => ({
       dia: i + 1,
+      weekday: getWeekdayAbbr(year, month, i + 1),
+      isWeekend: isWeekendDate(year, month, i + 1),
       minutosPerdidos: 0,
       ocorrencias: 0
     }));
@@ -64,12 +80,14 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
       const opData = monthlyData[op.id];
       if (opData) {
         opData.dias.forEach(d => {
-          if (d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão') {
-            days[d.dia - 1].minutosPerdidos += op.jornadaMin;
-            days[d.dia - 1].ocorrencias += 1;
-          } else if (d.status === 'dia ok/atraso') {
-            days[d.dia - 1].minutosPerdidos += Math.max(0, Math.min(op.jornadaMin, d.atraso || 0));
-            days[d.dia - 1].ocorrencias += 1;
+          if (d.dia >= 1 && d.dia <= totalDays) {
+            if (d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão') {
+              days[d.dia - 1].minutosPerdidos += op.jornadaMin;
+              days[d.dia - 1].ocorrencias += 1;
+            } else if (d.status === 'dia ok/atraso') {
+              days[d.dia - 1].minutosPerdidos += Math.max(0, Math.min(op.jornadaMin, d.atraso || 0));
+              days[d.dia - 1].ocorrencias += 1;
+            }
           }
         });
       }
@@ -77,7 +95,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
 
     const maxLoss = Math.max(...days.map(d => d.minutosPerdidos), 1);
     return { days, maxLoss };
-  }, [operators, monthlyData]);
+  }, [operators, monthlyData, totalDays, year, month]);
 
   // Supervisor sorted ranking
   const sortedSupervisors = useMemo(() => {
@@ -216,7 +234,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             </p>
           </div>
           <span className="text-xs font-mono text-slate-400">
-            3 Supervisores
+            {supervisorsList.length} Supervisores
           </span>
         </div>
 
@@ -301,7 +319,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Curva Diária de Minutos Perdidos (Dias 1 a 31)
+                Curva Diária de Minutos Perdidos ({monthLabel} · Dias 1 a {totalDays})
               </h3>
               <p className="text-xs text-slate-500">
                 Identifique os dias de maior impacto operacional e ausências concentradas.
@@ -325,7 +343,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                 >
                   {/* Tooltip */}
                   <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute bottom-full mb-2 bg-slate-900 text-white text-[10px] font-mono py-1 px-2 rounded whitespace-nowrap z-30 shadow-md">
-                    Dia {item.dia}: {item.minutosPerdidos} min ({item.ocorrencias} ocorrências)
+                    Dia {item.dia} ({item.weekday}): {item.minutosPerdidos} min ({item.ocorrencias} ocorrências)
                   </div>
 
                   {/* Bar */}
@@ -341,7 +359,9 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                   />
 
                   {/* Day label */}
-                  <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500">
+                  <span className={`text-[9px] font-mono ${
+                    item.isWeekend ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
+                  }`}>
                     {item.dia}
                   </span>
                 </div>
@@ -349,7 +369,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             })}
           </div>
           <div className="mt-2 text-center text-[10px] text-slate-400 font-medium">
-            Dias do Mês (1 a 31)
+            Dias de {monthLabel} (1 a {totalDays}) · Números em laranja indicam Sábado/Domingo
           </div>
         </div>
 

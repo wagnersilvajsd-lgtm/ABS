@@ -6,9 +6,16 @@ import {
   StatusType
 } from '../types/abs';
 import {
-  STATUS_OPTIONS,
-  WEEKDAYS_ABBR
+  STATUS_OPTIONS
 } from '../data/initialData';
+import {
+  formatMonthLabel,
+  getMonthWeekends,
+  getWeekdayAbbr,
+  isWeekendDate,
+  parseMonthKey,
+  WeekendFolgaMode
+} from '../utils/calendar';
 import {
   calculateDayAbs,
   calculateOperatorStats,
@@ -50,7 +57,8 @@ interface AbsOperatorViewProps {
   onUpdateDays: (operatorId: string, dias: DayRecord[]) => void;
   onSave: () => void;
   onResetOperatorMonth: (operatorId: string) => void;
-  onApply6x1Schedule: (operatorId: string) => void;
+  onApply6x1Schedule: (operatorId: string, mode?: WeekendFolgaMode) => void;
+  selectedMonthKey: string;
 }
 
 export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
@@ -61,8 +69,12 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   onUpdateDays,
   onSave,
   onResetOperatorMonth,
-  onApply6x1Schedule
+  onApply6x1Schedule,
+  selectedMonthKey
 }) => {
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const monthLabel = formatMonthLabel(selectedMonthKey);
+  const monthWeekends = useMemo(() => getMonthWeekends(year, month), [year, month]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
   const [opSearchTerm, setOpSearchTerm] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -251,13 +263,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     const desvios = dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão').length;
     const faltas = dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado').length;
     const folgas = dias.filter(d => d.status === 'folga').length;
-    const fds = dias.filter(d => {
-      const dayOfWeekIdx = (d.dia % 7);
-      const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
-      return weekdayName === 'Dom' || weekdayName === 'Sáb';
-    }).length;
+    const fds = dias.filter(d => isWeekendDate(year, month, d.dia)).length;
     return { desvios, faltas, folgas, fds };
-  }, [dias]);
+  }, [dias, year, month]);
 
   // Filtered days list for the table
   const displayedDias = useMemo(() => {
@@ -272,14 +280,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
       return dias.filter(d => d.status === 'folga');
     }
     if (dayFilter === 'fds') {
-      return dias.filter(d => {
-        const dayOfWeekIdx = (d.dia % 7);
-        const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
-        return weekdayName === 'Dom' || weekdayName === 'Sáb';
-      });
+      return dias.filter(d => isWeekendDate(year, month, d.dia));
     }
     return dias;
-  }, [dias, dayFilter]);
+  }, [dias, dayFilter, year, month]);
 
   // Target WFM benchmark 3% metrics for the active operator
   const targetAbsThreshold = 0.03; // 3.00%
@@ -288,7 +292,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const isOperatorWithinMeta = operatorStats.absMensal <= targetAbsThreshold;
 
   // Percentage breakdown for visual composition bar
-  const totalDays = dias.length || 31;
+  const totalDays = dias.length || monthWeekends.totalDays;
   const pctOk = Math.round((operatorStats.diasTrabalhados / totalDays) * 100);
   const pctFolga = Math.round((operatorStats.diasFolga / totalDays) * 100);
   const pctAtraso = Math.round((operatorStats.diasAtraso / totalDays) * 100);
@@ -610,7 +614,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               <button
                 onClick={() => {
                   onSave();
-                  showToast(`Apontamentos de ${operator.nome} salvos na base com sucesso!`);
+                  showToast(`Apontamentos de ${operator.nome} (${monthLabel}) salvos com sucesso!`);
                 }}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
               >
@@ -629,21 +633,43 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
               <button
                 onClick={() => {
-                  onApply6x1Schedule(operator.id);
-                  showToast('Escala 6x1 (4 folgas flexíveis em FDS) reaplicada aos 31 dias.');
+                  onApply6x1Schedule(operator.id, 'auto');
+                  showToast(`Escala 6x1 de ${monthLabel} (${totalDays} dias) aplicada!`);
                 }}
-                title="Aplica 4 folgas flexíveis em finais de semana (escala 6x1)"
+                title="Aplica automaticamente a escala 6x1 pelos finais de semana reais do mês"
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
               >
                 <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Escala 6x1 (4 Folgas FDS)</span>
+                <span className="hidden sm:inline">Escala 6x1 ({monthLabel.split('/')[0].trim()})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onApply6x1Schedule(operator.id, '3-dom');
+                  showToast(`3 folgas de FDS aplicadas em ${monthLabel} (${totalDays - 3} dias escalados).`);
+                }}
+                title="Aplica 3 folgas de final de semana neste mês (ideal para meses com 3 FDS)"
+                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-lg transition-colors cursor-pointer"
+              >
+                <span>3 Folgas FDS</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onApply6x1Schedule(operator.id, '4-dom');
+                  showToast(`Até 4 folgas de FDS aplicadas em ${monthLabel}.`);
+                }}
+                title="Aplica até 4 folgas de final de semana neste mês"
+                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <span>4 Folgas FDS</span>
               </button>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  if (window.confirm(`Deseja limpar todos os apontamentos do mês de ${operator.nome}? Os dias escalados voltarão para 'dia ok' e atrasos para 0.`)) {
+                  if (window.confirm(`Deseja limpar todos os apontamentos de ${monthLabel} de ${operator.nome}? Os dias escalados voltarão para 'dia ok' e atrasos para 0.`)) {
                     onResetOperatorMonth(operator.id);
                     showToast('Mês do operador reiniciado.');
                   }
@@ -726,26 +752,25 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
       </div>
 
-      {/* Mini-Calendário Interativo de 31 Dias (Heatmap Strip) */}
+      {/* Mini-Calendário Interativo do Mês Selecionado */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              Visão Mensal em 31 Dias (Clique no dia para rolar e editar)
+              Visão de {monthLabel} — {totalDays} Dias ({operatorStats.diasFolga} folgas / {totalDays - operatorStats.diasFolga} escalados)
             </span>
           </div>
           <span className="text-[11px] text-slate-500 font-medium">
-            Finais de semana em destaque laranja
+            Finais de semana reais (Sáb/Dom) em destaque laranja
           </span>
         </div>
 
-        {/* 31 Day Buttons Row */}
-        <div className="grid grid-cols-7 sm:grid-cols-11 md:grid-cols-16 lg:grid-cols-31 gap-1">
+        {/* Month Day Buttons Row */}
+        <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 lg:flex lg:gap-1 gap-1">
           {dias.map((d) => {
-            const dayOfWeekIdx = (d.dia % 7);
-            const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
-            const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
+            const weekdayName = getWeekdayAbbr(year, month, d.dia);
+            const isWeekend = isWeekendDate(year, month, d.dia);
 
             // Status color dot
             let dotColor = 'bg-[#006772]';
@@ -761,7 +786,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 type="button"
                 onClick={() => handleScrollToDay(d.dia)}
                 title={`Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`}
-                className={`flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
+                className={`lg:flex-1 flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
                   focusedDay === d.dia
                     ? 'ring-2 ring-[#006772] bg-teal-100 dark:bg-teal-950 border-[#006772] shadow-md'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700'
@@ -784,18 +809,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         </div>
       </div>
 
-      {/* 31-Day Interactive Timesheet Table (matching Sheets B7:C37 and Col D) */}
+      {/* Month Interactive Timesheet Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         
         {/* Table Title and Quick Filters */}
         <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Tabela de Apontamento Mensal
+              Tabela de Apontamento Mensal ({monthLabel})
             </span>
             <span className="text-xs text-slate-500">·</span>
             <span className="text-xs text-slate-500 font-medium">
-              Mostrando {displayedDias.length} de 31 dias
+              Mostrando {displayedDias.length} de {totalDays} dias
             </span>
           </div>
 
@@ -810,7 +835,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              Todos (31)
+              Todos ({totalDays})
             </button>
             <button
               type="button"
@@ -883,10 +908,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {displayedDias.map((d) => {
-                const dayOfWeekIdx = (d.dia % 7);
-                const weekdayName = WEEKDAYS_ABBR[dayOfWeekIdx];
+                const weekdayName = getWeekdayAbbr(year, month, d.dia);
                 // Apenas finais de semana (Sábado e Domingo) em laranja
-                const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
+                const isWeekend = isWeekendDate(year, month, d.dia);
                 const dailyAbs = calculateDayAbs(d.status, d.atraso, operator.jornadaMin);
                 const isTargetRow = focusedDay === d.dia;
 
