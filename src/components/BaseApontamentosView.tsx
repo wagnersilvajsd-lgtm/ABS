@@ -255,7 +255,17 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-mono text-[11px]">
-              {filteredOperators.map((op) => {
+              {filteredOperators.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4 + displayedDayNumbers.length}
+                    className="py-12 px-4 text-center font-sans text-xs text-slate-500 dark:text-slate-400"
+                  >
+                    Nenhum colaborador cadastrado nesta operação. Adicione supervisores e operadores nas abas Operações ou Operadores.
+                  </td>
+                </tr>
+              ) : (
+                filteredOperators.map((op) => {
                 const opData = monthlyData[op.id] || { operatorId: op.id, dias: [] };
                 const stats = calculateOperatorStats(opData.dias, op.jornadaMin);
 
@@ -400,7 +410,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                     })}
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>

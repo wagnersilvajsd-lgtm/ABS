@@ -14,6 +14,46 @@ export const INITIAL_OPERATIONS: Operation[] = [
       'JOSÉ WAGNER DA SILVA ALVES',
       "MATHEUS D' ALMEIDA MARTINS"
     ]
+  },
+  {
+    id: 'rede-nascer',
+    nome: 'Operação Rede Nascer',
+    cliente: 'Rede Nascer em Goiás',
+    logoUrl: '/assets/aistudio/image_d824c8b7.png',
+    metaAbs: 0.03,
+    jornadaPadraoMin: 380,
+    descricao: 'Atendimento e acolhimento integrado — Rede Nascer em Goiás',
+    supervisores: []
+  },
+  {
+    id: 'caema',
+    nome: 'Operação CAEMA',
+    cliente: 'CAEMA (Companhia de Saneamento Ambiental do Maranhão)',
+    logoUrl: '/assets/aistudio/image_418e7775.png',
+    metaAbs: 0.03,
+    jornadaPadraoMin: 380,
+    descricao: 'Central de Atendimento ao Cliente e Suporte Operacional — Maranhão',
+    supervisores: []
+  },
+  {
+    id: 'cagepa',
+    nome: 'Operação CAGEPA',
+    cliente: 'CAGEPA (Companhia de Água e Esgotos da Paraíba)',
+    logoUrl: '/assets/aistudio/image_e94b598a.png',
+    metaAbs: 0.03,
+    jornadaPadraoMin: 380,
+    descricao: 'Central de Atendimento ao Cidadão e Serviços Operacionais — Paraíba',
+    supervisores: []
+  },
+  {
+    id: 'sebrae',
+    nome: 'Operação SEBRAE',
+    cliente: 'SEBRAE (Serviço de Apoio às Micro e Pequenas Empresas)',
+    logoUrl: '/assets/aistudio/image_a4fc1e66.png',
+    metaAbs: 0.03,
+    jornadaPadraoMin: 380,
+    descricao: 'Central de Relacionamento e Suporte ao Empreendedor',
+    supervisores: []
   }
 ];
 

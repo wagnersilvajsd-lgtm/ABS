@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Operator, OperatorMonthlyData } from '../types/abs';
-import { SUPERVISORES_LIST } from '../data/initialData';
 import { generateMonthDays, getDaysInMonth, getDefaultMonthKey, parseMonthKey, WeekendFolgaMode } from '../utils/calendar';
 import { X, UserPlus, Clock, Check } from 'lucide-react';
 
@@ -26,14 +25,26 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   const totalDays = getDaysInMonth(year, month);
 
   const [nome, setNome] = useState('');
-  const [supervisor, setSupervisor] = useState(existingSupervisors[0] || SUPERVISORES_LIST[0]);
-  const [isCustomSupervisor, setIsCustomSupervisor] = useState(false);
+  const [supervisor, setSupervisor] = useState(existingSupervisors[0] || '');
+  const [isCustomSupervisor, setIsCustomSupervisor] = useState(existingSupervisors.length === 0);
   const [customSupervisorName, setCustomSupervisorName] = useState('');
   const [entrada, setEntrada] = useState('08:00:00');
   const [saida, setSaida] = useState('14:20:00');
   const [jornadaMin, setJornadaMin] = useState(380);
   const [folgaFdsType, setFolgaFdsType] = useState<WeekendFolgaMode>('auto');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    if (existingSupervisors.length === 0) {
+      setIsCustomSupervisor(true);
+      setSupervisor('');
+    } else {
+      setIsCustomSupervisor(false);
+      setSupervisor(prev => (prev && existingSupervisors.includes(prev) ? prev : existingSupervisors[0]));
+    }
+  }, [isOpen, activeOperationId, existingSupervisors]);
 
   if (!isOpen) return null;
 
@@ -101,7 +112,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
     // Reset form and close
     setNome('');
     setCustomSupervisorName('');
-    setIsCustomSupervisor(false);
+    setIsCustomSupervisor(existingSupervisors.length === 0);
     onClose();
   };
 
@@ -162,22 +173,24 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
                 Supervisor Responsável:
               </label>
-              <button
-                type="button"
-                onClick={() => setIsCustomSupervisor(!isCustomSupervisor)}
-                className="text-[11px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-medium cursor-pointer"
-              >
-                {isCustomSupervisor ? 'Selecionar da Lista' : '+ Novo Supervisor'}
-              </button>
+              {existingSupervisors.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsCustomSupervisor(!isCustomSupervisor)}
+                  className="text-[11px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-medium cursor-pointer"
+                >
+                  {isCustomSupervisor ? 'Selecionar da Lista' : '+ Novo Supervisor'}
+                </button>
+              )}
             </div>
 
-            {isCustomSupervisor ? (
+            {isCustomSupervisor || existingSupervisors.length === 0 ? (
               <input
                 type="text"
                 required
                 value={customSupervisorName}
                 onChange={(e) => setCustomSupervisorName(e.target.value)}
-                placeholder="Ex: FERNANDA ALVES PEREIRA"
+                placeholder="Digite o nome do supervisor (Ex: FERNANDA ALVES PEREIRA)"
                 className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 uppercase"
               />
             ) : (

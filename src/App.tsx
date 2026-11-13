@@ -38,6 +38,7 @@ import {
 } from './utils/calendar';
 import { calculateOperationSummary } from './utils/calculations';
 import { Navbar } from './components/Navbar';
+import { HomeOperationsPortal } from './components/HomeOperationsPortal';
 import { OperacoesView } from './components/OperacoesView';
 import { AbsOperatorView } from './components/AbsOperatorView';
 import { OperatorsListView } from './components/OperatorsListView';
@@ -76,6 +77,9 @@ export default function App() {
       localStorage.setItem('abs_theme_dark', 'false');
     }
   }, [isDark]);
+
+  // Landing portal vs entered operation workspace
+  const [hasEnteredOperation, setHasEnteredOperation] = useState(false);
 
   // Active navigation tab (including Operações JSD Telecom)
   const [activeTab, setActiveTab] = useState<
@@ -264,6 +268,29 @@ export default function App() {
 
   // Handler to add a new operator assigned to a supervisor
   const handleAddOperator = (newOperator: Operator, newMonthlyData: OperatorMonthlyData) => {
+    const targetOpId = newOperator.operacaoId || activeOperation?.id || 'caern';
+    const supName = newOperator.supervisor.trim().toUpperCase();
+
+    if (supName) {
+      setOperations(prev => {
+        let changed = false;
+        const updated = prev.map(op => {
+          if (op.id !== targetOpId) return op;
+          const list = op.supervisores ? [...op.supervisores] : [];
+          if (!list.some(s => s.toLowerCase().trim() === supName.toLowerCase())) {
+            list.push(supName);
+            changed = true;
+            return { ...op, supervisores: list };
+          }
+          return op;
+        });
+        if (changed) {
+          saveStoredOperations(updated);
+        }
+        return changed ? updated : prev;
+      });
+    }
+
     setOperators(prev => {
       const updated = [...prev, newOperator];
       saveStoredOperators(updated);
@@ -280,6 +307,7 @@ export default function App() {
       return updated;
     });
     setSelectedOperatorId(newOperator.id);
+    saveStoredSelectedOperatorId(newOperator.id);
   };
 
   // Delete operator permanently (operators list, monthly data, history, pending transfers)
@@ -733,10 +761,16 @@ export default function App() {
     setSelectedOperationId(id);
     saveStoredSelectedOperationId(id);
     const firstOp = operators.find(op => (op.operacaoId || 'caern') === id);
-    if (firstOp) {
-      setSelectedOperatorId(firstOp.id);
-      saveStoredSelectedOperatorId(firstOp.id);
-    }
+    const nextOpId = firstOp?.id || '';
+    setSelectedOperatorId(nextOpId);
+    saveStoredSelectedOperatorId(nextOpId);
+  };
+
+  // Enter operation from the initial selection page into its full workspace
+  const handleEnterOperation = (id: string) => {
+    handleSelectOperation(id);
+    setActiveTab('operacoes');
+    setHasEnteredOperation(true);
   };
 
   const handleAddOperation = (opData: Omit<Operation, 'id'>) => {
@@ -751,6 +785,12 @@ export default function App() {
     });
     setSelectedOperationId(newOp.id);
     saveStoredSelectedOperationId(newOp.id);
+    setSelectedOperatorId('');
+    saveStoredSelectedOperatorId('');
+    if (!hasEnteredOperation) {
+      setActiveTab('operacoes');
+      setHasEnteredOperation(true);
+    }
   };
 
   const handleUpdateOperation = (updatedOp: Operation) => {
@@ -908,6 +948,21 @@ export default function App() {
     return calculateOperationSummary(activeOperationOperators, filteredMonthlyData, currentSupervisors);
   }, [activeOperationOperators, filteredMonthlyData, currentSupervisors]);
 
+  if (!hasEnteredOperation) {
+    return (
+      <HomeOperationsPortal
+        operations={operations}
+        operators={operators}
+        monthlyData={filteredMonthlyData}
+        selectedMonthKey={selectedMonthKey}
+        isDark={isDark}
+        setIsDark={setIsDark}
+        onEnterOperation={handleEnterOperation}
+        onAddOperation={handleAddOperation}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
       
@@ -931,6 +986,7 @@ export default function App() {
         onChangeSupervisorView={handleChangeSupervisorView}
         pendingTransfersCount={visiblePendingTransfers.length}
         onOpenTransferInbox={() => setIsTransferInboxOpen(true)}
+        onGoHome={() => setHasEnteredOperation(false)}
       />
 
       {/* Action / Transfer Toast */}

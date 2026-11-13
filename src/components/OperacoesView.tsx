@@ -99,6 +99,8 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   // Form states for New Operator in Operation
   const [newOpOperatorName, setNewOpOperatorName] = useState('');
   const [newOpOperatorSup, setNewOpOperatorSup] = useState('');
+  const [isNewOpOperatorCustomSup, setIsNewOpOperatorCustomSup] = useState(false);
+  const [newOpOperatorCustomSup, setNewOpOperatorCustomSup] = useState('');
   const [newOpOperatorEntrada, setNewOpOperatorEntrada] = useState('08:00:00');
   const [newOpOperatorSaida, setNewOpOperatorSaida] = useState('14:20:00');
   const [newOpOperatorJornada, setNewOpOperatorJornada] = useState('380');
@@ -285,21 +287,36 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
     setIsAddSupModalOpen(false);
   };
 
+  // Open Add Operator modal pre-configured for current operation
+  const handleOpenAddOperatorModal = () => {
+    setNewOpOperatorName('');
+    setNewOpOperatorSup(activeSupervisors[0] || '');
+    setNewOpOperatorCustomSup('');
+    setIsNewOpOperatorCustomSup(activeSupervisors.length === 0);
+    setNewOpOperatorJornada(String(activeOp?.jornadaPadraoMin || 380));
+    setIsAddOperatorModalOpen(true);
+  };
+
   // Submit new operator
   const handleCreateOperator = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOpOperatorName.trim() || !activeOp) return;
-    const chosenSupervisor = newOpOperatorSup || activeSupervisors[0] || 'SUPERVISÃO GERAL';
+    const rawSupervisor =
+      isNewOpOperatorCustomSup || activeSupervisors.length === 0
+        ? newOpOperatorCustomSup.trim()
+        : newOpOperatorSup.trim();
+    const chosenSupervisor = (rawSupervisor || activeSupervisors[0] || 'SUPERVISÃO GERAL').toUpperCase();
     onAddOperatorToOperation({
       nome: newOpOperatorName.trim().toUpperCase(),
       supervisor: chosenSupervisor,
       entrada: newOpOperatorEntrada.trim(),
       saida: newOpOperatorSaida.trim(),
-      jornadaMin: parseInt(newOpOperatorJornada) || 380,
+      jornadaMin: parseInt(newOpOperatorJornada) || activeOp.jornadaPadraoMin || 380,
       offDayOfWeek: 1,
       operacaoId: activeOp.id
     });
     setNewOpOperatorName('');
+    setNewOpOperatorCustomSup('');
     setIsAddOperatorModalOpen(false);
   };
 
@@ -310,7 +327,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-5 border-b border-slate-200/70 dark:border-slate-800">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1.5 shrink-0 flex items-center justify-center overflow-hidden">
+            <div className="w-14 h-14 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1.5 shrink-0 flex items-center justify-center overflow-hidden">
               <img
                 src={activeOp?.logoUrl || '/assets/aistudio/image_def6497f.png'}
                 alt={activeOp?.nome || 'Operação'}
@@ -373,10 +390,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
             <button
               type="button"
-              onClick={() => {
-                setNewOpOperatorSup(activeSupervisors[0] || '');
-                setIsAddOperatorModalOpen(true);
-              }}
+              onClick={handleOpenAddOperatorModal}
               className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -408,7 +422,11 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               <button
                 key={op.id}
                 type="button"
-                onClick={() => onSelectOperation(op.id)}
+                onClick={() => {
+                  setSelectedSupFilter('todos');
+                  setOpSearchTerm('');
+                  onSelectOperation(op.id);
+                }}
                 className={`h-9 flex items-center gap-2 px-3.5 rounded-lg text-xs font-semibold btn-press whitespace-nowrap shrink-0 cursor-pointer border ${
                   isSelected
                     ? 'bg-[#006772] text-white border-[#006772]'
@@ -547,8 +565,18 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
         </div>
 
         {supervisorStatsList.length === 0 ? (
-          <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
-            Nenhum supervisor cadastrado nesta operação. Clique em "Adicionar Supervisor" para começar.
+          <div className="py-10 px-4 text-center space-y-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Operação em aberto · Nenhum supervisor cadastrado ainda em <strong>{activeOp?.nome}</strong>.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsAddSupModalOpen(true)}
+              className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors cursor-pointer"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Adicionar Primeiro Supervisor</span>
+            </button>
           </div>
         ) : (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
@@ -664,10 +692,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
 
             <button
               type="button"
-              onClick={() => {
-                setNewOpOperatorSup(activeSupervisors[0] || '');
-                setIsAddOperatorModalOpen(true);
-              }}
+              onClick={handleOpenAddOperatorModal}
               className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -695,8 +720,24 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {filteredOperators.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-10 text-center text-slate-500 dark:text-slate-400">
-                    Nenhum colaborador encontrado nesta operação com os filtros aplicados.
+                  <td colSpan={10} className="py-10 px-4 text-center text-slate-500 dark:text-slate-400">
+                    {opOperators.length === 0 ? (
+                      <div className="space-y-3">
+                        <p>
+                          Nenhum colaborador cadastrado ainda em <strong>{activeOp?.nome}</strong>.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddOperatorModal}
+                          className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors cursor-pointer"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Adicionar Primeiro Operador</span>
+                        </button>
+                      </div>
+                    ) : (
+                      'Nenhum colaborador encontrado nesta operação com os filtros aplicados.'
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -1304,24 +1345,42 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                  Supervisor Responsável:
-                </label>
-                <select
-                  value={newOpOperatorSup}
-                  onChange={(e) => setNewOpOperatorSup(e.target.value)}
-                  className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
-                >
-                  {activeSupervisors.length === 0 ? (
-                    <option value="SUPERVISÃO GERAL">SUPERVISÃO GERAL</option>
-                  ) : (
-                    activeSupervisors.map(sup => (
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                    Supervisor Responsável:
+                  </label>
+                  {activeSupervisors.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsNewOpOperatorCustomSup(!isNewOpOperatorCustomSup)}
+                      className="text-[11px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-medium cursor-pointer"
+                    >
+                      {isNewOpOperatorCustomSup ? 'Selecionar da Lista' : '+ Novo Supervisor'}
+                    </button>
+                  )}
+                </div>
+                {isNewOpOperatorCustomSup || activeSupervisors.length === 0 ? (
+                  <input
+                    type="text"
+                    required
+                    value={newOpOperatorCustomSup}
+                    onChange={(e) => setNewOpOperatorCustomSup(e.target.value)}
+                    placeholder="Digite o nome do supervisor (Ex: FERNANDA ALVES PEREIRA)"
+                    className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 uppercase"
+                  />
+                ) : (
+                  <select
+                    value={newOpOperatorSup}
+                    onChange={(e) => setNewOpOperatorSup(e.target.value)}
+                    className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
+                  >
+                    {activeSupervisors.map(sup => (
                       <option key={sup} value={sup}>
                         {sup}
                       </option>
-                    ))
-                  )}
-                </select>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

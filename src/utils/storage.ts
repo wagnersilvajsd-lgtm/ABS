@@ -26,6 +26,7 @@ const OPERATOR_HISTORY_STORAGE_KEY = 'abs_wfm_operator_history_v1';
 const TRANSFERS_STORAGE_KEY = 'abs_wfm_transfers_v1';
 const ACTIVE_SUPERVISOR_VIEW_KEY = 'abs_wfm_active_supervisor_view_v1';
 const SAMPLE_CLEANED_FLAG_KEY = 'abs_wfm_clean_start_v1';
+const OPS_SEEDED_V2_KEY = 'abs_wfm_ops_seeded_v2';
 
 const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
 
@@ -80,12 +81,23 @@ export function loadStoredOperations(): Operation[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        if (localStorage.getItem(OPS_SEEDED_V2_KEY) !== 'true') {
+          const existingIds = new Set(parsed.map((op: Operation) => op.id));
+          const additions = INITIAL_OPERATIONS.filter(op => !existingIds.has(op.id));
+          const merged = additions.length > 0 ? [...parsed, ...additions] : parsed;
+          localStorage.setItem(OPS_SEEDED_V2_KEY, 'true');
+          if (additions.length > 0) {
+            saveStoredOperations(merged);
+          }
+          return merged;
+        }
         return parsed;
       }
     }
   } catch (e) {
     console.error('Failed to load operations from storage', e);
   }
+  localStorage.setItem(OPS_SEEDED_V2_KEY, 'true');
   return INITIAL_OPERATIONS;
 }
 
@@ -334,6 +346,7 @@ export function resetToDefaults(): {
   const initialByMonth = { [defaultKey]: initialMonth };
 
   localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
+  localStorage.setItem(OPS_SEEDED_V2_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);

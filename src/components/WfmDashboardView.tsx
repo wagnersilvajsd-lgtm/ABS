@@ -252,8 +252,13 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           </span>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-          {sortedSupervisors.map((sup, idx) => {
+        {sortedSupervisors.length === 0 ? (
+          <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+            Nenhum supervisor ou colaborador cadastrado nesta operação ainda. Cadastre equipes na aba <strong>Operações</strong> para visualizar os indicadores por supervisão.
+          </div>
+        ) : (
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+            {sortedSupervisors.map((sup, idx) => {
             const isBest = idx === 0;
             const withinMeta = sup.absPercent <= targetWfmAbs;
             const barPct = Math.min(100, (sup.absPercent / (targetWfmAbs * 2)) * 100);
@@ -322,7 +327,8 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* Third Row: Balanced Daily Loss Curve (2 Cols) + Top 5 Outliers (1 Col) */}

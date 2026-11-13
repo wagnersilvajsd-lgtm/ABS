@@ -8,7 +8,8 @@ import {
   ChevronRight,
   CalendarDays,
   BellRing,
-  UserCheck
+  UserCheck,
+  LayoutGrid
 } from 'lucide-react';
 import {
   AVAILABLE_YEARS,
@@ -41,6 +42,7 @@ interface NavbarProps {
   onChangeSupervisorView?: (sup: string) => void;
   pendingTransfersCount?: number;
   onOpenTransferInbox?: () => void;
+  onGoHome?: () => void;
 }
 
 const NAV_ITEMS: Array<{
@@ -72,7 +74,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeSupervisorView = 'gestor',
   onChangeSupervisorView,
   pendingTransfersCount = 0,
-  onOpenTransferInbox
+  onOpenTransferInbox,
+  onGoHome
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const { totalDays, saturdays, sundays, completeWeekendsCount } = getMonthWeekends(year, month);
@@ -88,7 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Zone 1: Clean Single-Line Brand Wordmark */}
           <button
             type="button"
-            onClick={() => setActiveTab('operacoes')}
+            onClick={() => (onGoHome ? onGoHome() : setActiveTab('operacoes'))}
+            title="Voltar para a tela inicial de seleção de operações"
             className="flex items-center gap-2.5 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#006772] rounded-lg"
           >
             <img
@@ -263,8 +267,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Right Side: Active Operation Summary + Visão + Transferências */}
+          {/* Right Side: Active Operation Summary + Switch Operation + Visão + Transferências */}
           <div className="flex items-center gap-3 flex-wrap">
+            {onGoHome && (
+              <button
+                type="button"
+                onClick={onGoHome}
+                title="Voltar à página inicial para escolher outra operação"
+                className="h-8 px-2.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Trocar Operação</span>
+              </button>
+            )}
+
             <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 pr-3 border-r border-slate-200 dark:border-slate-800">
               <span className="font-medium truncate max-w-[160px]">{activeOperationName}</span>
               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
