@@ -25,6 +25,54 @@ const SELECTED_OPERATOR_STORAGE_KEY = 'abs_wfm_selected_op_v1';
 const OPERATOR_HISTORY_STORAGE_KEY = 'abs_wfm_operator_history_v1';
 const TRANSFERS_STORAGE_KEY = 'abs_wfm_transfers_v1';
 const ACTIVE_SUPERVISOR_VIEW_KEY = 'abs_wfm_active_supervisor_view_v1';
+const SAMPLE_CLEANED_FLAG_KEY = 'abs_wfm_clean_start_v1';
+
+const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
+
+function hasOnlySeededSampleDeviations(monthMap: Record<string, OperatorMonthlyData>): boolean {
+  let foundSample = false;
+  for (const opId of Object.keys(monthMap)) {
+    const record = monthMap[opId];
+    if (!record || !Array.isArray(record.dias)) continue;
+    for (const d of record.dias) {
+      if (d.status !== 'dia ok' && d.status !== 'folga') {
+        if (!SAMPLE_SEEDED_OPERATOR_IDS.has(opId)) {
+          return false;
+        }
+        const isKnownSample =
+          (opId === 'op-1' && ((d.status === 'dia ok/atraso' && d.atraso === 35) || d.status === 'falta')) ||
+          (opId === 'op-6' && d.status === 'atestado') ||
+          (opId === 'op-16' && ((d.status === 'dia ok/atraso' && d.atraso === 45) || d.status === 'falta')) ||
+          (opId === 'op-31' && d.status === 'dia ok/atraso' && d.atraso === 20) ||
+          (opId === 'op-35' && d.status === 'falta');
+        if (!isKnownSample) {
+          return false;
+        }
+        foundSample = true;
+      }
+    }
+  }
+  return foundSample;
+}
+
+function stripDeviationsFromMonthMap(
+  monthMap: Record<string, OperatorMonthlyData>
+): Record<string, OperatorMonthlyData> {
+  const cleaned: Record<string, OperatorMonthlyData> = {};
+  Object.keys(monthMap).forEach((opId) => {
+    const record = monthMap[opId];
+    cleaned[opId] = {
+      operatorId: opId,
+      dias: (record?.dias || []).map((d) => ({
+        ...d,
+        status: d.status === 'folga' ? 'folga' : 'dia ok',
+        atraso: 0,
+        abonoMin: undefined
+      }))
+    };
+  });
+  return cleaned;
+}
 
 export function loadStoredOperations(): Operation[] {
   try {
@@ -119,6 +167,21 @@ export function loadStoredMonthlyDataByMonth(
     if (rawV2) {
       const parsed = JSON.parse(rawV2);
       if (parsed && typeof parsed === 'object') {
+        if (localStorage.getItem(SAMPLE_CLEANED_FLAG_KEY) !== 'true') {
+          let modified = false;
+          const nextParsed: Record<string, Record<string, OperatorMonthlyData>> = { ...parsed };
+          Object.keys(nextParsed).forEach((mKey) => {
+            if (nextParsed[mKey] && hasOnlySeededSampleDeviations(nextParsed[mKey])) {
+              nextParsed[mKey] = stripDeviationsFromMonthMap(nextParsed[mKey]);
+              modified = true;
+            }
+          });
+          localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
+          if (modified) {
+            saveStoredMonthlyDataByMonth(nextParsed);
+          }
+          return nextParsed;
+        }
         return parsed;
       }
     }
@@ -128,7 +191,7 @@ export function loadStoredMonthlyDataByMonth(
     if (rawLegacy) {
       const legacyParsed = JSON.parse(rawLegacy);
       if (legacyParsed && typeof legacyParsed === 'object') {
-        const normalizedMonth: Record<string, OperatorMonthlyData> = {};
+        let normalizedMonth: Record<string, OperatorMonthlyData> = {};
         operators.forEach((op, idx) => {
           normalizedMonth[op.id] = normalizeOperatorMonthlyDays(
             legacyParsed[op.id],
@@ -138,6 +201,13 @@ export function loadStoredMonthlyDataByMonth(
             idx
           );
         });
+        if (
+          localStorage.getItem(SAMPLE_CLEANED_FLAG_KEY) !== 'true' &&
+          hasOnlySeededSampleDeviations(normalizedMonth)
+        ) {
+          normalizedMonth = stripDeviationsFromMonthMap(normalizedMonth);
+        }
+        localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
         const migrated = { [defaultKey]: normalizedMonth };
         saveStoredMonthlyDataByMonth(migrated);
         return migrated;
@@ -147,8 +217,9 @@ export function loadStoredMonthlyDataByMonth(
     console.error('Failed to load monthly data from storage', e);
   }
 
+  localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
   return {
-    [defaultKey]: generateMonthDatasetForOperators(operators, defYear, defMonth, true)
+    [defaultKey]: generateMonthDatasetForOperators(operators, defYear, defMonth, false)
   };
 }
 
@@ -259,9 +330,10 @@ export function resetToDefaults(): {
   const initialOps = INITIAL_OPERATORS;
   const defaultKey = getDefaultMonthKey();
   const { year, month } = parseMonthKey(defaultKey);
-  const initialMonth = generateMonthDatasetForOperators(initialOps, year, month, true);
+  const initialMonth = generateMonthDatasetForOperators(initialOps, year, month, false);
   const initialByMonth = { [defaultKey]: initialMonth };
 
+  localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);

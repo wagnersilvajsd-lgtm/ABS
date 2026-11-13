@@ -52,7 +52,7 @@ import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { EditOperatorModal } from './components/EditOperatorModal';
 import { EditSupervisorModal } from './components/EditSupervisorModal';
 import { formatPeriodSummary } from './components/PeriodCalendarPopover';
-import { BellRing, CheckCircle2, X, RotateCcw, CalendarRange } from 'lucide-react';
+import { BellRing, CheckCircle2, X, RotateCcw, CalendarRange, Eraser } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -128,6 +128,7 @@ export default function App() {
   } | null>(null);
   const [isTransferInboxOpen, setIsTransferInboxOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isClearMonthAbsConfirmOpen, setIsClearMonthAbsConfirmOpen] = useState(false);
   const [actionToast, setActionToast] = useState<{
     message: string;
     targetSupervisor?: string;
@@ -687,6 +688,36 @@ export default function App() {
     handleUpdateDays(operatorId, dias);
   };
 
+  // Clear all ABS deviations across all operators in the active operation for selectedMonthKey (preserving folga DSR schedules)
+  const handleClearAllAbsForMonth = () => {
+    const activeOpIds = new Set(activeOperationOperators.map(o => o.id));
+    setMonthlyDataByMonth(prev => {
+      const currentMonthMap = prev[selectedMonthKey] ? { ...prev[selectedMonthKey] } : { ...monthlyData };
+      activeOperationOperators.forEach(op => {
+        if (!activeOpIds.has(op.id)) return;
+        const sourceDias = currentMonthMap[op.id]?.dias || monthlyData[op.id]?.dias || [];
+        currentMonthMap[op.id] = {
+          operatorId: op.id,
+          dias: sourceDias.map(d => ({
+            ...d,
+            status: d.status === 'folga' ? ('folga' as StatusType) : ('dia ok' as StatusType),
+            atraso: 0,
+            abonoMin: undefined
+          }))
+        };
+      });
+      const updated = {
+        ...prev,
+        [selectedMonthKey]: currentMonthMap
+      };
+      saveStoredMonthlyDataByMonth(updated);
+      return updated;
+    });
+    setIsClearMonthAbsConfirmOpen(false);
+    setIsResetConfirmOpen(false);
+    showActionToast(`Todos os apontamentos de ABS de ${selectedMonthKey} foram zerados (0.00%). Pronto para preenchimento!`);
+  };
+
   // Reapply 6x1 weekend folga schedule using exact real calendar dates for selectedMonthKey
   const handleApply6x1Schedule = (operatorId: string, mode: WeekendFolgaMode = 'auto') => {
     const opIdx = operators.findIndex(o => o.id === operatorId);
@@ -1021,6 +1052,7 @@ export default function App() {
             onOpenDelete={(op) => setDeleteOperator(op)}
             onOpenEditOperator={(op) => setEditOperator(op)}
             onOpenEditSupervisor={(name, linkedCount) => setEditSupervisorTarget({ name, linkedCount })}
+            onClearMonthAbs={() => setIsClearMonthAbsConfirmOpen(true)}
             operatorHistoryCounts={operatorHistoryCounts}
           />
         )}
@@ -1033,6 +1065,7 @@ export default function App() {
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             selectedMonthKey={selectedMonthKey}
             selectedPeriodDays={selectedPeriodDays}
+            onClearMonthAbs={() => setIsClearMonthAbsConfirmOpen(true)}
           />
         )}
 
@@ -1117,6 +1150,48 @@ export default function App() {
         onConfirmDelete={handleConfirmDeleteOperator}
       />
 
+      {/* Clear Month ABS Confirmation Modal */}
+      {isClearMonthAbsConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-backdrop-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-6 space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Eraser className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Zerar ABS de Todos os Operadores ({selectedMonthKey})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClearMonthAbsConfirmOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Isso limpará todas as faltas, atrasos, atestados e abonos dos <strong>{activeOperationOperators.length}</strong> operadores de <strong>{activeOperation?.nome}</strong> na competência <strong>{selectedMonthKey}</strong>, deixando todos os dias úteis como <strong>Dia OK (0.00% ABS)</strong> e mantendo as folgas DSR e os cadastros intactos.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsClearMonthAbsConfirmOpen(false)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAllAbsForMonth}
+                className="px-4 py-2 text-xs font-bold text-white bg-[#006772] hover:bg-[#005059] rounded-lg cursor-pointer"
+              >
+                Zerar ABS do Mês
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reset Defaults Confirmation Modal */}
       {isResetConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-backdrop-in">
@@ -1125,7 +1200,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-rose-600" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Restaurar Dados Padrão
+                  Limpar ou Restaurar Dados
                 </h3>
               </div>
               <button
@@ -1137,22 +1212,29 @@ export default function App() {
               </button>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Tem certeza que deseja restaurar a estrutura inicial com os 44 operadores originais da Operação CAERN? Todas as edições manuais, transferências e históricos serão redefinidos.
+              Você pode zerar apenas os apontamentos de ABS da competência atual ({selectedMonthKey}) mantendo equipes e históricos, ou restaurar a base inicial completa da Operação CAERN (já zerada em 0.00%).
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setIsResetConfirmOpen(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                className="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                onClick={handleConfirmResetDefaults}
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer"
+                onClick={handleClearAllAbsForMonth}
+                className="px-3.5 py-2 text-xs font-bold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 border border-teal-200 dark:border-teal-800 rounded-lg cursor-pointer"
               >
-                Confirmar Restauração
+                Zerar Só o ABS ({selectedMonthKey})
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetDefaults}
+                className="px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer"
+              >
+                Restaurar Base Completa
               </button>
             </div>
           </div>

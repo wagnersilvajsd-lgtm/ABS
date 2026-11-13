@@ -121,46 +121,12 @@ export function generateInitialMonthlyData(operators: Operator[]): Record<string
     const fdsFolgas = (opIdx % 2 === 0) ? [7, 14, 21, 28] : [6, 13, 20, 27];
 
     for (let d = 1; d <= 31; d++) {
-      let status: StatusType = 'dia ok';
-      let atraso = 0;
-
-      if (fdsFolgas.indexOf(d) !== -1) {
-        status = 'folga';
-        atraso = 0;
-      } else if (opIdx === 0 && d === 3) {
-        // Liliane dia 3: atraso de 35 min
-        status = 'dia ok/atraso';
-        atraso = 35;
-      } else if (opIdx === 0 && d === 12) {
-        // Liliane dia 12: falta
-        status = 'falta';
-        atraso = 0;
-      } else if (opIdx === 5 && d === 15) {
-        // Ana Karoline: atestado
-        status = 'atestado';
-        atraso = 0;
-      } else if (opIdx === 15 && d === 8) {
-        // Júlia Maria: atraso de 45 min
-        status = 'dia ok/atraso';
-        atraso = 45;
-      } else if (opIdx === 15 && d === 22) {
-        // Júlia Maria: falta
-        status = 'falta';
-        atraso = 0;
-      } else if (opIdx === 30 && d === 5) {
-        // Mariana Teodósio: atraso de 20 min
-        status = 'dia ok/atraso';
-        atraso = 20;
-      } else if (opIdx === 34 && d === 18) {
-        // Daiana Lima: falta
-        status = 'falta';
-        atraso = 0;
-      }
+      const status: StatusType = fdsFolgas.indexOf(d) !== -1 ? 'folga' : 'dia ok';
 
       dias.push({
         dia: d,
         status,
-        atraso
+        atraso: 0
       });
     }
 

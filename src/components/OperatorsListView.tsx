@@ -19,7 +19,8 @@ import {
   ClipboardList,
   ArrowRightLeft,
   Trash2,
-  Edit2
+  Edit2,
+  Eraser
 } from 'lucide-react';
 
 interface OperatorsListViewProps {
@@ -32,6 +33,7 @@ interface OperatorsListViewProps {
   onOpenDelete: (operator: Operator) => void;
   onOpenEditOperator: (operator: Operator) => void;
   onOpenEditSupervisor?: (supervisorName: string, linkedCount: number) => void;
+  onClearMonthAbs?: () => void;
   operatorHistoryCounts?: Record<string, number>;
 }
 
@@ -47,6 +49,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
   onOpenDelete,
   onOpenEditOperator,
   onOpenEditSupervisor,
+  onClearMonthAbs,
   operatorHistoryCounts = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,10 +203,22 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
               </span>
             </div>
 
+            {onClearMonthAbs && (
+              <button
+                type="button"
+                onClick={onClearMonthAbs}
+                title="Limpar todas as ocorrências e zerar o ABS de todos os operadores neste mês"
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/60 rounded-lg btn-press whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Eraser className="w-3.5 h-3.5" />
+                <span>Zerar ABS do Mês</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onAddOperator}
-              className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg btn-press whitespace-nowrap shrink-0 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Adicionar Operador</span>

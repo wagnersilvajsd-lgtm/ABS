@@ -3,7 +3,7 @@ import { Operator, OperatorMonthlyData, StatusType, DayRecord } from '../types/a
 import { STATUS_OPTIONS } from '../data/initialData';
 import { formatMonthLabel, getDaysInMonth, getWeekdayAbbr, isWeekendDate, parseMonthKey } from '../utils/calendar';
 import { calculateOperatorStats, formatPercent } from '../utils/calculations';
-import { Search, Filter, Calendar, Edit3, X, Check } from 'lucide-react';
+import { Search, Filter, Calendar, Edit3, X, Check, Eraser } from 'lucide-react';
 
 interface BaseApontamentosViewProps {
   operators: Operator[];
@@ -12,6 +12,7 @@ interface BaseApontamentosViewProps {
   onSelectOperatorForAudit: (operatorId: string) => void;
   selectedMonthKey: string;
   selectedPeriodDays?: number[] | null;
+  onClearMonthAbs?: () => void;
 }
 
 export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
@@ -20,7 +21,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
   onUpdateDays,
   onSelectOperatorForAudit,
   selectedMonthKey,
-  selectedPeriodDays = null
+  selectedPeriodDays = null,
+  onClearMonthAbs
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
@@ -134,11 +136,25 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
             </p>
           </div>
 
-          <div className="text-right shrink-0">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Exibindo</span>
-            <span className="text-sm font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf]">
-              {filteredOperators.length} operador(es)
-            </span>
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-right">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Exibindo</span>
+              <span className="text-sm font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf]">
+                {filteredOperators.length} operador(es)
+              </span>
+            </div>
+
+            {onClearMonthAbs && (
+              <button
+                type="button"
+                onClick={onClearMonthAbs}
+                title="Limpar todas as ocorrências e zerar o ABS de todos os operadores neste mês"
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/60 rounded-lg btn-press whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Eraser className="w-3.5 h-3.5" />
+                <span>Zerar ABS do Mês</span>
+              </button>
+            )}
           </div>
         </div>
 
