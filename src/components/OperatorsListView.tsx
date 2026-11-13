@@ -159,7 +159,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
               Aba 1: Cadastro &amp; Consolidação (OPERADORES)
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
@@ -174,23 +174,23 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={onAddOperator}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-2xs whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               <span>Adicionar Operador</span>
             </button>
 
-            <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-3 py-1.5 rounded-lg text-center">
-              <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase block">
+            <div className="bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 px-3 py-1.5 rounded-lg text-center">
+              <span className="text-[10px] font-bold text-[#006772] dark:text-teal-300 uppercase block">
                 Operadores
               </span>
-              <span className="text-base font-bold font-mono text-emerald-900 dark:text-emerald-100">
+              <span className="text-base font-bold font-mono text-[#005059] dark:text-teal-100">
                 {aggregateStats.totalCount} / {operators.length}
               </span>
             </div>
 
-            <div className="bg-emerald-900 text-white px-3.5 py-1.5 rounded-lg text-center">
-              <span className="text-[10px] font-bold text-emerald-300 uppercase block">
+            <div className="bg-[#005059] text-white px-3.5 py-1.5 rounded-lg text-center">
+              <span className="text-[10px] font-bold text-teal-200 uppercase block">
                 ABS Médio
               </span>
               <span className="text-base font-extrabold font-mono text-white">
@@ -211,7 +211,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar operador ou horário..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
             />
           </div>
 
@@ -219,9 +219,9 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
           <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-x-auto text-xs">
             <button
               onClick={() => setSelectedSupervisor('todos')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 selectedSupervisor === 'todos'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-2xs font-bold'
+                  ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] shadow-2xs font-bold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
@@ -231,9 +231,9 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
               <button
                 key={sup}
                 onClick={() => setSelectedSupervisor(sup)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   selectedSupervisor.toLowerCase() === sup.toLowerCase()
-                    ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-2xs font-bold'
+                    ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] shadow-2xs font-bold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
@@ -264,33 +264,33 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-[#1e4620] text-white font-bold text-[10px] uppercase tracking-wider">
+            <thead className="bg-[#005059] text-white font-bold text-[10px] uppercase tracking-wider">
               <tr>
                 <th
                   onClick={() => handleToggleSort('nome')}
-                  className="py-3 px-4 cursor-pointer hover:bg-emerald-900 transition-colors select-none"
+                  className="py-3 px-4 cursor-pointer hover:bg-[#00383f] transition-colors select-none"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>OPERADOR (A)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-300" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('supervisor')}
-                  className="py-3 px-4 cursor-pointer hover:bg-emerald-900 transition-colors select-none"
+                  className="py-3 px-4 cursor-pointer hover:bg-[#00383f] transition-colors select-none"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>SUPERVISOR (B)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-300" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('entrada')}
-                  className="py-3 px-3 text-center cursor-pointer hover:bg-emerald-900 transition-colors select-none w-28"
+                  className="py-3 px-3 text-center cursor-pointer hover:bg-[#00383f] transition-colors select-none w-28"
                 >
                   <div className="flex items-center justify-center gap-1">
                     <span>ENTRADA (C)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-300" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th className="py-3 px-3 text-center w-28">
@@ -301,29 +301,29 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                 </th>
                 <th
                   onClick={() => handleToggleSort('minutosPerdidos')}
-                  className="py-3 px-4 text-right cursor-pointer hover:bg-emerald-900 transition-colors select-none w-32"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32"
                 >
                   <div className="flex items-center justify-end gap-1.5">
                     <span>PERDIDOS (F)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-300" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('minutosEscalados')}
-                  className="py-3 px-4 text-right cursor-pointer hover:bg-emerald-900 transition-colors select-none w-32"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32"
                 >
                   <div className="flex items-center justify-end gap-1.5">
                     <span>ESCALADOS (G)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-300" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-200" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleToggleSort('absMensal')}
-                  className="py-3 px-4 text-center cursor-pointer hover:bg-emerald-900 transition-colors select-none w-32 bg-emerald-950"
+                  className="py-3 px-4 text-center cursor-pointer hover:bg-[#00383f] transition-colors select-none w-32 bg-[#00383f]"
                 >
                   <div className="flex items-center justify-center gap-1.5">
                     <span>ABS MENSAL (H)</span>
-                    <ArrowUpDown className="w-3 h-3 text-emerald-200" />
+                    <ArrowUpDown className="w-3 h-3 text-teal-100" />
                   </div>
                 </th>
                 <th className="py-3 px-3 text-center w-24">
@@ -374,7 +374,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                       </td>
 
                       {/* Jornada */}
-                      <td className="py-2.5 px-3 text-center font-mono font-medium text-emerald-800 dark:text-emerald-400">
+                      <td className="py-2.5 px-3 text-center font-mono font-medium text-[#006772] dark:text-[#2dd4bf]">
                         {op.jornadaMin}
                       </td>
 
@@ -401,10 +401,10 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-xs ${
                             isZeroAbs
-                              ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                              ? 'text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 font-bold'
                               : isHighAbs
                               ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 font-extrabold'
-                              : 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40'
+                              : 'text-[#d89627] dark:text-[#f0ad35] bg-amber-50 dark:bg-amber-950/40 font-bold'
                           }`}
                         >
                           {formatPercent(op.stats.absMensal)}
@@ -415,7 +415,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                       <td className="py-2.5 px-3 text-center">
                         <button
                           onClick={() => onSelectOperatorForAudit(op.id)}
-                          className="px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded transition-colors flex items-center justify-center gap-1 mx-auto"
+                          className="px-2.5 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
                           title="Abrir apontamento diário deste operador"
                         >
                           <span>Apontar</span>
@@ -439,7 +439,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                 <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
                   {aggregateStats.escalados.toLocaleString('pt-BR')} min
                 </td>
-                <td className="py-3 px-4 text-center font-mono text-emerald-800 dark:text-emerald-400 text-sm">
+                <td className="py-3 px-4 text-center font-mono text-[#006772] dark:text-[#2dd4bf] text-sm font-extrabold">
                   {formatPercent(aggregateStats.avgAbs)}
                 </td>
                 <td></td>

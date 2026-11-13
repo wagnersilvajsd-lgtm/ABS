@@ -2,6 +2,25 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-jsd-teal-50: #f0f8f9;
+  --color-jsd-teal-100: #d6eef1;
+  --color-jsd-teal-200: #b2dfe4;
+  --color-jsd-teal-600: #0e818e;
+  --color-jsd-teal-700: #006772;
+  --color-jsd-teal-800: #005059;
+  --color-jsd-teal-900: #003e45;
+  --color-jsd-teal-950: #00252a;
+
+  --color-jsd-gold-50: #fdfaf3;
+  --color-jsd-gold-100: #fcf4de;
+  --color-jsd-gold-200: #f7e6b7;
+  --color-jsd-gold-500: #e5a42f;
+  --color-jsd-gold-600: #d89627;
+  --color-jsd-gold-700: #b87b18;
+  --color-jsd-gold-800: #936018;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

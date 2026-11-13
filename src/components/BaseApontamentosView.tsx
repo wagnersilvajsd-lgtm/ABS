@@ -96,7 +96,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
               Aba 3: Repositório Central (BASE_APONTAMENTOS)
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
@@ -109,7 +109,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Exibindo:</span>
-            <span className="text-xs font-bold font-mono text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded">
+            <span className="text-xs font-bold font-mono text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 px-2 py-1 rounded">
               {filteredOperators.length} operadores
             </span>
           </div>
@@ -124,16 +124,16 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar colaborador na matriz..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
             />
           </div>
 
           <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs overflow-x-auto">
             <button
               onClick={() => setSelectedSupervisor('todos')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 selectedSupervisor === 'todos'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 font-bold shadow-2xs'
+                  ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] font-bold shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -143,9 +143,9 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               <button
                 key={sup}
                 onClick={() => setSelectedSupervisor(sup)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   selectedSupervisor.toLowerCase() === sup.toLowerCase()
-                    ? 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 font-bold shadow-2xs'
+                    ? 'bg-white dark:bg-slate-900 text-[#006772] dark:text-[#2dd4bf] font-bold shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400'
                 }`}
               >
@@ -160,18 +160,18 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto max-h-[680px]">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-20 bg-slate-900 text-white font-bold text-[10px]">
+            <thead className="sticky top-0 z-20 bg-[#005059] text-white font-bold text-[10px]">
               <tr>
-                <th className="py-2.5 px-3 sticky left-0 z-30 bg-slate-900 w-56 border-r border-slate-800 shadow-xs">
+                <th className="py-2.5 px-3 sticky left-0 z-30 bg-[#005059] w-56 border-r border-[#00383f] shadow-xs">
                   OPERADOR
                 </th>
-                <th className="py-2.5 px-2 text-center w-20 border-r border-slate-800">
+                <th className="py-2.5 px-2 text-center w-20 border-r border-[#00383f]">
                   PERD (min)
                 </th>
-                <th className="py-2.5 px-2 text-center w-20 border-r border-slate-800">
+                <th className="py-2.5 px-2 text-center w-20 border-r border-[#00383f]">
                   ESCAL (min)
                 </th>
-                <th className="py-2.5 px-2 text-center w-16 border-r border-slate-800 bg-emerald-950 text-emerald-300">
+                <th className="py-2.5 px-2 text-center w-16 border-r border-[#00383f] bg-[#00383f] text-teal-100">
                   ABS %
                 </th>
 
@@ -211,7 +211,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                         <span className="truncate" title={op.nome}>{op.nome}</span>
                         <button
                           onClick={() => onSelectOperatorForAudit(op.id)}
-                          className="opacity-0 group-hover:opacity-100 text-[10px] text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
+                          className="opacity-0 group-hover:opacity-100 text-[10px] text-[#006772] dark:text-[#2dd4bf] hover:underline shrink-0 cursor-pointer"
                         >
                           ver
                         </button>
@@ -233,10 +233,10 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       <span
                         className={
                           stats.absMensal === 0
-                            ? 'text-emerald-700 dark:text-emerald-400'
+                            ? 'text-[#006772] dark:text-[#2dd4bf]'
                             : stats.absMensal > 0.03
                             ? 'text-rose-700 dark:text-rose-400 font-extrabold'
-                            : 'text-amber-700 dark:text-amber-400'
+                            : 'text-[#d89627] dark:text-[#f0ad35]'
                         }
                       >
                         {formatPercent(stats.absMensal)}
@@ -264,7 +264,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                               atraso: d.atraso
                             })
                           }
-                          className="py-1 px-0.5 text-center border-r border-slate-100 dark:border-slate-800/80 cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:z-10 transition-all select-none"
+                          className="py-1 px-0.5 text-center border-r border-slate-100 dark:border-slate-800/80 cursor-pointer hover:ring-2 hover:ring-[#006772] hover:z-10 transition-all select-none"
                           title={`${op.nome} - Dia ${d.dia}: ${d.status} ${
                             isAtraso ? `(${d.atraso} min)` : ''
                           } (Clique para alterar)`}
@@ -272,7 +272,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                           <div
                             className={`w-6 h-6 mx-auto rounded flex items-center justify-center text-[9px] font-bold ${
                               isOk
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/60 dark:text-teal-300'
                                 : isAtraso
                                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300'
                                 : isFalta
@@ -335,9 +335,9 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                           atraso: opt.value === 'dia ok/atraso' ? (editingCell.atraso || 15) : 0
                         })
                       }
-                      className={`p-2 text-xs rounded-lg border text-left transition-all font-medium ${
+                      className={`p-2 text-xs rounded-lg border text-left transition-all font-medium cursor-pointer ${
                         editingCell.status === opt.value
-                          ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+                          ? 'bg-[#006772] text-white border-[#006772] shadow-xs'
                           : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                       }`}
                     >
@@ -373,14 +373,14 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingCell(null)}
-                className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleSaveCellEdit}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Salvar Alteração</span>

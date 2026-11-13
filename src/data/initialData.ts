@@ -1,4 +1,21 @@
-import { Operator, OperatorMonthlyData, DayRecord, StatusType } from '../types/abs';
+import { Operator, OperatorMonthlyData, DayRecord, StatusType, Operation } from '../types/abs';
+
+export const INITIAL_OPERATIONS: Operation[] = [
+  {
+    id: 'caern',
+    nome: 'Operação CAERN',
+    cliente: 'CAERN (Companhia de Águas e Esgotos do RN)',
+    logoUrl: '/assets/aistudio/image_d97c0630.png',
+    metaAbs: 0.03, // 3.00%
+    jornadaPadraoMin: 380,
+    descricao: 'Central Integrada de Atendimento ao Cidadão - Suporte Operacional e Emergências',
+    supervisores: [
+      'THAYS DA SILVA CUNHA',
+      'JOSÉ WAGNER DA SILVA ALVES',
+      "MATHEUS D' ALMEIDA MARTINS"
+    ]
+  }
+];
 
 export const INITIAL_OPERATORS_RAW = [
   ['LILIANE RODRIGUES DE OLIVEIRA', 'THAYS DA SILVA CUNHA', '00:00:00', '06:20:00'],
@@ -55,6 +72,7 @@ export const INITIAL_OPERATORS: Operator[] = INITIAL_OPERATORS_RAW.map((row, idx
   saida: row[3],
   jornadaMin: 380, // 6 horas e 20 minutos
   offDayOfWeek: (idx % 6) + 1, // Folga semanal escalonada no regime 6x1
+  operacaoId: 'caern',
 }));
 
 export const SUPERVISORES_LIST = [

@@ -12,6 +12,17 @@ export interface DayRecord {
   atraso: number; // in minutes
 }
 
+export interface Operation {
+  id: string;
+  nome: string;
+  cliente: string;
+  logoUrl?: string;
+  metaAbs: number; // e.g. 0.03 (3.00%)
+  jornadaPadraoMin: number; // typically 380 min (6h20)
+  descricao?: string;
+  supervisores: string[];
+}
+
 export interface Operator {
   id: string;
   nome: string;
@@ -20,6 +31,7 @@ export interface Operator {
   saida: string;
   jornadaMin: number; // typically 380 min (6h20)
   offDayOfWeek: number; // 1 = Dom, 2 = Seg, ..., 7 = Sáb
+  operacaoId?: string; // id da operação vinculada (ex: 'caern')
 }
 
 export interface OperatorMonthlyData {

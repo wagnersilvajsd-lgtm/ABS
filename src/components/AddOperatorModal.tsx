@@ -8,13 +8,15 @@ interface AddOperatorModalProps {
   onClose: () => void;
   onAddOperator: (operator: Operator, monthlyData: OperatorMonthlyData) => void;
   existingSupervisors: string[];
+  activeOperationId?: string;
 }
 
 export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   isOpen,
   onClose,
   onAddOperator,
-  existingSupervisors
+  existingSupervisors,
+  activeOperationId = 'caern'
 }) => {
   const [nome, setNome] = useState('');
   const [supervisor, setSupervisor] = useState(existingSupervisors[0] || SUPERVISORES_LIST[0]);
@@ -78,7 +80,8 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
       entrada: entrada.trim(),
       saida: saida.trim(),
       jornadaMin: Number(jornadaMin) || 380,
-      offDayOfWeek: folgaFdsType === 'domingo' ? 1 : 7
+      offDayOfWeek: folgaFdsType === 'domingo' ? 1 : 7,
+      operacaoId: activeOperationId
     };
 
     // Initialize 31 days with 4 flexible weekend folgas and 27 'dia ok'
@@ -113,7 +116,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-800 dark:bg-emerald-700 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-lg bg-[#006772] flex items-center justify-center text-white">
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
@@ -127,7 +130,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,7 +156,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex: CARLOS EDUARDO DA SILVA"
-              className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30 uppercase"
+              className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 uppercase"
             />
           </div>
 
@@ -166,7 +169,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCustomSupervisor(!isCustomSupervisor)}
-                className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline font-medium"
+                className="text-[11px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-medium cursor-pointer"
               >
                 {isCustomSupervisor ? 'Selecionar da Lista' : '+ Novo Supervisor'}
               </button>
@@ -179,13 +182,13 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
                 value={customSupervisorName}
                 onChange={(e) => setCustomSupervisorName(e.target.value)}
                 placeholder="Ex: FERNANDA ALVES PEREIRA"
-                className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30 uppercase"
+                className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 uppercase"
               />
             ) : (
               <select
                 value={supervisor}
                 onChange={(e) => setSupervisor(e.target.value)}
-                className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30 cursor-pointer"
+                className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
               >
                 {existingSupervisors.map((sup) => (
                   <option key={sup} value={sup}>
@@ -210,7 +213,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
                   value={entrada}
                   onChange={(e) => handleEntradaChange(e.target.value)}
                   placeholder="08:00:00"
-                  className="w-full h-10 pl-9 pr-3 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                  className="w-full h-10 pl-9 pr-3 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                 />
               </div>
             </div>
@@ -227,7 +230,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
                   value={saida}
                   onChange={(e) => setSaida(e.target.value)}
                   placeholder="14:20:00"
-                  className="w-full h-10 pl-9 pr-3 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                  className="w-full h-10 pl-9 pr-3 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                 />
               </div>
             </div>
@@ -245,7 +248,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
                 max="600"
                 value={jornadaMin}
                 onChange={(e) => setJornadaMin(parseInt(e.target.value) || 380)}
-                className="w-full h-10 px-3 text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-lg text-emerald-950 dark:text-emerald-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                className="w-full h-10 px-3 text-xs font-mono font-bold bg-teal-50 dark:bg-teal-950/30 border border-teal-300 dark:border-teal-800 rounded-lg text-teal-950 dark:text-teal-200 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
               />
               <span className="text-[10px] text-slate-400 mt-0.5 block">
                 Padrão 380 min (6h20min)
@@ -275,13 +278,13 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Cadastrar Operador</span>

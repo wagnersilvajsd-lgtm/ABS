@@ -4,8 +4,12 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Operator, OperatorMonthlyData, DayRecord, StatusType } from './types/abs';
+import { Operator, OperatorMonthlyData, DayRecord, StatusType, Operation } from './types/abs';
 import {
+  loadStoredOperations,
+  saveStoredOperations,
+  loadStoredSelectedOperationId,
+  saveStoredSelectedOperationId,
   loadStoredOperators,
   saveStoredOperators,
   loadStoredMonthlyData,
@@ -17,6 +21,7 @@ import {
 import { calculateOperationSummary } from './utils/calculations';
 import { SUPERVISORES_LIST } from './data/initialData';
 import { Navbar } from './components/Navbar';
+import { OperacoesView } from './components/OperacoesView';
 import { AbsOperatorView } from './components/AbsOperatorView';
 import { OperatorsListView } from './components/OperatorsListView';
 import { BaseApontamentosView } from './components/BaseApontamentosView';
@@ -47,10 +52,16 @@ export default function App() {
     }
   }, [isDark]);
 
-  // Active navigation tab
+  // Active navigation tab (including Operações JSD Telecom)
   const [activeTab, setActiveTab] = useState<
-    'abs-operador' | 'operadores' | 'base-apontamentos' | 'painel-wfm'
-  >('abs-operador');
+    'operacoes' | 'abs-operador' | 'operadores' | 'base-apontamentos' | 'painel-wfm'
+  >('operacoes');
+
+  // Operations state
+  const [operations, setOperations] = useState<Operation[]>(() => loadStoredOperations());
+  const [selectedOperationId, setSelectedOperationId] = useState<string>(() =>
+    loadStoredSelectedOperationId()
+  );
 
   // Core application data (Operators & 31-day records)
   const [operators, setOperators] = useState<Operator[]>(() => loadStoredOperators());
@@ -61,18 +72,32 @@ export default function App() {
     loadStoredSelectedOperatorId()
   );
 
+  // Active operation entity
+  const activeOperation = useMemo(() => {
+    return operations.find(o => o.id === selectedOperationId) || operations[0];
+  }, [operations, selectedOperationId]);
+
+  // Operators scoped to the currently selected operation
+  const activeOperationOperators = useMemo(() => {
+    const activeId = activeOperation?.id || 'caern';
+    return operators.filter(op => (op.operacaoId || 'caern') === activeId);
+  }, [operators, activeOperation]);
+
   // Modal states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
 
-  // Dynamic unique supervisors list
+  // Dynamic unique supervisors list for the active operation
   const currentSupervisors = useMemo(() => {
     const set = new Set<string>();
-    operators.forEach(op => {
+    if (activeOperation?.supervisores) {
+      activeOperation.supervisores.forEach(s => set.add(s));
+    }
+    activeOperationOperators.forEach(op => {
       if (op.supervisor) set.add(op.supervisor);
     });
     return Array.from(set);
-  }, [operators]);
+  }, [activeOperation, activeOperationOperators]);
 
   // Handler to add a new operator assigned to a supervisor
   const handleAddOperator = (newOperator: Operator, newMonthlyData: OperatorMonthlyData) => {
@@ -162,16 +187,82 @@ export default function App() {
     handleUpdateDays(operatorId, dias);
   };
 
+  // Operation management handlers
+  const handleSelectOperation = (id: string) => {
+    setSelectedOperationId(id);
+    saveStoredSelectedOperationId(id);
+    const firstOp = operators.find(op => (op.operacaoId || 'caern') === id);
+    if (firstOp) {
+      setSelectedOperatorId(firstOp.id);
+      saveStoredSelectedOperatorId(firstOp.id);
+    }
+  };
+
+  const handleAddOperation = (opData: Omit<Operation, 'id'>) => {
+    const newOp: Operation = {
+      ...opData,
+      id: `op-${Date.now()}`
+    };
+    setOperations(prev => {
+      const updated = [...prev, newOp];
+      saveStoredOperations(updated);
+      return updated;
+    });
+    setSelectedOperationId(newOp.id);
+    saveStoredSelectedOperationId(newOp.id);
+  };
+
+  const handleUpdateOperation = (updatedOp: Operation) => {
+    setOperations(prev => {
+      const updated = prev.map(o => (o.id === updatedOp.id ? updatedOp : o));
+      saveStoredOperations(updated);
+      return updated;
+    });
+  };
+
+  const handleAddSupervisorToOperation = (operationId: string, supervisorName: string) => {
+    setOperations(prev => {
+      const updated = prev.map(o => {
+        if (o.id === operationId) {
+          const list = o.supervisores ? [...o.supervisores] : [];
+          if (!list.includes(supervisorName)) {
+            list.push(supervisorName);
+          }
+          return { ...o, supervisores: list };
+        }
+        return o;
+      });
+      saveStoredOperations(updated);
+      return updated;
+    });
+  };
+
+  const handleAddOperatorToOperation = (opData: Omit<Operator, 'id'>) => {
+    const newId = `op-${Date.now()}`;
+    const newOperator: Operator = {
+      ...opData,
+      id: newId
+    };
+    const newDias: DayRecord[] = Array.from({ length: 31 }, (_, i) => ({
+      dia: i + 1,
+      status: (i + 1 === 7 || i + 1 === 14 || i + 1 === 21 || i + 1 === 28) ? ('folga' as StatusType) : ('dia ok' as StatusType),
+      atraso: 0
+    }));
+    handleAddOperator(newOperator, { operatorId: newId, dias: newDias });
+  };
+
   // Restore factory initial 44 operators and dataset
   const handleResetDefaults = () => {
     if (
       window.confirm(
-        'Tem certeza que deseja restaurar a estrutura inicial com os 44 operadores originais? Todas as edições manuais serão redefinidas para o padrão inicial.'
+        'Tem certeza que deseja restaurar a estrutura inicial com os 44 operadores originais da Operação CAERN? Todas as edições manuais serão redefinidas para o padrão inicial.'
       )
     ) {
       const reset = resetToDefaults();
+      setOperations(reset.operations);
       setOperators(reset.operators);
       setMonthlyData(reset.monthlyData);
+      setSelectedOperationId(reset.operations[0].id);
       setSelectedOperatorId(reset.operators[0].id);
     }
   };
@@ -192,8 +283,8 @@ export default function App() {
 
   // Global operation calculation for the navbar
   const globalSummary = useMemo(() => {
-    return calculateOperationSummary(operators, monthlyData, currentSupervisors);
-  }, [operators, monthlyData, currentSupervisors]);
+    return calculateOperationSummary(activeOperationOperators, monthlyData, currentSupervisors);
+  }, [activeOperationOperators, monthlyData, currentSupervisors]);
 
   return (
     <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
@@ -207,14 +298,30 @@ export default function App() {
         onResetDefaults={handleResetDefaults}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         absGeral={globalSummary.absGeral}
+        activeOperationName={activeOperation?.nome}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
+        {activeTab === 'operacoes' && (
+          <OperacoesView
+            operations={operations}
+            selectedOperationId={selectedOperationId}
+            onSelectOperation={handleSelectOperation}
+            onAddOperation={handleAddOperation}
+            onUpdateOperation={handleUpdateOperation}
+            operators={operators}
+            monthlyData={monthlyData}
+            onAddSupervisorToOperation={handleAddSupervisorToOperation}
+            onAddOperatorToOperation={handleAddOperatorToOperation}
+            onSelectOperatorForAudit={handleSelectOperatorForAudit}
+          />
+        )}
+        
         {activeTab === 'abs-operador' && (
           <AbsOperatorView
-            operators={operators}
+            operators={activeOperationOperators}
             currentOperatorId={selectedOperatorId}
             onSelectOperator={handleSelectOperator}
             monthlyData={monthlyData}
@@ -227,7 +334,7 @@ export default function App() {
 
         {activeTab === 'operadores' && (
           <OperatorsListView
-            operators={operators}
+            operators={activeOperationOperators}
             monthlyData={monthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             onAddOperator={() => setIsAddOperatorModalOpen(true)}
@@ -236,7 +343,7 @@ export default function App() {
 
         {activeTab === 'base-apontamentos' && (
           <BaseApontamentosView
-            operators={operators}
+            operators={activeOperationOperators}
             monthlyData={monthlyData}
             onUpdateDays={handleUpdateDays}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
@@ -245,7 +352,7 @@ export default function App() {
 
         {activeTab === 'painel-wfm' && (
           <WfmDashboardView
-            operators={operators}
+            operators={activeOperationOperators}
             monthlyData={monthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
           />
@@ -259,13 +366,14 @@ export default function App() {
         onClose={() => setIsAddOperatorModalOpen(false)}
         onAddOperator={handleAddOperator}
         existingSupervisors={currentSupervisors}
+        activeOperationId={activeOperation?.id}
       />
 
       {/* Export & Import Modal */}
       <ExportImportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        operators={operators}
+        operators={activeOperationOperators}
         monthlyData={monthlyData}
         onImportData={handleImportData}
       />

@@ -94,7 +94,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
               Painel de Gestão WFM (Workforce Management)
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
@@ -106,9 +106,9 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs">
-              <span className="text-emerald-700 dark:text-emerald-300 font-medium">Meta WFM: </span>
-              <span className="font-bold font-mono text-emerald-900 dark:text-emerald-100">&le; 3.00%</span>
+            <div className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 text-xs">
+              <span className="text-[#006772] dark:text-teal-300 font-medium">Meta WFM: </span>
+              <span className="font-bold font-mono text-[#005059] dark:text-teal-100">&le; 3.00%</span>
             </div>
           </div>
         </div>
@@ -117,22 +117,22 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
         <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* KPI 1: ABS Geral */}
-          <div className="bg-emerald-900 text-white rounded-xl p-4 shadow-sm border border-emerald-800 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-[#006772] via-[#005059] to-[#00383f] text-white rounded-xl p-4 shadow-sm border border-[#004e57] flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">
+              <span className="text-[11px] font-bold text-teal-200 uppercase tracking-wide">
                 ABS Geral da Operação
               </span>
-              <Activity className="w-4 h-4 text-emerald-300" />
+              <Activity className="w-4 h-4 text-teal-200" />
             </div>
             <div className="my-2">
               <div className="text-3xl font-extrabold font-mono tabular-nums">
                 {formatPercent(summary.absGeral)}
               </div>
-              <span className="text-[11px] text-emerald-200 block mt-0.5">
+              <span className="text-[11px] text-teal-200 block mt-0.5">
                 {isTargetMet ? 'Dentro da meta de 3.00%' : 'Acima da tolerância WFM (3.00%)'}
               </span>
             </div>
-            <div className="text-[10px] text-emerald-300/80 border-t border-emerald-800/80 pt-2 font-mono">
+            <div className="text-[10px] text-teal-300/80 border-t border-white/15 pt-2 font-mono">
               Fórmula: Total Perdido / Total Escalado
             </div>
           </div>
@@ -234,7 +234,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                       {isBest ? 'Líder de Aderência' : `Ranking #${idx + 1}`}
                     </span>
                     {isBest && (
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold px-2 py-0.5 rounded">
+                      <span className="text-[10px] bg-teal-100 text-[#006772] dark:bg-teal-950/60 dark:text-teal-300 font-bold px-2 py-0.5 rounded">
                         Menor ABS
                       </span>
                     )}
@@ -252,15 +252,15 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                       <span className="text-[10px] text-slate-500 uppercase block font-semibold">
                         ABS da Equipe
                       </span>
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                         Meta: ≤ 3.00%
                       </span>
                     </div>
-                    <div className="text-2xl font-extrabold font-mono text-emerald-800 dark:text-emerald-400 tabular-nums mt-1">
+                    <div className="text-2xl font-extrabold font-mono text-[#006772] dark:text-[#2dd4bf] tabular-nums mt-1">
                       {formatPercent(sup.absPercent)}
                     </div>
                     <span className={`text-[10px] font-bold block mt-1 ${
-                      sup.absPercent <= targetWfmAbs ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                      sup.absPercent <= targetWfmAbs ? 'text-[#006772] dark:text-[#2dd4bf]' : 'text-amber-600 dark:text-amber-400'
                     }`}>
                       {sup.absPercent <= targetWfmAbs ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima da Meta (> 3%)'}
                     </span>
@@ -336,7 +336,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                         ? item.minutosPerdidos > 380
                           ? 'bg-rose-500 hover:bg-rose-600'
                           : 'bg-amber-500 hover:bg-amber-600'
-                        : 'bg-emerald-200 dark:bg-emerald-950/60'
+                        : 'bg-teal-200 dark:bg-teal-950/60'
                     }`}
                   />
 
@@ -399,7 +399,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                       </span>
                       <button
                         onClick={() => onSelectOperatorForAudit(op.id)}
-                        className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:underline"
+                        className="text-[10px] text-[#006772] dark:text-[#2dd4bf] hover:underline font-bold cursor-pointer"
                       >
                         Auditar &rarr;
                       </button>

@@ -149,7 +149,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+            <FileSpreadsheet className="w-5 h-5 text-[#006772] dark:text-[#2dd4bf]" />
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Exportar / Importar Dados WFM
@@ -161,7 +161,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -171,9 +171,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         <div className="px-6 pt-3 border-b border-slate-100 dark:border-slate-800 flex gap-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab('export')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'export'
-                ? 'border-emerald-700 text-emerald-800 dark:border-emerald-400 dark:text-emerald-300'
+                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -181,9 +181,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('appscript')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'appscript'
-                ? 'border-emerald-700 text-emerald-800 dark:border-emerald-400 dark:text-emerald-300'
+                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -191,9 +191,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('import')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'import'
-                ? 'border-emerald-700 text-emerald-800 dark:border-emerald-400 dark:text-emerald-300'
+                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -221,9 +221,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                       setTimeout(() => setCopiedType(null), 2500);
                     });
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg transition-colors shadow-2xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
-                  {copiedType === 'appscript' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedType === 'appscript' ? <Check className="w-3.5 h-3.5 text-teal-200" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedType === 'appscript' ? 'Código Copiado!' : 'Copiar Código .gs'}</span>
                 </button>
               </div>
@@ -255,14 +255,14 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleCopyToClipboard(generateOperadoresCsv(), 'operadores')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
-                    {copiedType === 'operadores' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                    {copiedType === 'operadores' ? <Check className="w-3.5 h-3.5 text-[#006772]" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                     <span>{copiedType === 'operadores' ? 'Copiado!' : 'Copiar p/ Sheets'}</span>
                   </button>
                   <button
                     onClick={() => handleDownloadCsv(generateOperadoresCsv(), 'OPERADORES_ABS_WFM.csv')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg transition-colors shadow-2xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>CSV</span>
@@ -283,14 +283,14 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => handleCopyToClipboard(generateBaseApontamentosCsv(), 'base')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
-                    {copiedType === 'base' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                    {copiedType === 'base' ? <Check className="w-3.5 h-3.5 text-[#006772]" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                     <span>{copiedType === 'base' ? 'Copiado!' : 'Copiar p/ Sheets'}</span>
                   </button>
                   <button
                     onClick={() => handleDownloadCsv(generateBaseApontamentosCsv(), 'BASE_APONTAMENTOS_WFM.csv')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg transition-colors shadow-2xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>CSV</span>
@@ -310,7 +310,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 </div>
                 <button
                   onClick={handleDownloadJsonBackup}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 rounded-lg transition-colors shadow-2xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Baixar JSON</span>
@@ -329,7 +329,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                   value={importJsonText}
                   onChange={(e) => setImportJsonText(e.target.value)}
                   placeholder='{"exportedAt": "...", "operators": [...], "monthlyData": {...}}'
-                  className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                  className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                 />
               </div>
 
@@ -344,7 +344,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                 <button
                   type="button"
                   onClick={handleProcessImport}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 rounded-lg shadow-xs"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Processar e Restaurar Backup</span>

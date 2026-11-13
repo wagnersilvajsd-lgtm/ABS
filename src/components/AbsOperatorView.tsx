@@ -298,7 +298,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const getStatusBadgeClass = (status: StatusType) => {
     switch (status) {
       case 'dia ok':
-        return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40';
+        return 'bg-teal-50 text-[#006772] dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800/40';
       case 'dia ok/atraso':
         return 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800/40';
       case 'falta':
@@ -312,13 +312,27 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     }
   };
 
+  if (!operator) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-10 text-center shadow-xs">
+        <Users className="w-10 h-10 text-[#006772] mx-auto mb-3 opacity-80" />
+        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+          Nenhum operador cadastrado nesta operação
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+          Acesse a aba <strong>Operações</strong> ou <strong>Operadores</strong> para adicionar supervisores e colaboradores a esta operação.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-[#2dd4bf] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -332,10 +346,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#006772] dark:text-[#2dd4bf]">
                   Apontamento Dinâmico (ABS OPERADOR)
                 </span>
-                <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-mono font-bold">
+                <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 px-2 py-0.5 rounded-full font-mono font-bold">
                   Escala 6x1
                 </span>
               </div>
@@ -373,7 +387,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
           {/* Filtro por Supervisor */}
           <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+              <Filter className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
                 Filtro de Supervisor:
               </span>
@@ -385,7 +399,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 onClick={() => handleSupervisorFilterChange('todos')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   selectedSupervisor === 'todos'
-                    ? 'bg-emerald-800 text-white font-bold shadow-2xs'
+                    ? 'bg-[#006772] text-white font-bold shadow-2xs'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -398,7 +412,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   onClick={() => handleSupervisorFilterChange(sup)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                     selectedSupervisor.toLowerCase() === sup.toLowerCase()
-                      ? 'bg-emerald-800 text-white font-bold shadow-2xs'
+                      ? 'bg-[#006772] text-white font-bold shadow-2xs'
                       : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -418,7 +432,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   B1: Seleção do Operador
                 </label>
                 {selectedSupervisor !== 'todos' && (
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] text-[#006772] dark:text-[#2dd4bf] font-semibold bg-teal-50 dark:bg-teal-950/50 px-1.5 py-0.5 rounded">
                     Equipe de {selectedSupervisor} ({operatorsBySupervisor.length})
                   </span>
                 )}
@@ -429,7 +443,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   <select
                     value={operator?.id || ''}
                     onChange={(e) => onSelectOperator(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 font-bold text-sm rounded-lg border border-emerald-300 dark:border-emerald-700/60 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/40 transition-all cursor-pointer truncate"
+                    className="w-full h-10 px-3 py-2 bg-teal-50/70 dark:bg-teal-950/30 text-teal-950 dark:text-teal-200 font-bold text-sm rounded-lg border border-teal-300 dark:border-teal-700/60 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/40 transition-all cursor-pointer truncate"
                   >
                     {operatorsBySupervisor.map((op) => (
                       <option key={op.id} value={op.id}>
@@ -447,7 +461,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                     value={opSearchTerm}
                     onChange={(e) => setOpSearchTerm(e.target.value)}
                     placeholder="Filtrar por nome ou horário..."
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                   />
                   {opSearchTerm && (
                     <button
@@ -472,7 +486,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   <UserCheck className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
                   <span className="truncate">{operator.supervisor}</span>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 font-bold">
                   Meta Sup: ≤ 3.00%
                 </span>
               </div>
@@ -507,7 +521,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
           <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/60">
               <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <Target className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Termômetro de Tolerância WFM (Meta ≤ 3.00%)
                 </span>
@@ -515,7 +529,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
                   isOperatorWithinMeta
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                    ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/80 dark:text-teal-300'
                     : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
                 }`}>
                   {isOperatorWithinMeta ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima do Teto (> 3%)'}
@@ -531,7 +545,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 </span>
                 <span className="text-slate-500 font-medium">
                   {minutesMargin >= 0 ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                    <span className="text-[#006772] dark:text-[#2dd4bf] font-bold">
                       +{minutesMargin} min de margem livre
                     </span>
                   ) : (
@@ -547,9 +561,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 <div
                   className={`h-full transition-all duration-500 rounded-full ${
                     operatorStats.absMensal === 0
-                      ? 'bg-emerald-500'
+                      ? 'bg-[#006772]'
                       : operatorStats.absMensal <= targetAbsThreshold
-                      ? 'bg-emerald-600'
+                      ? 'bg-[#006772]'
                       : 'bg-rose-500'
                   }`}
                   style={{
@@ -561,7 +575,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               {/* Scale reference labels */}
               <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1">
                 <span>0.00%</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400">Meta: 3.00%</span>
+                <span className="font-bold text-[#006772] dark:text-[#2dd4bf]">Meta: 3.00%</span>
                 <span>6.00%+</span>
               </div>
             </div>
@@ -572,11 +586,11 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 Distribuição:
               </span>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#006772] shrink-0"></span>
                 <span>OK: <strong>{operatorStats.diasTrabalhados}d</strong> ({pctOk}%)</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#d89627] shrink-0"></span>
                 <span>Atrasos: <strong>{operatorStats.diasAtraso}d</strong></span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
@@ -598,7 +612,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   onSave();
                   showToast(`Apontamentos de ${operator.nome} salvos na base com sucesso!`);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 rounded-lg transition-colors shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Salvar Apontamentos</span>
@@ -607,9 +621,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               <button
                 onClick={handleBatchFillWorkingDaysOk}
                 title="Define todos os dias úteis como OK sem alterar as folgas"
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg transition-colors cursor-pointer"
               >
-                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <Zap className="w-3.5 h-3.5 text-[#006772]" />
                 <span>Todos Dias Úteis OK</span>
               </button>
 
@@ -619,7 +633,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   showToast('Escala 6x1 (4 folgas flexíveis em FDS) reaplicada aos 31 dias.');
                 }}
                 title="Aplica 4 folgas flexíveis em finais de semana (escala 6x1)"
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
               >
                 <CalendarCheck className="w-3.5 h-3.5 text-slate-500" />
                 <span className="hidden sm:inline">Escala 6x1 (4 Folgas FDS)</span>
@@ -634,7 +648,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                     showToast('Mês do operador reiniciado.');
                   }
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
               >
                 <Eraser className="w-3.5 h-3.5" />
                 <span>Limpar Mês</span>
@@ -644,14 +658,14 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
         </div>
 
-        {/* Right Col: Coluna F (ABS SUPERVISOR - Dynamic Weighted Formula) */}
-        <div className="bg-emerald-900 text-white rounded-xl p-5 shadow-sm flex flex-col justify-between border border-emerald-800/80">
+        {/* Right Col: Coluna F (ABS SUPERVISOR - JSD Telecom Deep Teal gradient card) */}
+        <div className="bg-gradient-to-br from-[#006772] via-[#005059] to-[#00383f] text-white rounded-xl p-5 shadow-sm flex flex-col justify-between border border-[#004750]">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-200">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-teal-200">
                 Coluna F: ABS SUPERVISOR
               </span>
-              <span className="text-[10px] bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded font-mono">
+              <span className="text-[10px] bg-white/10 text-teal-100 px-2 py-0.5 rounded font-mono border border-white/15">
                 SUMIF Ponderado
               </span>
             </div>
@@ -659,27 +673,27 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             <h3 className="text-base font-bold text-white mt-1">
               {operator.supervisor}
             </h3>
-            <p className="text-xs text-emerald-200/80 mt-0.5">
+            <p className="text-xs text-teal-200/80 mt-0.5">
               Equipe de {supervisorStats?.totalOperadores || 0} operadores vinculados
             </p>
 
-            <div className="mt-4 pt-4 border-t border-emerald-800/70">
+            <div className="mt-4 pt-4 border-t border-white/15">
               <div className="flex items-baseline justify-between">
-                <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-emerald-100">
+                <div className="text-3xl font-extrabold font-mono tabular-nums tracking-tight text-white">
                   {formatPercent(supervisorStats?.absPercent || 0)}
                 </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-200">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/20 border border-white/20 text-teal-200">
                   Meta: ≤ 3.00%
                 </span>
               </div>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-[11px] text-emerald-300 font-medium">
+                <span className="text-[11px] text-teal-200 font-medium">
                   Índice Consolidado da Supervisão
                 </span>
                 <span className={`text-[10px] font-bold ${
                   (supervisorStats?.absPercent || 0) <= 0.03
-                    ? 'text-emerald-300'
-                    : 'text-amber-300'
+                    ? 'text-teal-200'
+                    : 'text-[#d89627]'
                 }`}>
                   {(supervisorStats?.absPercent || 0) <= 0.03 ? '✓ Dentro da Meta (≤ 3%)' : '⚠ Acima de 3.00%'}
                 </span>
@@ -687,23 +701,23 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 pt-3 border-t border-emerald-800/60 grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-emerald-950/40 p-2 rounded-lg">
-              <span className="text-[10px] text-emerald-300 block uppercase">Min. Perdidos</span>
-              <span className="font-bold font-mono tabular-nums text-emerald-100">
+          <div className="mt-6 pt-3 border-t border-white/15 grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-[#002e33]/60 p-2.5 rounded-lg border border-white/10">
+              <span className="text-[10px] text-teal-200 block uppercase">Min. Perdidos</span>
+              <span className="font-bold font-mono tabular-nums text-white">
                 {(supervisorStats?.minutosPerdidos || 0).toLocaleString('pt-BR')} min
               </span>
-              <span className="text-[10px] text-emerald-400 block">
+              <span className="text-[10px] text-teal-300 block">
                 ≈ {formatMinutesToHours(supervisorStats?.minutosPerdidos || 0)}
               </span>
             </div>
 
-            <div className="bg-emerald-950/40 p-2 rounded-lg">
-              <span className="text-[10px] text-emerald-300 block uppercase">Min. Escalados</span>
-              <span className="font-bold font-mono tabular-nums text-emerald-100">
+            <div className="bg-[#002e33]/60 p-2.5 rounded-lg border border-white/10">
+              <span className="text-[10px] text-teal-200 block uppercase">Min. Escalados</span>
+              <span className="font-bold font-mono tabular-nums text-white">
                 {(supervisorStats?.minutosEscalados || 0).toLocaleString('pt-BR')} min
               </span>
-              <span className="text-[10px] text-emerald-400 block">
+              <span className="text-[10px] text-teal-300 block">
                 ≈ {formatMinutesToHours(supervisorStats?.minutosEscalados || 0)}
               </span>
             </div>
@@ -716,7 +730,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <CalendarDays className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
               Visão Mensal em 31 Dias (Clique no dia para rolar e editar)
             </span>
@@ -734,8 +748,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             const isWeekend = weekdayName === 'Dom' || weekdayName === 'Sáb';
 
             // Status color dot
-            let dotColor = 'bg-emerald-500';
-            if (d.status === 'dia ok/atraso') dotColor = 'bg-amber-500';
+            let dotColor = 'bg-[#006772]';
+            if (d.status === 'dia ok/atraso') dotColor = 'bg-[#d89627]';
             if (d.status === 'falta') dotColor = 'bg-rose-500';
             if (d.status === 'atestado') dotColor = 'bg-blue-500';
             if (d.status === 'suspensão') dotColor = 'bg-purple-500';
@@ -749,7 +763,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 title={`Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`}
                 className={`flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
                   focusedDay === d.dia
-                    ? 'ring-2 ring-emerald-500 bg-emerald-100 dark:bg-emerald-950 border-emerald-500 shadow-md'
+                    ? 'ring-2 ring-[#006772] bg-teal-100 dark:bg-teal-950 border-[#006772] shadow-md'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700'
                 }`}
               >
@@ -792,7 +806,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               onClick={() => setDayFilter('todos')}
               className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
                 dayFilter === 'todos'
-                  ? 'bg-emerald-800 text-white shadow-2xs'
+                  ? 'bg-[#006772] text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
@@ -848,18 +862,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         {/* Scrollable table container */}
         <div className="overflow-x-auto max-h-[640px]">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-20 bg-emerald-900 text-white font-bold text-[11px] tracking-wide">
+            <thead className="sticky top-0 z-20 bg-[#005059] text-white font-bold text-[11px] tracking-wide">
               <tr>
-                <th className="py-2.5 px-4 w-24 text-center border-r border-emerald-800">
+                <th className="py-2.5 px-4 w-24 text-center border-r border-[#00383f]">
                   dias (A)
                 </th>
-                <th className="py-2.5 px-4 w-48 text-center border-r border-emerald-800">
+                <th className="py-2.5 px-4 w-48 text-center border-r border-[#00383f]">
                   status (B)
                 </th>
-                <th className="py-2.5 px-4 w-44 text-center border-r border-emerald-800">
+                <th className="py-2.5 px-4 w-44 text-center border-r border-[#00383f]">
                   atraso em minutos (C)
                 </th>
-                <th className="py-2.5 px-4 w-36 text-center border-r border-emerald-800">
+                <th className="py-2.5 px-4 w-36 text-center border-r border-[#00383f]">
                   ABS diario (D)
                 </th>
                 <th className="py-2.5 px-4 text-center">
@@ -882,7 +896,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                     key={d.dia}
                     className={`transition-all duration-300 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
                       isTargetRow
-                        ? 'bg-emerald-100/80 dark:bg-emerald-950/70 ring-2 ring-emerald-500'
+                        ? 'bg-teal-100/80 dark:bg-teal-950/70 ring-2 ring-[#006772]'
                         : d.status === 'folga'
                         ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-80'
                         : d.status === 'falta'
@@ -951,7 +965,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleAtrasoChange(d.dia, d.atraso + 15)}
-                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded"
+                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
                               title="+15 minutos"
                             >
                               +15
@@ -959,7 +973,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleAtrasoChange(d.dia, d.atraso + 30)}
-                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded"
+                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
                               title="+30 minutos"
                             >
                               +30
@@ -976,7 +990,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           — (folga)
                         </span>
                       ) : dailyAbs === 0 ? (
-                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                        <span className="text-[#006772] dark:text-[#2dd4bf] font-medium">
                           0.00%
                         </span>
                       ) : dailyAbs === 1 ? (
@@ -996,10 +1010,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'dia ok', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'dia ok'
-                              ? 'bg-emerald-700 text-white font-bold'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
+                              ? 'bg-[#006772] text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-teal-100 dark:hover:bg-teal-950/60'
                           }`}
                         >
                           OK
@@ -1008,7 +1022,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'folga', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'folga'
                               ? 'bg-slate-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1020,7 +1034,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'falta', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'falta'
                               ? 'bg-rose-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-rose-100 dark:hover:bg-rose-950/60'
@@ -1032,7 +1046,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'atestado', 0)}
-                          className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'atestado'
                               ? 'bg-blue-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-950/60'
@@ -1051,46 +1065,46 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         </div>
 
         {/* Consolidado Footer (Matching Sheets Rows 38 to 40) */}
-        <div className="bg-emerald-950 text-white p-5 border-t border-emerald-900 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+        <div className="bg-[#00383f] text-white p-5 border-t border-[#002e33] grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
           
           {/* Row 39: Minutos Perdidos */}
-          <div className="bg-emerald-900/60 p-3.5 rounded-lg border border-emerald-800/80">
-            <span className="text-[11px] font-bold text-emerald-300 block uppercase tracking-wide">
+          <div className="bg-[#002e33]/70 p-3.5 rounded-lg border border-[#004e57]">
+            <span className="text-[11px] font-bold text-teal-200 block uppercase tracking-wide">
               Linha 39: Minutos Perdidos (Mês)
             </span>
             <div className="text-xl font-bold font-mono tabular-nums text-white mt-1">
               {operatorStats.minutosPerdidos.toLocaleString('pt-BR')} min
             </div>
-            <span className="text-xs text-emerald-300/80 mt-0.5 block">
+            <span className="text-xs text-teal-300/80 mt-0.5 block">
               Equivalente a {formatMinutesToHours(operatorStats.minutosPerdidos)}
             </span>
           </div>
 
           {/* Row 40: Minutos Escalados */}
-          <div className="bg-emerald-900/60 p-3.5 rounded-lg border border-emerald-800/80">
-            <span className="text-[11px] font-bold text-emerald-300 block uppercase tracking-wide">
+          <div className="bg-[#002e33]/70 p-3.5 rounded-lg border border-[#004e57]">
+            <span className="text-[11px] font-bold text-teal-200 block uppercase tracking-wide">
               Linha 40: Minutos Escalados (Mês)
             </span>
             <div className="text-xl font-bold font-mono tabular-nums text-white mt-1">
               {operatorStats.minutosEscalados.toLocaleString('pt-BR')} min
             </div>
-            <span className="text-[11px] text-emerald-300/80 mt-0.5 block font-mono">
+            <span className="text-[11px] text-teal-300/80 mt-0.5 block font-mono">
               = (COUNTIF(&lt;&gt;folga) - COUNTIF("")) * {operator.jornadaMin}
             </span>
-            <span className="text-[11px] text-emerald-400 mt-0.5 block">
+            <span className="text-[11px] text-teal-300 mt-0.5 block">
               {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias úteis ({operatorStats.diasFolga} folgas flexíveis deduzidas)
             </span>
           </div>
 
           {/* Row 38: ABS CONSOLIDADO (D39 / D40) */}
-          <div className="bg-emerald-800 p-3.5 rounded-lg border border-emerald-600 text-center">
-            <span className="text-[11px] font-bold text-emerald-200 block uppercase tracking-wide">
+          <div className="bg-[#006772] p-3.5 rounded-lg border border-[#2dd4bf]/40 text-center shadow-sm">
+            <span className="text-[11px] font-bold text-teal-100 block uppercase tracking-wide">
               Linha 38: ABS CONSOLIDADO (Mês)
             </span>
             <div className="text-2xl font-extrabold font-mono tabular-nums text-white mt-1">
               {formatPercent(operatorStats.absMensal)}
             </div>
-            <span className="text-[11px] text-emerald-200 mt-0.5 block">
+            <span className="text-[11px] text-teal-100 mt-0.5 block">
               = Minutos Perdidos / Minutos Escalados
             </span>
           </div>
