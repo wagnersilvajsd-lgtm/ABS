@@ -46,7 +46,9 @@ import {
   Zap,
   Target,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  ClipboardList,
+  ArrowRightLeft
 } from 'lucide-react';
 
 interface AbsOperatorViewProps {
@@ -59,6 +61,9 @@ interface AbsOperatorViewProps {
   onResetOperatorMonth: (operatorId: string) => void;
   onApply6x1Schedule: (operatorId: string, mode?: WeekendFolgaMode) => void;
   selectedMonthKey: string;
+  onOpenProfile?: (operator: Operator) => void;
+  onOpenTransfer?: (operator: Operator) => void;
+  operatorHistoryCount?: number;
 }
 
 export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
@@ -70,7 +75,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   onSave,
   onResetOperatorMonth,
   onApply6x1Schedule,
-  selectedMonthKey
+  selectedMonthKey,
+  onOpenProfile,
+  onOpenTransfer,
+  operatorHistoryCount = 0
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const monthLabel = formatMonthLabel(selectedMonthKey);
@@ -357,9 +365,36 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                   Escala 6x1
                 </span>
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-                {operator.nome}
-              </h2>
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {operator.nome}
+                </h2>
+                {onOpenProfile && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenProfile(operator)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    <span>Perfil &amp; Escala Pedagógica</span>
+                    {operatorHistoryCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[10px] font-mono">
+                        {operatorHistoryCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {onOpenTransfer && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenTransfer(operator)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 border border-teal-200 dark:border-teal-800 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <span>Transferir Supervisor</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Quick Navigation Between Operators + Keyboard Hints */}

@@ -34,9 +34,55 @@ export interface Operator {
   operacaoId?: string; // id da operação vinculada (ex: 'caern')
 }
 
+export type PedagogicalMeasureType =
+  | 'feedback'
+  | 'advertencia_verbal'
+  | 'advertencia_escrita'
+  | 'suspensao';
+
+export type HistoryEventCategory = 'pedagogico' | 'transferencia' | 'horario';
+
+export interface OperatorHistoryEvent {
+  id: string;
+  operatorId: string;
+  category: HistoryEventCategory;
+  measureType?: PedagogicalMeasureType;
+  reason?: string;
+  description: string;
+  appliedBy: string;
+  dateTime: string; // ISO timestamp
+  suspensionDays?: number;
+  fromSupervisor?: string;
+  toSupervisor?: string;
+  fromSchedule?: string;
+  toSchedule?: string;
+  transferStatus?: 'pendente' | 'aceita' | 'recusada';
+}
+
+export interface TransferRequest {
+  id: string;
+  operatorId: string;
+  operatorName: string;
+  operacaoId: string;
+  fromSupervisor: string;
+  toSupervisor: string;
+  fromEntrada: string;
+  fromSaida: string;
+  fromJornadaMin: number;
+  toEntrada: string;
+  toSaida: string;
+  toJornadaMin: number;
+  requestedAt: string; // ISO timestamp
+  requestedBy: string;
+  reason: string;
+  status: 'pendente' | 'aceita' | 'recusada';
+  respondedAt?: string;
+  responseNote?: string;
+}
+
 export interface OperatorMonthlyData {
   operatorId: string;
-  dias: DayRecord[]; // 31 days
+  dias: DayRecord[]; // Exact days of month (28, 29, 30, or 31)
 }
 
 export interface OperatorStats {

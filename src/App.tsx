@@ -1,10 +1,13 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Operator, OperatorMonthlyData, DayRecord, StatusType, Operation } from './types/abs';
+import {
+  Operator,
+  OperatorMonthlyData,
+  DayRecord,
+  StatusType,
+  Operation,
+  OperatorHistoryEvent,
+  TransferRequest
+} from './types/abs';
 import {
   loadStoredOperations,
   saveStoredOperations,
@@ -18,6 +21,12 @@ import {
   saveStoredMonthlyDataByMonth,
   loadStoredSelectedOperatorId,
   saveStoredSelectedOperatorId,
+  loadStoredOperatorHistory,
+  saveStoredOperatorHistory,
+  loadStoredTransfers,
+  saveStoredTransfers,
+  loadStoredActiveSupervisorView,
+  saveStoredActiveSupervisorView,
   resetToDefaults
 } from './utils/storage';
 import {
@@ -36,6 +45,11 @@ import { BaseApontamentosView } from './components/BaseApontamentosView';
 import { WfmDashboardView } from './components/WfmDashboardView';
 import { ExportImportModal } from './components/ExportImportModal';
 import { AddOperatorModal } from './components/AddOperatorModal';
+import { OperatorProfileModal } from './components/OperatorProfileModal';
+import { TransferOperatorModal } from './components/TransferOperatorModal';
+import { TransferInboxModal } from './components/TransferInboxModal';
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
+import { BellRing, CheckCircle2, X, RotateCcw } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -85,6 +99,40 @@ export default function App() {
     loadStoredSelectedOperatorId()
   );
 
+  // Operator Profile History & Supervisor Transfers
+  const [operatorHistory, setOperatorHistory] = useState<Record<string, OperatorHistoryEvent[]>>(
+    () => loadStoredOperatorHistory()
+  );
+  const [transferRequests, setTransferRequests] = useState<TransferRequest[]>(() =>
+    loadStoredTransfers()
+  );
+  const [activeSupervisorView, setActiveSupervisorView] = useState<string>(() =>
+    loadStoredActiveSupervisorView()
+  );
+
+  // Modal & Toast states
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
+  const [profileOperatorId, setProfileOperatorId] = useState<string | null>(null);
+  const [transferOperator, setTransferOperator] = useState<Operator | null>(null);
+  const [deleteOperator, setDeleteOperator] = useState<Operator | null>(null);
+  const [isTransferInboxOpen, setIsTransferInboxOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [actionToast, setActionToast] = useState<{
+    message: string;
+    targetSupervisor?: string;
+  } | null>(null);
+
+  const showActionToast = (message: string, targetSupervisor?: string) => {
+    setActionToast({ message, targetSupervisor });
+  };
+
+  useEffect(() => {
+    if (!actionToast) return;
+    const timer = setTimeout(() => setActionToast(null), 7000);
+    return () => clearTimeout(timer);
+  }, [actionToast]);
+
   // Derived monthlyData for the currently selected month, guaranteed normalized to exact daysInMonth (28/29/30/31)
   const monthlyData = useMemo(() => {
     const { year, month } = parseMonthKey(selectedMonthKey);
@@ -128,10 +176,6 @@ export default function App() {
     return operators.filter(op => (op.operacaoId || 'caern') === activeId);
   }, [operators, activeOperation]);
 
-  // Modal states
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
-
   // Dynamic unique supervisors list for the active operation
   const currentSupervisors = useMemo(() => {
     const set = new Set<string>();
@@ -143,6 +187,51 @@ export default function App() {
     });
     return Array.from(set);
   }, [activeOperation, activeOperationOperators]);
+
+  // History event counts per operator
+  const operatorHistoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.keys(operatorHistory).forEach(opId => {
+      counts[opId] = (operatorHistory[opId] || []).length;
+    });
+    return counts;
+  }, [operatorHistory]);
+
+  // Pending transfers filtered by active supervisor view (or all pending if gestor)
+  const visiblePendingTransfers = useMemo(() => {
+    const pending = transferRequests.filter(t => t.status === 'pendente');
+    if (activeSupervisorView === 'gestor') {
+      return pending;
+    }
+    return pending.filter(
+      t => t.toSupervisor.toLowerCase().trim() === activeSupervisorView.toLowerCase().trim()
+    );
+  }, [transferRequests, activeSupervisorView]);
+
+  // Auto-open informative pop-up when the receiving supervisor enters their session view
+  useEffect(() => {
+    if (activeSupervisorView !== 'gestor') {
+      const incoming = transferRequests.filter(
+        t =>
+          t.status === 'pendente' &&
+          t.toSupervisor.toLowerCase().trim() === activeSupervisorView.toLowerCase().trim()
+      );
+      if (incoming.length > 0) {
+        setIsTransferInboxOpen(true);
+      }
+    }
+  }, [activeSupervisorView, transferRequests]);
+
+  const handleChangeSupervisorView = (sup: string) => {
+    setActiveSupervisorView(sup);
+    saveStoredActiveSupervisorView(sup);
+  };
+
+  // Profile operator object
+  const profileOperator = useMemo(() => {
+    if (!profileOperatorId) return null;
+    return operators.find(o => o.id === profileOperatorId) || null;
+  }, [profileOperatorId, operators]);
 
   // Handler to add a new operator assigned to a supervisor
   const handleAddOperator = (newOperator: Operator, newMonthlyData: OperatorMonthlyData) => {
@@ -162,6 +251,258 @@ export default function App() {
       return updated;
     });
     setSelectedOperatorId(newOperator.id);
+  };
+
+  // Delete operator permanently (operators list, monthly data, history, pending transfers)
+  const handleConfirmDeleteOperator = (operatorId: string) => {
+    const deletedOp = operators.find(o => o.id === operatorId);
+
+    const remainingOperators = operators.filter(o => o.id !== operatorId);
+    setOperators(remainingOperators);
+    saveStoredOperators(remainingOperators);
+
+    setMonthlyDataByMonth(prev => {
+      const next: Record<string, Record<string, OperatorMonthlyData>> = {};
+      Object.keys(prev).forEach(mKey => {
+        const monthClone = { ...prev[mKey] };
+        delete monthClone[operatorId];
+        next[mKey] = monthClone;
+      });
+      saveStoredMonthlyDataByMonth(next);
+      return next;
+    });
+
+    setOperatorHistory(prev => {
+      const next = { ...prev };
+      delete next[operatorId];
+      saveStoredOperatorHistory(next);
+      return next;
+    });
+
+    setTransferRequests(prev => {
+      const next = prev.filter(t => t.operatorId !== operatorId);
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    if (profileOperatorId === operatorId) {
+      setProfileOperatorId(null);
+    }
+
+    if (selectedOperatorId === operatorId) {
+      const activeId = activeOperation?.id || 'caern';
+      const fallback = remainingOperators.find(o => (o.operacaoId || 'caern') === activeId) || remainingOperators[0];
+      const nextId = fallback?.id || '';
+      setSelectedOperatorId(nextId);
+      saveStoredSelectedOperatorId(nextId);
+    }
+
+    if (deletedOp) {
+      showActionToast(`Operador ${deletedOp.nome} excluído da operação.`);
+    }
+  };
+
+  // Pedagogical & History events handlers
+  const handleAddHistoryEvent = (eventData: Omit<OperatorHistoryEvent, 'id'>) => {
+    const newEvent: OperatorHistoryEvent = {
+      ...eventData,
+      id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    };
+    setOperatorHistory(prev => {
+      const list = prev[eventData.operatorId] ? [...prev[eventData.operatorId]] : [];
+      list.unshift(newEvent);
+      const next = {
+        ...prev,
+        [eventData.operatorId]: list
+      };
+      saveStoredOperatorHistory(next);
+      return next;
+    });
+    showActionToast('Registro salvo no histórico do perfil do colaborador.');
+  };
+
+  const handleDeleteHistoryEvent = (operatorId: string, eventId: string) => {
+    setOperatorHistory(prev => {
+      const list = (prev[operatorId] || []).filter(ev => ev.id !== eventId);
+      const next = {
+        ...prev,
+        [operatorId]: list
+      };
+      saveStoredOperatorHistory(next);
+      return next;
+    });
+  };
+
+  // Transfer submission handler (supervisor -> supervisor with schedule & timestamp)
+  const handleSubmitTransfer = (payload: {
+    operator: Operator;
+    toSupervisor: string;
+    toEntrada: string;
+    toSaida: string;
+    toJornadaMin: number;
+    reason: string;
+  }) => {
+    const { operator: op, toSupervisor, toEntrada, toSaida, toJornadaMin, reason } = payload;
+    const nowIso = new Date().toISOString();
+
+    const newTransfer: TransferRequest = {
+      id: `transf-${Date.now()}`,
+      operatorId: op.id,
+      operatorName: op.nome,
+      operacaoId: op.operacaoId || activeOperation?.id || 'caern',
+      fromSupervisor: op.supervisor,
+      toSupervisor,
+      fromEntrada: op.entrada,
+      fromSaida: op.saida,
+      fromJornadaMin: op.jornadaMin,
+      toEntrada,
+      toSaida,
+      toJornadaMin,
+      requestedAt: nowIso,
+      requestedBy: activeSupervisorView === 'gestor' ? op.supervisor : activeSupervisorView,
+      reason,
+      status: 'pendente'
+    };
+
+    setTransferRequests(prev => {
+      const next = [newTransfer, ...prev];
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    // Log request in operator's profile history
+    handleAddHistoryEvent({
+      operatorId: op.id,
+      category: 'transferencia',
+      reason: 'Solicitação de Transferência entre Supervisores',
+      description: `Transferência solicitada de ${op.supervisor} para ${toSupervisor}. Motivo: ${reason}`,
+      appliedBy: activeSupervisorView === 'gestor' ? op.supervisor : activeSupervisorView,
+      dateTime: nowIso,
+      fromSupervisor: op.supervisor,
+      toSupervisor,
+      fromSchedule: `${op.entrada} - ${op.saida}`,
+      toSchedule: `${toEntrada} - ${toSaida}`,
+      transferStatus: 'pendente'
+    });
+
+    showActionToast(
+      `Transferência de ${op.nome} enviada para ${toSupervisor}!`,
+      toSupervisor
+    );
+  };
+
+  // Accept incoming transfer
+  const handleAcceptTransfer = (transferId: string, responseNote: string) => {
+    const req = transferRequests.find(t => t.id === transferId);
+    if (!req) return;
+
+    const nowIso = new Date().toISOString();
+
+    // Update transfer status
+    setTransferRequests(prev => {
+      const next = prev.map(t =>
+        t.id === transferId
+          ? {
+              ...t,
+              status: 'aceita' as const,
+              respondedAt: nowIso,
+              responseNote
+            }
+          : t
+      );
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    // Update operator supervisor & schedule
+    setOperators(prev => {
+      const next = prev.map(op =>
+        op.id === req.operatorId
+          ? {
+              ...op,
+              supervisor: req.toSupervisor,
+              entrada: req.toEntrada,
+              saida: req.toSaida,
+              jornadaMin: req.toJornadaMin
+            }
+          : op
+      );
+      saveStoredOperators(next);
+      return next;
+    });
+
+    // Ensure destination supervisor is registered in the operation's supervisors list
+    setOperations(prev => {
+      const next = prev.map(o => {
+        if (o.id === req.operacaoId) {
+          const sups = o.supervisores ? [...o.supervisores] : [];
+          if (!sups.some(s => s.toLowerCase() === req.toSupervisor.toLowerCase())) {
+            sups.push(req.toSupervisor);
+          }
+          return { ...o, supervisores: sups };
+        }
+        return o;
+      });
+      saveStoredOperations(next);
+      return next;
+    });
+
+    // Record acceptance in operator history
+    handleAddHistoryEvent({
+      operatorId: req.operatorId,
+      category: 'transferencia',
+      reason: 'Transferência Aceita pelo Supervisor Destino',
+      description: `Transferência aceita por ${req.toSupervisor}.${responseNote ? ` Observação: ${responseNote}` : ''}`,
+      appliedBy: req.toSupervisor,
+      dateTime: nowIso,
+      fromSupervisor: req.fromSupervisor,
+      toSupervisor: req.toSupervisor,
+      fromSchedule: `${req.fromEntrada} - ${req.fromSaida}`,
+      toSchedule: `${req.toEntrada} - ${req.toSaida}`,
+      transferStatus: 'aceita'
+    });
+
+    showActionToast(`Transferência de ${req.operatorName} aceita! Novo supervisor: ${req.toSupervisor}.`);
+  };
+
+  // Reject incoming transfer
+  const handleRejectTransfer = (transferId: string, responseNote: string) => {
+    const req = transferRequests.find(t => t.id === transferId);
+    if (!req) return;
+
+    const nowIso = new Date().toISOString();
+
+    setTransferRequests(prev => {
+      const next = prev.map(t =>
+        t.id === transferId
+          ? {
+              ...t,
+              status: 'recusada' as const,
+              respondedAt: nowIso,
+              responseNote
+            }
+          : t
+      );
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    // Record rejection in operator history
+    handleAddHistoryEvent({
+      operatorId: req.operatorId,
+      category: 'transferencia',
+      reason: 'Transferência Recusada pelo Supervisor Destino',
+      description: `Transferência para ${req.toSupervisor} foi recusada. Colaborador mantido com ${req.fromSupervisor}.${responseNote ? ` Motivo da recusa: ${responseNote}` : ''}`,
+      appliedBy: req.toSupervisor,
+      dateTime: nowIso,
+      fromSupervisor: req.fromSupervisor,
+      toSupervisor: req.toSupervisor,
+      fromSchedule: `${req.fromEntrada} - ${req.fromSaida}`,
+      toSchedule: `${req.toEntrada} - ${req.toSaida}`,
+      transferStatus: 'recusada'
+    });
+
+    showActionToast(`Transferência de ${req.operatorName} foi recusada.`);
   };
 
   // Select an operator and persist choice
@@ -291,26 +632,27 @@ export default function App() {
   };
 
   // Restore factory initial 44 operators and dataset
-  const handleResetDefaults = () => {
-    if (
-      window.confirm(
-        'Tem certeza que deseja restaurar a estrutura inicial com os 44 operadores originais da Operação CAERN? Todas as edições manuais serão redefinidas para o padrão inicial.'
-      )
-    ) {
-      const reset = resetToDefaults();
-      setOperations(reset.operations);
-      setOperators(reset.operators);
-      setSelectedMonthKey(reset.selectedMonthKey);
-      setMonthlyDataByMonth(reset.monthlyDataByMonth);
-      setSelectedOperationId(reset.operations[0].id);
-      setSelectedOperatorId(reset.operators[0].id);
-    }
+  const handleConfirmResetDefaults = () => {
+    const reset = resetToDefaults();
+    setOperations(reset.operations);
+    setOperators(reset.operators);
+    setSelectedMonthKey(reset.selectedMonthKey);
+    setMonthlyDataByMonth(reset.monthlyDataByMonth);
+    setOperatorHistory(reset.operatorHistory);
+    setTransferRequests(reset.transfers);
+    setActiveSupervisorView('gestor');
+    setSelectedOperationId(reset.operations[0].id);
+    setSelectedOperatorId(reset.operators[0].id);
+    setIsResetConfirmOpen(false);
+    showActionToast('Base restaurada para os 44 operadores originais da CAERN.');
   };
 
   // Handle external JSON import
   const handleImportData = (
     newOperators: Operator[],
-    newMonthlyData: Record<string, OperatorMonthlyData>
+    newMonthlyData: Record<string, OperatorMonthlyData>,
+    importedHistory?: Record<string, OperatorHistoryEvent[]>,
+    importedTransfers?: TransferRequest[]
   ) => {
     setOperators(newOperators);
     saveStoredOperators(newOperators);
@@ -322,6 +664,14 @@ export default function App() {
       saveStoredMonthlyDataByMonth(updated);
       return updated;
     });
+    if (importedHistory) {
+      setOperatorHistory(importedHistory);
+      saveStoredOperatorHistory(importedHistory);
+    }
+    if (importedTransfers) {
+      setTransferRequests(importedTransfers);
+      saveStoredTransfers(importedTransfers);
+    }
     if (newOperators.length > 0) {
       setSelectedOperatorId(newOperators[0].id);
     }
@@ -341,13 +691,51 @@ export default function App() {
         setActiveTab={setActiveTab}
         isDark={isDark}
         setIsDark={setIsDark}
-        onResetDefaults={handleResetDefaults}
+        onResetDefaults={() => setIsResetConfirmOpen(true)}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         absGeral={globalSummary.absGeral}
         activeOperationName={activeOperation?.nome}
         selectedMonthKey={selectedMonthKey}
         onSelectMonthKey={handleSelectMonthKey}
+        supervisorsList={currentSupervisors}
+        activeSupervisorView={activeSupervisorView}
+        onChangeSupervisorView={handleChangeSupervisorView}
+        pendingTransfersCount={visiblePendingTransfers.length}
+        onOpenTransferInbox={() => setIsTransferInboxOpen(true)}
       />
+
+      {/* Action / Transfer Toast */}
+      {actionToast && (
+        <div className="fixed bottom-5 right-5 z-50 max-w-md bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-[#006772] flex items-center gap-3">
+          <CheckCircle2 className="w-4 h-4 text-[#2dd4bf] shrink-0" />
+          <div className="flex-1 text-xs">
+            <p className="font-semibold">{actionToast.message}</p>
+            {actionToast.targetSupervisor && (
+              <button
+                type="button"
+                onClick={() => {
+                  const sup = actionToast.targetSupervisor!;
+                  setActiveSupervisorView(sup);
+                  saveStoredActiveSupervisorView(sup);
+                  setIsTransferInboxOpen(true);
+                  setActionToast(null);
+                }}
+                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#d89627] hover:bg-[#b37718] text-white text-[11px] font-bold cursor-pointer"
+              >
+                <BellRing className="w-3 h-3" />
+                <span>Simular Visão de {actionToast.targetSupervisor} (Abrir Pop-up)</span>
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionToast(null)}
+            className="text-slate-400 hover:text-white cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -364,6 +752,10 @@ export default function App() {
             onAddSupervisorToOperation={handleAddSupervisorToOperation}
             onAddOperatorToOperation={handleAddOperatorToOperation}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
+            onOpenProfile={(op) => setProfileOperatorId(op.id)}
+            onOpenTransfer={(op) => setTransferOperator(op)}
+            onOpenDelete={(op) => setDeleteOperator(op)}
+            operatorHistoryCounts={operatorHistoryCounts}
           />
         )}
         
@@ -378,6 +770,9 @@ export default function App() {
             onResetOperatorMonth={handleResetOperatorMonth}
             onApply6x1Schedule={handleApply6x1Schedule}
             selectedMonthKey={selectedMonthKey}
+            onOpenProfile={(op) => setProfileOperatorId(op.id)}
+            onOpenTransfer={(op) => setTransferOperator(op)}
+            operatorHistoryCount={operatorHistoryCounts[selectedOperatorId] || 0}
           />
         )}
 
@@ -387,6 +782,10 @@ export default function App() {
             monthlyData={monthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             onAddOperator={() => setIsAddOperatorModalOpen(true)}
+            onOpenProfile={(op) => setProfileOperatorId(op.id)}
+            onOpenTransfer={(op) => setTransferOperator(op)}
+            onOpenDelete={(op) => setDeleteOperator(op)}
+            operatorHistoryCounts={operatorHistoryCounts}
           />
         )}
 
@@ -421,6 +820,88 @@ export default function App() {
         selectedMonthKey={selectedMonthKey}
       />
 
+      {/* Operator Profile & Pedagogical Scale Modal */}
+      <OperatorProfileModal
+        isOpen={Boolean(profileOperator)}
+        onClose={() => setProfileOperatorId(null)}
+        operator={profileOperator}
+        operationName={activeOperation?.nome || 'Operação CAERN'}
+        historyEvents={profileOperator ? operatorHistory[profileOperator.id] || [] : []}
+        onAddHistoryEvent={handleAddHistoryEvent}
+        onDeleteHistoryEvent={handleDeleteHistoryEvent}
+        onOpenTransfer={(op) => setTransferOperator(op)}
+        onOpenDelete={(op) => setDeleteOperator(op)}
+      />
+
+      {/* Supervisor-to-Supervisor Transfer Request Modal */}
+      <TransferOperatorModal
+        isOpen={Boolean(transferOperator)}
+        onClose={() => setTransferOperator(null)}
+        operator={transferOperator}
+        availableSupervisors={currentSupervisors}
+        onSubmitTransfer={handleSubmitTransfer}
+      />
+
+      {/* Receiving Supervisor Pop-up (Accept / Reject Transfer) */}
+      <TransferInboxModal
+        isOpen={isTransferInboxOpen}
+        onClose={() => setIsTransferInboxOpen(false)}
+        pendingTransfers={visiblePendingTransfers}
+        activeSupervisorView={activeSupervisorView}
+        onAcceptTransfer={handleAcceptTransfer}
+        onRejectTransfer={handleRejectTransfer}
+      />
+
+      {/* Delete Operator Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteOperator)}
+        onClose={() => setDeleteOperator(null)}
+        operator={deleteOperator}
+        onConfirmDelete={handleConfirmDeleteOperator}
+      />
+
+      {/* Reset Defaults Confirmation Modal */}
+      {isResetConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-rose-600" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Restaurar Dados Padrão
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Tem certeza que deseja restaurar a estrutura inicial com os 44 operadores originais da Operação CAERN? Todas as edições manuais, transferências e históricos serão redefinidos.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetDefaults}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer"
+              >
+                Confirmar Restauração
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Export & Import Modal */}
       <ExportImportModal
         isOpen={isExportModalOpen}
@@ -429,6 +910,8 @@ export default function App() {
         monthlyData={monthlyData}
         onImportData={handleImportData}
         selectedMonthKey={selectedMonthKey}
+        operatorHistory={operatorHistory}
+        transferRequests={transferRequests}
       />
 
       {/* Quiet Corporate Footer */}

@@ -11,7 +11,9 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  CalendarDays
+  CalendarDays,
+  BellRing,
+  UserCheck
 } from 'lucide-react';
 import {
   AVAILABLE_YEARS,
@@ -35,6 +37,11 @@ interface NavbarProps {
   activeOperationName?: string;
   selectedMonthKey: string;
   onSelectMonthKey: (monthKey: string) => void;
+  supervisorsList?: string[];
+  activeSupervisorView?: string;
+  onChangeSupervisorView?: (sup: string) => void;
+  pendingTransfersCount?: number;
+  onOpenTransferInbox?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -47,7 +54,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   absGeral,
   activeOperationName = 'Operação CAERN',
   selectedMonthKey,
-  onSelectMonthKey
+  onSelectMonthKey,
+  supervisorsList = [],
+  activeSupervisorView = 'gestor',
+  onChangeSupervisorView,
+  pendingTransfersCount = 0,
+  onOpenTransferInbox
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const { totalDays, saturdays, sundays, completeWeekendsCount } = getMonthWeekends(year, month);
@@ -320,12 +332,63 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Calendar Weekend & Days Info */}
-          <div className="flex items-center gap-2 flex-wrap text-[11px] font-mono">
-            <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+          {/* Supervisor Session Switcher, Transfer Inbox & Calendar Info */}
+          <div className="flex items-center gap-2 flex-wrap text-[11px]">
+            {onChangeSupervisorView && (
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1">
+                <UserCheck className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf] shrink-0" />
+                <span className="text-[10px] font-bold uppercase text-slate-400 hidden sm:inline">
+                  Visão:
+                </span>
+                <select
+                  value={activeSupervisorView}
+                  onChange={(e) => onChangeSupervisorView(e.target.value)}
+                  aria-label="Selecionar visão de supervisor"
+                  className="text-xs font-bold bg-transparent text-slate-800 dark:text-slate-100 focus:outline-hidden cursor-pointer max-w-[170px] truncate"
+                >
+                  <option value="gestor">Gestor Geral WFM</option>
+                  {supervisorsList.map(sup => (
+                    <option key={sup} value={sup}>
+                      Sup: {sup}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {onOpenTransferInbox && (
+              <button
+                type="button"
+                onClick={onOpenTransferInbox}
+                title={
+                  pendingTransfersCount > 0
+                    ? `${pendingTransfersCount} transferência(s) pendente(s) para análise`
+                    : 'Caixa de transferências entre supervisores'
+                }
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                  pendingTransfersCount > 0
+                    ? 'bg-[#d89627] text-white border-[#b37718] shadow-sm animate-pulse'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <BellRing className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Transferências</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    pendingTransfersCount > 0
+                      ? 'bg-white text-[#b37718]'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {pendingTransfersCount}
+                </span>
+              </button>
+            )}
+
+            <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold font-mono">
               {totalDays} dias{month === 2 && totalDays === 29 ? ' (Bissexto)' : ''}
             </span>
-            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-semibold">
+            <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-semibold font-mono">
               {saturdays.length} Sáb · {sundays.length} Dom ({completeWeekendsCount} FDS completos)
             </span>
           </div>

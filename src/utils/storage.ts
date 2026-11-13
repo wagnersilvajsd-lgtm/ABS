@@ -1,4 +1,10 @@
-import { Operator, OperatorMonthlyData, Operation } from '../types/abs';
+import {
+  Operator,
+  OperatorMonthlyData,
+  Operation,
+  OperatorHistoryEvent,
+  TransferRequest
+} from '../types/abs';
 import { INITIAL_OPERATORS, INITIAL_OPERATIONS } from '../data/initialData';
 import {
   getDefaultMonthKey,
@@ -16,6 +22,9 @@ const MONTHLY_DATA_STORAGE_KEY = 'abs_wfm_monthly_data_v1';
 const MONTHLY_DATA_BY_MONTH_KEY = 'abs_wfm_monthly_data_by_month_v2';
 const SELECTED_MONTH_STORAGE_KEY = 'abs_wfm_selected_month_v1';
 const SELECTED_OPERATOR_STORAGE_KEY = 'abs_wfm_selected_op_v1';
+const OPERATOR_HISTORY_STORAGE_KEY = 'abs_wfm_operator_history_v1';
+const TRANSFERS_STORAGE_KEY = 'abs_wfm_transfers_v1';
+const ACTIVE_SUPERVISOR_VIEW_KEY = 'abs_wfm_active_supervisor_view_v1';
 
 export function loadStoredOperations(): Operation[] {
   try {
@@ -167,11 +176,73 @@ export function saveStoredSelectedOperatorId(id: string): void {
   } catch (e) {}
 }
 
+export function loadStoredOperatorHistory(): Record<string, OperatorHistoryEvent[]> {
+  try {
+    const raw = localStorage.getItem(OPERATOR_HISTORY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load operator history', e);
+  }
+  return {};
+}
+
+export function saveStoredOperatorHistory(history: Record<string, OperatorHistoryEvent[]>): void {
+  try {
+    localStorage.setItem(OPERATOR_HISTORY_STORAGE_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Failed to save operator history', e);
+  }
+}
+
+export function loadStoredTransfers(): TransferRequest[] {
+  try {
+    const raw = localStorage.getItem(TRANSFERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load transfers', e);
+  }
+  return [];
+}
+
+export function saveStoredTransfers(transfers: TransferRequest[]): void {
+  try {
+    localStorage.setItem(TRANSFERS_STORAGE_KEY, JSON.stringify(transfers));
+  } catch (e) {
+    console.error('Failed to save transfers', e);
+  }
+}
+
+export function loadStoredActiveSupervisorView(): string {
+  try {
+    const saved = localStorage.getItem(ACTIVE_SUPERVISOR_VIEW_KEY);
+    if (saved) return saved;
+  } catch (e) {}
+  return 'gestor';
+}
+
+export function saveStoredActiveSupervisorView(sup: string): void {
+  try {
+    localStorage.setItem(ACTIVE_SUPERVISOR_VIEW_KEY, sup);
+  } catch (e) {}
+}
+
 export function resetToDefaults(): {
   operations: Operation[];
   operators: Operator[];
   selectedMonthKey: string;
   monthlyDataByMonth: Record<string, Record<string, OperatorMonthlyData>>;
+  operatorHistory: Record<string, OperatorHistoryEvent[]>;
+  transfers: TransferRequest[];
 } {
   localStorage.removeItem(OPERATIONS_STORAGE_KEY);
   localStorage.removeItem(SELECTED_OPERATION_STORAGE_KEY);
@@ -180,6 +251,9 @@ export function resetToDefaults(): {
   localStorage.removeItem(MONTHLY_DATA_BY_MONTH_KEY);
   localStorage.removeItem(SELECTED_MONTH_STORAGE_KEY);
   localStorage.removeItem(SELECTED_OPERATOR_STORAGE_KEY);
+  localStorage.removeItem(OPERATOR_HISTORY_STORAGE_KEY);
+  localStorage.removeItem(TRANSFERS_STORAGE_KEY);
+  localStorage.removeItem(ACTIVE_SUPERVISOR_VIEW_KEY);
 
   const initialOperations = INITIAL_OPERATIONS;
   const initialOps = INITIAL_OPERATORS;
@@ -199,6 +273,8 @@ export function resetToDefaults(): {
     operations: initialOperations,
     operators: initialOps,
     selectedMonthKey: defaultKey,
-    monthlyDataByMonth: initialByMonth
+    monthlyDataByMonth: initialByMonth,
+    operatorHistory: {},
+    transfers: []
   };
 }

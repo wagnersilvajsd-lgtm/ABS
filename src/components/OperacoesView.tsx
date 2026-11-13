@@ -18,7 +18,10 @@ import {
   UserPlus,
   FolderPlus,
   Sparkles,
-  Layers
+  Layers,
+  ClipboardList,
+  ArrowRightLeft,
+  Trash2
 } from 'lucide-react';
 
 interface OperacoesViewProps {
@@ -32,6 +35,10 @@ interface OperacoesViewProps {
   onAddSupervisorToOperation: (operationId: string, supervisorName: string) => void;
   onAddOperatorToOperation: (opData: Omit<Operator, 'id'>) => void;
   onSelectOperatorForAudit: (operatorId: string) => void;
+  onOpenProfile: (operator: Operator) => void;
+  onOpenTransfer: (operator: Operator) => void;
+  onOpenDelete: (operator: Operator) => void;
+  operatorHistoryCounts?: Record<string, number>;
 }
 
 export const OperacoesView: React.FC<OperacoesViewProps> = ({
@@ -44,7 +51,11 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   monthlyData,
   onAddSupervisorToOperation,
   onAddOperatorToOperation,
-  onSelectOperatorForAudit
+  onSelectOperatorForAudit,
+  onOpenProfile,
+  onOpenTransfer,
+  onOpenDelete,
+  operatorHistoryCounts = {}
 }) => {
   // Modal states
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
@@ -586,7 +597,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 <th className="py-3 px-4 text-right">Min. Perdidos</th>
                 <th className="py-3 px-4 text-right">Min. Escalados</th>
                 <th className="py-3 px-4 text-center bg-[#00383f]">ABS Mensal</th>
-                <th className="py-3 px-3 text-center">Ação</th>
+                <th className="py-3 px-3 text-center w-48">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -601,6 +612,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                   const data = monthlyData[op.id] || { operatorId: op.id, dias: [] };
                   const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 380);
                   const isHigh = st.absMensal > (activeOp?.metaAbs || 0.03);
+                  const historyCount = operatorHistoryCounts[op.id] || 0;
 
                   return (
                     <tr
@@ -609,10 +621,25 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                     >
                       <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400 font-mono w-5">
+                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">
                             {(idx + 1).toString().padStart(2, '0')}
                           </span>
-                          <span className="truncate">{op.nome}</span>
+                          <button
+                            type="button"
+                            onClick={() => onOpenProfile(op)}
+                            title="Abrir perfil, histórico e escala pedagógica"
+                            className="truncate text-left hover:text-[#006772] dark:hover:text-[#2dd4bf] hover:underline cursor-pointer"
+                          >
+                            {op.nome}
+                          </button>
+                          {historyCount > 0 && (
+                            <span
+                              title={`${historyCount} registro(s) no histórico`}
+                              className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0"
+                            >
+                              {historyCount}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 text-xs">
@@ -647,14 +674,41 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-center">
-                        <button
-                          onClick={() => onSelectOperatorForAudit(op.id)}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
-                          title="Abrir folha mensal deste operador"
-                        >
-                          <span>Apontar</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenProfile(op)}
+                            className="p-1.5 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors cursor-pointer"
+                            title="Perfil, Histórico e Escala Pedagógica"
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onOpenTransfer(op)}
+                            className="p-1.5 text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors cursor-pointer"
+                            title="Transferir operador para outro supervisor"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onSelectOperatorForAudit(op.id)}
+                            className="px-2 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Abrir folha mensal deste operador"
+                          >
+                            <span>Apontar</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onOpenDelete(op)}
+                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded transition-colors cursor-pointer"
+                            title="Excluir operador"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

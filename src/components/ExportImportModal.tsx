@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Operator, OperatorMonthlyData } from '../types/abs';
+import { Operator, OperatorMonthlyData, OperatorHistoryEvent, TransferRequest } from '../types/abs';
 import { calculateOperatorStats } from '../utils/calculations';
 import { formatMonthLabel, getDaysInMonth, parseMonthKey } from '../utils/calendar';
 import { X, Download, Copy, Check, FileSpreadsheet, Upload, AlertCircle, Code } from 'lucide-react';
@@ -10,8 +10,15 @@ interface ExportImportModalProps {
   onClose: () => void;
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
-  onImportData: (operators: Operator[], monthlyData: Record<string, OperatorMonthlyData>) => void;
+  onImportData: (
+    operators: Operator[],
+    monthlyData: Record<string, OperatorMonthlyData>,
+    operatorHistory?: Record<string, OperatorHistoryEvent[]>,
+    transferRequests?: TransferRequest[]
+  ) => void;
   selectedMonthKey: string;
+  operatorHistory?: Record<string, OperatorHistoryEvent[]>;
+  transferRequests?: TransferRequest[];
 }
 
 export const ExportImportModal: React.FC<ExportImportModalProps> = ({
@@ -20,7 +27,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   operators,
   monthlyData,
   onImportData,
-  selectedMonthKey
+  selectedMonthKey,
+  operatorHistory,
+  transferRequests
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
@@ -115,7 +124,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     const payload = {
       exportedAt: new Date().toISOString(),
       operators,
-      monthlyData
+      monthlyData,
+      operatorHistory: operatorHistory || {},
+      transferRequests: transferRequests || []
     };
     const jsonStr = JSON.stringify(payload, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -141,7 +152,12 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         setImportError('Formato inválido: o JSON deve conter "operators" e "monthlyData".');
         return;
       }
-      onImportData(parsed.operators, parsed.monthlyData);
+      onImportData(
+        parsed.operators,
+        parsed.monthlyData,
+        parsed.operatorHistory,
+        parsed.transferRequests
+      );
       onClose();
     } catch (e: any) {
       setImportError(`Erro ao processar JSON: ${e.message}`);

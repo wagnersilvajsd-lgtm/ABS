@@ -15,7 +15,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  UserPlus
+  UserPlus,
+  ClipboardList,
+  ArrowRightLeft,
+  Trash2
 } from 'lucide-react';
 
 interface OperatorsListViewProps {
@@ -23,6 +26,10 @@ interface OperatorsListViewProps {
   monthlyData: Record<string, OperatorMonthlyData>;
   onSelectOperatorForAudit: (operatorId: string) => void;
   onAddOperator: () => void;
+  onOpenProfile: (operator: Operator) => void;
+  onOpenTransfer: (operator: Operator) => void;
+  onOpenDelete: (operator: Operator) => void;
+  operatorHistoryCounts?: Record<string, number>;
 }
 
 type SortField = 'nome' | 'supervisor' | 'entrada' | 'minutosPerdidos' | 'minutosEscalados' | 'absMensal';
@@ -31,7 +38,11 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
   operators,
   monthlyData,
   onSelectOperatorForAudit,
-  onAddOperator
+  onAddOperator,
+  onOpenProfile,
+  onOpenTransfer,
+  onOpenDelete,
+  operatorHistoryCounts = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
@@ -326,8 +337,8 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                     <ArrowUpDown className="w-3 h-3 text-teal-100" />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center w-24">
-                  Ação
+                <th className="py-3 px-3 text-center w-48">
+                  Ações
                 </th>
               </tr>
             </thead>
@@ -342,6 +353,7 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                 sortedOperators.map((op, idx) => {
                   const isHighAbs = op.stats.absMensal > 0.03;
                   const isZeroAbs = op.stats.absMensal === 0;
+                  const historyCount = operatorHistoryCounts[op.id] || 0;
 
                   return (
                     <tr
@@ -351,10 +363,25 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                       {/* Operador */}
                       <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400 font-mono w-5">
+                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">
                             {(idx + 1).toString().padStart(2, '0')}
                           </span>
-                          <span className="truncate">{op.nome}</span>
+                          <button
+                            type="button"
+                            onClick={() => onOpenProfile(op)}
+                            title="Abrir perfil, histórico e escala pedagógica"
+                            className="truncate text-left hover:text-[#006772] dark:hover:text-[#2dd4bf] hover:underline cursor-pointer"
+                          >
+                            {op.nome}
+                          </button>
+                          {historyCount > 0 && (
+                            <span
+                              title={`${historyCount} registro(s) no histórico do perfil`}
+                              className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shrink-0"
+                            >
+                              {historyCount}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -411,16 +438,46 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                         </span>
                       </td>
 
-                      {/* Ação: Abrir Apontamento */}
+                      {/* Ações: Perfil, Transferir, Apontar, Excluir */}
                       <td className="py-2.5 px-3 text-center">
-                        <button
-                          onClick={() => onSelectOperatorForAudit(op.id)}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
-                          title="Abrir apontamento diário deste operador"
-                        >
-                          <span>Apontar</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenProfile(op)}
+                            className="p-1.5 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors cursor-pointer"
+                            title="Perfil, Histórico e Escala Pedagógica"
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onOpenTransfer(op)}
+                            className="p-1.5 text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors cursor-pointer"
+                            title="Transferir operador para outro supervisor"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onSelectOperatorForAudit(op.id)}
+                            className="px-2 py-1 text-[11px] font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Abrir apontamento diário deste operador"
+                          >
+                            <span>Apontar</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onOpenDelete(op)}
+                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded transition-colors cursor-pointer"
+                            title="Excluir operador"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
