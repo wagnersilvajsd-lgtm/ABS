@@ -48,7 +48,8 @@ import {
   ArrowRight,
   ArrowLeft,
   ClipboardList,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Edit2
 } from 'lucide-react';
 
 interface AbsOperatorViewProps {
@@ -63,6 +64,8 @@ interface AbsOperatorViewProps {
   selectedMonthKey: string;
   onOpenProfile?: (operator: Operator) => void;
   onOpenTransfer?: (operator: Operator) => void;
+  onOpenEditOperator?: (operator: Operator) => void;
+  onOpenEditSupervisor?: (supervisorName: string, linkedCount: number) => void;
   operatorHistoryCount?: number;
 }
 
@@ -78,6 +81,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   selectedMonthKey,
   onOpenProfile,
   onOpenTransfer,
+  onOpenEditOperator,
+  onOpenEditSupervisor,
   operatorHistoryCount = 0
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
@@ -369,6 +374,17 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   {operator.nome}
                 </h2>
+                {onOpenEditOperator && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenEditOperator(operator)}
+                    title="Editar nome e horário deste operador"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>Editar Nome</span>
+                  </button>
+                )}
                 {onOpenProfile && (
                   <button
                     type="button"
@@ -520,12 +536,27 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 B2: Supervisor (PROCV)
               </label>
-              <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center">
+              <div className="h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                <div className="flex items-center min-w-0">
                   <UserCheck className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
                   <span className="truncate">{operator.supervisor}</span>
+                  {onOpenEditSupervisor && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenEditSupervisor(
+                          operator.supervisor,
+                          supervisorCounts[operator.supervisor] || 0
+                        )
+                      }
+                      title="Editar nome deste supervisor"
+                      className="ml-1.5 p-1 text-slate-400 hover:text-[#006772] dark:hover:text-[#2dd4bf] rounded transition-colors cursor-pointer shrink-0"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-[#006772] dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 font-bold shrink-0">
                   Meta Sup: ≤ 3.00%
                 </span>
               </div>

@@ -21,7 +21,10 @@ import {
   Layers,
   ClipboardList,
   ArrowRightLeft,
-  Trash2
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  AlertTriangle
 } from 'lucide-react';
 
 interface OperacoesViewProps {
@@ -30,6 +33,7 @@ interface OperacoesViewProps {
   onSelectOperation: (id: string) => void;
   onAddOperation: (op: Omit<Operation, 'id'>) => void;
   onUpdateOperation: (op: Operation) => void;
+  onDeleteOperation: (operationId: string) => void;
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   onAddSupervisorToOperation: (operationId: string, supervisorName: string) => void;
@@ -38,6 +42,8 @@ interface OperacoesViewProps {
   onOpenProfile: (operator: Operator) => void;
   onOpenTransfer: (operator: Operator) => void;
   onOpenDelete: (operator: Operator) => void;
+  onOpenEditOperator: (operator: Operator) => void;
+  onOpenEditSupervisor: (supervisorName: string, linkedCount: number) => void;
   operatorHistoryCounts?: Record<string, number>;
 }
 
@@ -47,6 +53,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   onSelectOperation,
   onAddOperation,
   onUpdateOperation,
+  onDeleteOperation,
   operators,
   monthlyData,
   onAddSupervisorToOperation,
@@ -55,13 +62,17 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   onOpenProfile,
   onOpenTransfer,
   onOpenDelete,
+  onOpenEditOperator,
+  onOpenEditSupervisor,
   operatorHistoryCounts = {}
 }) => {
   // Modal states
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
   const [isEditOpModalOpen, setIsEditOpModalOpen] = useState(false);
+  const [isDeleteOpConfirmOpen, setIsDeleteOpConfirmOpen] = useState(false);
   const [isAddSupModalOpen, setIsAddSupModalOpen] = useState(false);
   const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Filter & search states
   const [selectedSupFilter, setSelectedSupFilter] = useState<string>('todos');
@@ -156,9 +167,71 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
     return list;
   }, [opOperators, selectedSupFilter, opSearchTerm]);
 
+  // Upload and optimize logo image file for localStorage persistence
+  const handleLogoFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: 'new' | 'edit'
+  ) => {
+    setUploadError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Selecione um arquivo de imagem válido (PNG, JPG, WEBP ou SVG).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('A imagem deve ter no máximo 5 MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      if (!result) return;
+
+      // SVG or already compact image can be stored directly
+      if (file.type === 'image/svg+xml' || result.length <= 160000) {
+        if (target === 'new') setNewOpLogoUrl(result);
+        else setEditOpLogoUrl(result);
+        return;
+      }
+
+      // Resize large raster images cleanly to max 256x256 while preserving aspect ratio & transparency
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 256;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimized = canvas.toDataURL('image/png', 0.9);
+          if (target === 'new') setNewOpLogoUrl(optimized);
+          else setEditOpLogoUrl(optimized);
+        } else {
+          if (target === 'new') setNewOpLogoUrl(result);
+          else setEditOpLogoUrl(result);
+        }
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   // Open edit modal prefilled
   const handleOpenEdit = () => {
     if (!activeOp) return;
+    setUploadError(null);
     setEditOpName(activeOp.nome);
     setEditOpClient(activeOp.cliente);
     setEditOpLogoUrl(activeOp.logoUrl || '');
@@ -175,7 +248,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       ...activeOp,
       nome: editOpName.trim() || activeOp.nome,
       cliente: editOpClient.trim() || activeOp.cliente,
-      logoUrl: editOpLogoUrl.trim() || activeOp.logoUrl,
+      logoUrl: editOpLogoUrl.trim() || '/assets/aistudio/image_def6497f.png',
       metaAbs: (parseFloat(editOpMetaAbs) || 3.0) / 100,
       descricao: editOpDesc.trim()
     };
@@ -274,6 +347,21 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </button>
 
             <button
+              type="button"
+              disabled={operations.length <= 1}
+              onClick={() => setIsDeleteOpConfirmOpen(true)}
+              title={
+                operations.length <= 1
+                  ? 'É necessário manter pelo menos 1 operação cadastrada'
+                  : `Excluir ${activeOp?.nome}`
+              }
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/50 rounded-xl transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Excluir Operação</span>
+            </button>
+
+            <button
               onClick={() => setIsAddSupModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#006772] dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-xl transition-colors cursor-pointer"
             >
@@ -293,7 +381,10 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </button>
 
             <button
-              onClick={() => setIsAddOpModalOpen(true)}
+              onClick={() => {
+                setUploadError(null);
+                setIsAddOpModalOpen(true);
+              }}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-[#d89627] hover:bg-[#b37718] rounded-xl transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -470,22 +561,34 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-[#006772]/40 transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
                       Supervisão
                     </span>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      isWithinMeta
-                        ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/80 dark:text-teal-300'
-                        : 'bg-amber-100 text-[#d89627] dark:bg-amber-950/80'
-                    }`}>
-                      {isWithinMeta ? '✓ Na Meta' : '⚠ Acima'}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                        isWithinMeta
+                          ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/80 dark:text-teal-300'
+                          : 'bg-amber-100 text-[#d89627] dark:bg-amber-950/80'
+                      }`}>
+                        {isWithinMeta ? '✓ Na Meta' : '⚠ Acima'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onOpenEditSupervisor(sup.supervisor, sup.totalOperadores)}
+                        title="Editar nome deste supervisor"
+                        className="p-1 text-slate-500 hover:text-[#006772] dark:text-slate-400 dark:hover:text-[#2dd4bf] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md hover:border-[#006772]/40 transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
-                    {sup.supervisor}
-                  </h4>
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {sup.supervisor}
+                    </h4>
+                  </div>
                   <span className="text-xs text-slate-500 block">
                     {sup.totalOperadores} colaboradores vinculados
                   </span>
@@ -677,6 +780,14 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
+                            onClick={() => onOpenEditOperator(op)}
+                            className="p-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                            title="Editar nome e horário do operador"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => onOpenProfile(op)}
                             className="p-1.5 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition-colors cursor-pointer"
                             title="Perfil, Histórico e Escala Pedagógica"
@@ -801,16 +912,55 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                  URL da Logo (ou Caminho da Imagem):
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5 uppercase tracking-wide">
+                  Imagem / Logo da Operação:
                 </label>
-                <input
-                  type="text"
-                  value={newOpLogoUrl}
-                  onChange={(e) => setNewOpLogoUrl(e.target.value)}
-                  placeholder="Ex: /assets/aistudio/image_def6497f.png"
-                  className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-                />
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      {newOpLogoUrl ? (
+                        <img
+                          src={newOpLogoUrl}
+                          alt="Prévia da logo"
+                          className="w-full h-full object-contain rounded-lg"
+                        />
+                      ) : (
+                        <ImageIcon className="w-5 h-5 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Fazer Upload da Imagem</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleLogoFileChange(e, 'new')}
+                          className="hidden"
+                        />
+                      </label>
+                      {newOpLogoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setNewOpLogoUrl('')}
+                          className="px-2.5 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg cursor-pointer"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={newOpLogoUrl}
+                    onChange={(e) => setNewOpLogoUrl(e.target.value)}
+                    placeholder="Ou cole a URL/caminho da imagem (ex: /assets/aistudio/image_def6497f.png)"
+                    className="w-full h-9 px-3 text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                  />
+                  {uploadError && (
+                    <p className="text-[11px] text-rose-600 font-medium">{uploadError}</p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -892,31 +1042,66 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                    Meta ABS (%):
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.5"
-                    max="20"
-                    value={editOpMetaAbs}
-                    onChange={(e) => setEditOpMetaAbs(e.target.value)}
-                    className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                    URL da Logo:
-                  </label>
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
+                  Meta ABS (%):
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.5"
+                  max="20"
+                  value={editOpMetaAbs}
+                  onChange={(e) => setEditOpMetaAbs(e.target.value)}
+                  className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5 uppercase tracking-wide">
+                  Imagem / Logo da Operação:
+                </label>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img
+                        src={editOpLogoUrl || '/assets/aistudio/image_def6497f.png'}
+                        alt="Logo da operação"
+                        className="w-full h-full object-contain rounded-lg"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Fazer Upload da Imagem</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleLogoFileChange(e, 'edit')}
+                          className="hidden"
+                        />
+                      </label>
+                      {editOpLogoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setEditOpLogoUrl('')}
+                          className="px-2.5 py-1.5 text-[11px] font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg cursor-pointer"
+                        >
+                          Usar Padrão
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <input
                     type="text"
                     value={editOpLogoUrl}
                     onChange={(e) => setEditOpLogoUrl(e.target.value)}
-                    className="w-full h-10 px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                    placeholder="Ou cole a URL/caminho da imagem..."
+                    className="w-full h-9 px-3 text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                   />
+                  {uploadError && (
+                    <p className="text-[11px] text-rose-600 font-medium">{uploadError}</p>
+                  )}
                 </div>
               </div>
 
@@ -932,23 +1117,111 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 />
               </div>
 
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  disabled={operations.length <= 1}
+                  onClick={() => {
+                    setIsEditOpModalOpen(false);
+                    setIsDeleteOpConfirmOpen(true);
+                  }}
+                  title={
+                    operations.length <= 1
+                      ? 'Não é possível excluir a única operação restante'
+                      : 'Excluir esta operação'
+                  }
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Excluir Operação</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditOpModalOpen(false)}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Salvar Alterações</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmar Exclusão de Operação */}
+      {isDeleteOpConfirmOpen && activeOp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-rose-200 dark:border-rose-900 w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+            <div className="px-6 py-4 bg-rose-50 dark:bg-rose-950/50 border-b border-rose-100 dark:border-rose-900/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-rose-950 dark:text-rose-200">
+                  Confirmar Exclusão da Operação
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpConfirmOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Você está prestes a excluir permanentemente esta operação, junto com seus supervisores, operadores vinculados e histórico de apontamentos:
+              </p>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                <img
+                  src={activeOp.logoUrl || '/assets/aistudio/image_def6497f.png'}
+                  alt={activeOp.nome}
+                  className="w-11 h-11 object-contain rounded-lg bg-white p-1 border border-slate-200 dark:border-slate-700 shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                    {activeOp.nome}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {opOperators.length} operador(es) · {activeSupervisors.length} supervisor(es)
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsEditOpModalOpen(false)}
+                  onClick={() => setIsDeleteOpConfirmOpen(false)}
                   className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
-                  type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    onDeleteOperation(activeOp.id);
+                    setIsDeleteOpConfirmOpen(false);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Salvar Alterações</span>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Confirmar Exclusão</span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

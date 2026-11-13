@@ -18,7 +18,8 @@ import {
   UserPlus,
   ClipboardList,
   ArrowRightLeft,
-  Trash2
+  Trash2,
+  Edit2
 } from 'lucide-react';
 
 interface OperatorsListViewProps {
@@ -29,6 +30,8 @@ interface OperatorsListViewProps {
   onOpenProfile: (operator: Operator) => void;
   onOpenTransfer: (operator: Operator) => void;
   onOpenDelete: (operator: Operator) => void;
+  onOpenEditOperator: (operator: Operator) => void;
+  onOpenEditSupervisor?: (supervisorName: string, linkedCount: number) => void;
   operatorHistoryCounts?: Record<string, number>;
 }
 
@@ -42,6 +45,8 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
   onOpenProfile,
   onOpenTransfer,
   onOpenDelete,
+  onOpenEditOperator,
+  onOpenEditSupervisor,
   operatorHistoryCounts = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -387,7 +392,24 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
 
                       {/* Supervisor */}
                       <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 text-xs">
-                        {op.supervisor}
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate">{op.supervisor}</span>
+                          {onOpenEditSupervisor && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const count = operators.filter(
+                                  o => o.supervisor.toLowerCase() === op.supervisor.toLowerCase()
+                                ).length;
+                                onOpenEditSupervisor(op.supervisor, count);
+                              }}
+                              title="Editar nome deste supervisor"
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#006772] dark:hover:text-[#2dd4bf] rounded transition-opacity cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Entrada */}
@@ -438,9 +460,18 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
                         </span>
                       </td>
 
-                      {/* Ações: Perfil, Transferir, Apontar, Excluir */}
+                      {/* Ações: Editar, Perfil, Transferir, Apontar, Excluir */}
                       <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditOperator(op)}
+                            className="p-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                            title="Editar nome e horário do operador"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => onOpenProfile(op)}

@@ -49,6 +49,8 @@ import { OperatorProfileModal } from './components/OperatorProfileModal';
 import { TransferOperatorModal } from './components/TransferOperatorModal';
 import { TransferInboxModal } from './components/TransferInboxModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
+import { EditOperatorModal } from './components/EditOperatorModal';
+import { EditSupervisorModal } from './components/EditSupervisorModal';
 import { BellRing, CheckCircle2, X, RotateCcw } from 'lucide-react';
 
 export default function App() {
@@ -116,6 +118,11 @@ export default function App() {
   const [profileOperatorId, setProfileOperatorId] = useState<string | null>(null);
   const [transferOperator, setTransferOperator] = useState<Operator | null>(null);
   const [deleteOperator, setDeleteOperator] = useState<Operator | null>(null);
+  const [editOperator, setEditOperator] = useState<Operator | null>(null);
+  const [editSupervisorTarget, setEditSupervisorTarget] = useState<{
+    name: string;
+    linkedCount: number;
+  } | null>(null);
   const [isTransferInboxOpen, setIsTransferInboxOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [actionToast, setActionToast] = useState<{
@@ -300,6 +307,98 @@ export default function App() {
     if (deletedOp) {
       showActionToast(`Operador ${deletedOp.nome} excluído da operação.`);
     }
+  };
+
+  // Edit operator name & contract schedule
+  const handleSaveEditedOperator = (updated: {
+    id: string;
+    nome: string;
+    entrada: string;
+    saida: string;
+    jornadaMin: number;
+  }) => {
+    setOperators(prev => {
+      const next = prev.map(op =>
+        op.id === updated.id
+          ? {
+              ...op,
+              nome: updated.nome,
+              entrada: updated.entrada,
+              saida: updated.saida,
+              jornadaMin: updated.jornadaMin
+            }
+          : op
+      );
+      saveStoredOperators(next);
+      return next;
+    });
+
+    setTransferRequests(prev => {
+      const next = prev.map(t =>
+        t.operatorId === updated.id ? { ...t, operatorName: updated.nome } : t
+      );
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    showActionToast(`Cadastro de ${updated.nome} atualizado com sucesso.`);
+  };
+
+  // Rename supervisor across active operation, linked operators, pending transfers, and active view
+  const handleRenameSupervisor = (oldName: string, newName: string) => {
+    const oldLower = oldName.toLowerCase().trim();
+    if (!newName.trim() || oldLower === newName.toLowerCase().trim()) return;
+
+    const activeId = activeOperation?.id || 'caern';
+
+    setOperations(prev => {
+      const next = prev.map(op => {
+        if (op.id !== activeId) return op;
+        const currentList = op.supervisores || [];
+        const updatedList = Array.from(
+          new Set(
+            currentList.map(s => (s.toLowerCase().trim() === oldLower ? newName : s))
+          )
+        );
+        if (!updatedList.some(s => s.toLowerCase().trim() === newName.toLowerCase().trim())) {
+          updatedList.push(newName);
+        }
+        return { ...op, supervisores: updatedList };
+      });
+      saveStoredOperations(next);
+      return next;
+    });
+
+    setOperators(prev => {
+      const next = prev.map(op => {
+        if ((op.operacaoId || 'caern') === activeId && op.supervisor.toLowerCase().trim() === oldLower) {
+          return { ...op, supervisor: newName };
+        }
+        return op;
+      });
+      saveStoredOperators(next);
+      return next;
+    });
+
+    setTransferRequests(prev => {
+      const next = prev.map(t => {
+        if (t.operacaoId !== activeId) return t;
+        return {
+          ...t,
+          fromSupervisor: t.fromSupervisor.toLowerCase().trim() === oldLower ? newName : t.fromSupervisor,
+          toSupervisor: t.toSupervisor.toLowerCase().trim() === oldLower ? newName : t.toSupervisor
+        };
+      });
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    if (activeSupervisorView.toLowerCase().trim() === oldLower) {
+      setActiveSupervisorView(newName);
+      saveStoredActiveSupervisorView(newName);
+    }
+
+    showActionToast(`Supervisor renomeado de ${oldName} para ${newName}.`);
   };
 
   // Pedagogical & History events handlers
@@ -601,6 +700,74 @@ export default function App() {
       saveStoredOperations(updated);
       return updated;
     });
+    showActionToast(`Operação ${updatedOp.nome} atualizada com sucesso.`);
+  };
+
+  const handleDeleteOperation = (operationId: string) => {
+    if (operations.length <= 1) return;
+    const targetOp = operations.find(o => o.id === operationId);
+    const remainingOps = operations.filter(o => o.id !== operationId);
+
+    setOperations(remainingOps);
+    saveStoredOperations(remainingOps);
+
+    // Collect operator IDs linked to deleted operation
+    const removedOperatorIds = new Set(
+      operators
+        .filter(op => (op.operacaoId || 'caern') === operationId)
+        .map(op => op.id)
+    );
+
+    const remainingOperators = operators.filter(op => !removedOperatorIds.has(op.id));
+    setOperators(remainingOperators);
+    saveStoredOperators(remainingOperators);
+
+    if (removedOperatorIds.size > 0) {
+      setMonthlyDataByMonth(prev => {
+        const next: Record<string, Record<string, OperatorMonthlyData>> = {};
+        Object.keys(prev).forEach(mKey => {
+          const monthClone = { ...prev[mKey] };
+          removedOperatorIds.forEach(opId => delete monthClone[opId]);
+          next[mKey] = monthClone;
+        });
+        saveStoredMonthlyDataByMonth(next);
+        return next;
+      });
+
+      setOperatorHistory(prev => {
+        const next = { ...prev };
+        removedOperatorIds.forEach(opId => delete next[opId]);
+        saveStoredOperatorHistory(next);
+        return next;
+      });
+    }
+
+    setTransferRequests(prev => {
+      const next = prev.filter(
+        t => t.operacaoId !== operationId && !removedOperatorIds.has(t.operatorId)
+      );
+      saveStoredTransfers(next);
+      return next;
+    });
+
+    const nextActiveOpId = remainingOps[0]?.id || '';
+    setSelectedOperationId(nextActiveOpId);
+    saveStoredSelectedOperationId(nextActiveOpId);
+
+    const nextFirstOp = remainingOperators.find(
+      op => (op.operacaoId || 'caern') === nextActiveOpId
+    );
+    const nextOpId = nextFirstOp?.id || '';
+    setSelectedOperatorId(nextOpId);
+    saveStoredSelectedOperatorId(nextOpId);
+
+    if (profileOperatorId && removedOperatorIds.has(profileOperatorId)) {
+      setProfileOperatorId(null);
+    }
+
+    if (targetOp) {
+      showActionToast(`Operação ${targetOp.nome} excluída com sucesso.`);
+    }
   };
 
   const handleAddSupervisorToOperation = (operationId: string, supervisorName: string) => {
@@ -747,6 +914,7 @@ export default function App() {
             onSelectOperation={handleSelectOperation}
             onAddOperation={handleAddOperation}
             onUpdateOperation={handleUpdateOperation}
+            onDeleteOperation={handleDeleteOperation}
             operators={operators}
             monthlyData={monthlyData}
             onAddSupervisorToOperation={handleAddSupervisorToOperation}
@@ -755,6 +923,8 @@ export default function App() {
             onOpenProfile={(op) => setProfileOperatorId(op.id)}
             onOpenTransfer={(op) => setTransferOperator(op)}
             onOpenDelete={(op) => setDeleteOperator(op)}
+            onOpenEditOperator={(op) => setEditOperator(op)}
+            onOpenEditSupervisor={(name, linkedCount) => setEditSupervisorTarget({ name, linkedCount })}
             operatorHistoryCounts={operatorHistoryCounts}
           />
         )}
@@ -772,6 +942,8 @@ export default function App() {
             selectedMonthKey={selectedMonthKey}
             onOpenProfile={(op) => setProfileOperatorId(op.id)}
             onOpenTransfer={(op) => setTransferOperator(op)}
+            onOpenEditOperator={(op) => setEditOperator(op)}
+            onOpenEditSupervisor={(name, linkedCount) => setEditSupervisorTarget({ name, linkedCount })}
             operatorHistoryCount={operatorHistoryCounts[selectedOperatorId] || 0}
           />
         )}
@@ -785,6 +957,8 @@ export default function App() {
             onOpenProfile={(op) => setProfileOperatorId(op.id)}
             onOpenTransfer={(op) => setTransferOperator(op)}
             onOpenDelete={(op) => setDeleteOperator(op)}
+            onOpenEditOperator={(op) => setEditOperator(op)}
+            onOpenEditSupervisor={(name, linkedCount) => setEditSupervisorTarget({ name, linkedCount })}
             operatorHistoryCounts={operatorHistoryCounts}
           />
         )}
@@ -831,6 +1005,24 @@ export default function App() {
         onDeleteHistoryEvent={handleDeleteHistoryEvent}
         onOpenTransfer={(op) => setTransferOperator(op)}
         onOpenDelete={(op) => setDeleteOperator(op)}
+        onOpenEditOperator={(op) => setEditOperator(op)}
+      />
+
+      {/* Edit Operator Name & Schedule Modal */}
+      <EditOperatorModal
+        isOpen={Boolean(editOperator)}
+        onClose={() => setEditOperator(null)}
+        operator={editOperator}
+        onSaveOperator={handleSaveEditedOperator}
+      />
+
+      {/* Edit Supervisor Name Modal */}
+      <EditSupervisorModal
+        isOpen={Boolean(editSupervisorTarget)}
+        onClose={() => setEditSupervisorTarget(null)}
+        supervisorName={editSupervisorTarget?.name || null}
+        linkedOperatorsCount={editSupervisorTarget?.linkedCount || 0}
+        onRenameSupervisor={handleRenameSupervisor}
       />
 
       {/* Supervisor-to-Supervisor Transfer Request Modal */}

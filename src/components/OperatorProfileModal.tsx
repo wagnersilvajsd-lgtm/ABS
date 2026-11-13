@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   History,
   CheckCircle2,
-  Calendar
+  Calendar,
+  Edit2
 } from 'lucide-react';
 
 interface OperatorProfileModalProps {
@@ -30,6 +31,7 @@ interface OperatorProfileModalProps {
   onDeleteHistoryEvent: (operatorId: string, eventId: string) => void;
   onOpenTransfer: (operator: Operator) => void;
   onOpenDelete: (operator: Operator) => void;
+  onOpenEditOperator?: (operator: Operator) => void;
 }
 
 const PEDAGOGICAL_OPTIONS: {
@@ -88,7 +90,8 @@ export const OperatorProfileModal: React.FC<OperatorProfileModalProps> = ({
   onAddHistoryEvent,
   onDeleteHistoryEvent,
   onOpenTransfer,
-  onOpenDelete
+  onOpenDelete,
+  onOpenEditOperator
 }) => {
   const [timelineFilter, setTimelineFilter] = useState<'todos' | 'pedagogico' | 'transferencia'>('todos');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -310,6 +313,17 @@ export const OperatorProfileModal: React.FC<OperatorProfileModalProps> = ({
               <ArrowRightLeft className="w-3.5 h-3.5" />
               <span>Transferir Supervisor / Horário</span>
             </button>
+
+            {onOpenEditOperator && (
+              <button
+                type="button"
+                onClick={() => onOpenEditOperator(operator)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Editar Nome / Horário</span>
+              </button>
+            )}
           </div>
 
           <button
