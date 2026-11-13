@@ -37,9 +37,11 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
   const [editingCell, setEditingCell] = useState<{
     operatorId: string;
     operatorNome: string;
+    jornadaMin: number;
     dia: number;
     status: StatusType;
     atraso: number;
+    abonoMin: number;
   } | null>(null);
 
   // Filtered operators
@@ -66,7 +68,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
         return {
           ...d,
           status: editingCell.status,
-          atraso: editingCell.status === 'dia ok/atraso' ? editingCell.atraso : 0
+          atraso: editingCell.status === 'dia ok/atraso' ? editingCell.atraso : 0,
+          abonoMin: editingCell.status === 'abono' ? editingCell.abonoMin : undefined
         };
       }
       return d;
@@ -259,12 +262,13 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
 
                     {/* Days D1 to D{totalDays} */}
                     {opData.dias.slice(0, totalDays).map((d) => {
-                      const isFolga = d.status === 'folga';
                       const isOk = d.status === 'dia ok';
                       const isAtraso = d.status === 'dia ok/atraso';
+                      const isAbono = d.status === 'abono';
                       const isFalta = d.status === 'falta';
                       const isAtestado = d.status === 'atestado';
                       const isSuspensao = d.status === 'suspensão';
+                      const validAbono = Math.max(0, Math.min(op.jornadaMin, Number(d.abonoMin) || 0));
 
                       return (
                         <td
@@ -273,14 +277,23 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                             setEditingCell({
                               operatorId: op.id,
                               operatorNome: op.nome,
+                              jornadaMin: op.jornadaMin,
                               dia: d.dia,
                               status: d.status,
-                              atraso: d.atraso
+                              atraso: d.atraso,
+                              abonoMin:
+                                d.status === 'abono'
+                                  ? validAbono
+                                  : Math.max(0, op.jornadaMin - Math.min(120, op.jornadaMin))
                             })
                           }
                           className="py-1 px-0.5 text-center border-r border-slate-100 dark:border-slate-800/80 cursor-pointer hover:ring-2 hover:ring-[#006772] hover:z-10 transition-all select-none"
                           title={`${op.nome} - Dia ${d.dia}: ${d.status} ${
-                            isAtraso ? `(${d.atraso} min)` : ''
+                            isAtraso
+                              ? `(${d.atraso} min)`
+                              : isAbono
+                              ? `(${validAbono} min abonados / ${Math.max(0, op.jornadaMin - validAbono)} min logados)`
+                              : ''
                           } (Clique para alterar)`}
                         >
                           <div
@@ -289,6 +302,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                 ? 'bg-teal-100 text-[#006772] dark:bg-teal-950/60 dark:text-teal-300'
                                 : isAtraso
                                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300'
+                                : isAbono
+                                ? 'bg-cyan-600 text-white'
                                 : isFalta
                                 ? 'bg-rose-600 text-white'
                                 : isAtestado
@@ -298,7 +313,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800/50 dark:text-slate-500'
                             }`}
                           >
-                            {isOk ? 'OK' : isAtraso ? `${d.atraso}` : isFalta ? 'F' : isAtestado ? 'A' : isSuspensao ? 'S' : '—'}
+                            {isOk ? 'OK' : isAtraso ? `${d.atraso}` : isAbono ? 'AB' : isFalta ? 'F' : isAtestado ? 'A' : isSuspensao ? 'S' : '—'}
                           </div>
                         </td>
                       );
@@ -346,7 +361,11 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                         setEditingCell({
                           ...editingCell,
                           status: opt.value,
-                          atraso: opt.value === 'dia ok/atraso' ? (editingCell.atraso || 15) : 0
+                          atraso: opt.value === 'dia ok/atraso' ? (editingCell.atraso || 15) : 0,
+                          abonoMin:
+                            opt.value === 'abono'
+                              ? editingCell.abonoMin || Math.max(0, editingCell.jornadaMin - Math.min(120, editingCell.jornadaMin))
+                              : editingCell.abonoMin
                         })
                       }
                       className={`p-2 text-xs rounded-lg border text-left transition-all font-medium cursor-pointer ${
@@ -369,16 +388,80 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                   <input
                     type="number"
                     min="1"
-                    max="380"
+                    max={editingCell.jornadaMin}
                     value={editingCell.atraso}
                     onChange={(e) =>
                       setEditingCell({
                         ...editingCell,
-                        atraso: Math.max(0, Math.min(380, parseInt(e.target.value) || 0))
+                        atraso: Math.max(0, Math.min(editingCell.jornadaMin, parseInt(e.target.value) || 0))
                       })
                     }
                     className="w-full h-10 px-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-lg font-mono text-sm font-bold text-amber-950 dark:text-amber-100"
                   />
+                </div>
+              )}
+
+              {editingCell.status === 'abono' && (
+                <div className="p-3 rounded-lg bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-bold text-cyan-900 dark:text-cyan-200">
+                      Tempo Trabalhado / Logado (min):
+                    </label>
+                    <span className="text-[11px] font-mono text-cyan-700 dark:text-cyan-300">
+                      Jornada: {editingCell.jornadaMin} min
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max={editingCell.jornadaMin}
+                      value={Math.max(0, editingCell.jornadaMin - editingCell.abonoMin)}
+                      onChange={(e) => {
+                        const worked = Math.max(0, Math.min(editingCell.jornadaMin, parseInt(e.target.value, 10) || 0));
+                        setEditingCell({
+                          ...editingCell,
+                          abonoMin: Math.max(0, editingCell.jornadaMin - worked)
+                        });
+                      }}
+                      className="w-28 h-9 px-3 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 rounded-lg font-mono text-sm font-bold text-cyan-950 dark:text-cyan-100"
+                    />
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[
+                        { label: '0h (Integral)', mins: 0 },
+                        { label: '1h', mins: 60 },
+                        { label: '2h', mins: 120 },
+                        { label: '3h', mins: 180 },
+                        { label: '4h', mins: 240 }
+                      ].map((preset) => {
+                        const clamped = Math.min(editingCell.jornadaMin, preset.mins);
+                        const active = editingCell.jornadaMin - editingCell.abonoMin === clamped;
+                        return (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() =>
+                              setEditingCell({
+                                ...editingCell,
+                                abonoMin: Math.max(0, editingCell.jornadaMin - clamped)
+                              })
+                            }
+                            className={`px-2 py-1 text-[11px] font-mono rounded cursor-pointer transition-colors ${
+                              active
+                                ? 'bg-cyan-700 text-white font-bold'
+                                : 'bg-white dark:bg-slate-800 border border-cyan-200 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200 hover:bg-cyan-100'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-cyan-800 dark:text-cyan-300 font-medium">
+                    Restante abonado: <strong>{editingCell.abonoMin} min</strong> (não contabiliza como perda no ABS; apenas os{' '}
+                    <strong>{Math.max(0, editingCell.jornadaMin - editingCell.abonoMin)} min</strong> trabalhados compõem a escala do dia).
+                  </p>
                 </div>
               )}
             </div>

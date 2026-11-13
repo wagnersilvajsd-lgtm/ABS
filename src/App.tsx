@@ -653,7 +653,8 @@ export default function App() {
     const dias: DayRecord[] = opData.dias.map(d => ({
       ...d,
       status: d.status === 'folga' ? ('folga' as StatusType) : ('dia ok' as StatusType),
-      atraso: 0
+      atraso: 0,
+      abonoMin: undefined
     }));
 
     handleUpdateDays(operatorId, dias);

@@ -7,12 +7,22 @@ import { DayRecord, Operator, OperatorMonthlyData, OperatorStats, OperationSumma
  *       IF(B7="dia ok/atraso", IFERROR(C7/$D$3, 0),
  *          IF(OR(B7="falta", B7="atestado", B7="suspensão"), 1, ""))))
  */
-export function calculateDayAbs(status: StatusType, atraso: number, jornadaMin: number = 380): number | null {
+export function calculateDayAbs(
+  status: StatusType,
+  atraso: number,
+  jornadaMin: number = 380,
+  abonoMin: number = 0
+): number | null {
   if (status === 'folga') {
     return null; // Empty in spreadsheet, doesn't penalize or count
   }
   if (status === 'dia ok') {
     return 0;
+  }
+  if (status === 'abono') {
+    const validAbono = Math.max(0, Math.min(jornadaMin, Number(abonoMin) || 0));
+    const workedMin = Math.max(0, jornadaMin - validAbono);
+    return workedMin > 0 ? 0 : null; // Abono isenta o restante faltante de perda no ABS
   }
   if (status === 'dia ok/atraso') {
     const validDelay = Math.max(0, Math.min(jornadaMin, Number(atraso) || 0));
@@ -27,7 +37,7 @@ export function calculateDayAbs(status: StatusType, atraso: number, jornadaMin: 
 /**
  * Calculates operator monthly stats matching Google Sheets formulas:
  * D39 (Minutos Perdidos): SUM(C7:C37) + (COUNTIF(B7:B37, "falta") + COUNTIF(B7:B37, "atestado") + COUNTIF(B7:B37, "suspensão")) * D3
- * D40 (Minutos Escalados): (COUNTIF(B7:B37, "<>folga") - COUNTIF(B7:B37, "")) * D3
+ * D40 (Minutos Escalados): (COUNTIF(B7:B37, "<>folga") - COUNTIF(B7:B37, "")) * D3 - SUM(minutosAbonados)
  * D38 (ABS Consolidado): D39 / D40
  */
 export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 380): OperatorStats {
@@ -38,19 +48,34 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
   let countDiaOk = 0;
   let countDiaOkAtraso = 0;
   let countFolga = 0;
-  let diasEscaladosCount = 0;
+  let countAbono = 0;
+  let minutosAbonados = 0;
+  let minutosEscalados = 0;
+  let diasTrabalhadosAbono = 0;
 
   for (const d of dias) {
     const status = (d.status || '').trim().toLowerCase();
-    
+
     // Status vazio ou folga NÃO entra em minutos escalados
     if (status === 'folga' || !status) {
       countFolga++;
       continue;
     }
 
-    // Qualquer outro status válido é considerado dia útil escalado
-    diasEscaladosCount++;
+    if (status === 'abono') {
+      countAbono++;
+      const validAbono = Math.max(0, Math.min(jornadaMin, Number(d.abonoMin) || 0));
+      const workedMin = Math.max(0, jornadaMin - validAbono);
+      minutosAbonados += validAbono;
+      minutosEscalados += workedMin;
+      if (workedMin > 0) {
+        diasTrabalhadosAbono++;
+      }
+      continue;
+    }
+
+    // Qualquer outro status válido é considerado dia útil escalado integral
+    minutosEscalados += jornadaMin;
 
     switch (status) {
       case 'dia ok':
@@ -73,11 +98,9 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
   }
 
   // Minutos Perdidos (Numerador): soma dos atrasos + faltas/atestados/suspensões * jornadaMin
+  // Nota: horas faltantes abonadas ('abono') NÃO contabilizam como minutos perdidos
   const minutosPerdidos = minutosAtraso + (countFalta + countAtestado + countSuspensao) * jornadaMin;
-  
-  // Minutos Escalados (Denominador): dias úteis escalados (excluindo estritamente folgas e vazios) * jornadaMin
-  const minutosEscalados = diasEscaladosCount * jornadaMin;
-  
+
   // ABS Consolidado
   const absMensal = minutosEscalados > 0 ? minutosPerdidos / minutosEscalados : 0;
 
@@ -85,12 +108,14 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
     minutosPerdidos,
     minutosEscalados,
     absMensal,
-    diasTrabalhados: countDiaOk + countDiaOkAtraso,
+    diasTrabalhados: countDiaOk + countDiaOkAtraso + diasTrabalhadosAbono,
     diasFolga: countFolga,
     diasFalta: countFalta,
     diasAtestado: countAtestado,
     diasSuspensao: countSuspensao,
-    diasAtraso: countDiaOkAtraso
+    diasAtraso: countDiaOkAtraso,
+    diasAbono: countAbono,
+    minutosAbonados
   };
 }
 
@@ -143,6 +168,8 @@ export function calculateOperationSummary(
   let totalAtestados = 0;
   let totalSuspensoes = 0;
   let totalMinutosAtraso = 0;
+  let totalDiasAbono = 0;
+  let totalMinutosAbonados = 0;
 
   operators.forEach(op => {
     const opData = monthlyData[op.id];
@@ -153,6 +180,8 @@ export function calculateOperationSummary(
       totalFaltas += stats.diasFalta;
       totalAtestados += stats.diasAtestado;
       totalSuspensoes += stats.diasSuspensao;
+      totalDiasAbono += stats.diasAbono;
+      totalMinutosAbonados += stats.minutosAbonados;
       // Extract delay minutes specifically
       opData.dias.forEach(d => {
         if (d.status === 'dia ok/atraso') {
@@ -177,6 +206,8 @@ export function calculateOperationSummary(
     totalAtestados,
     totalSuspensoes,
     totalMinutosAtraso,
+    totalDiasAbono,
+    totalMinutosAbonados,
     supervisores: supervisorStatsList
   };
 }

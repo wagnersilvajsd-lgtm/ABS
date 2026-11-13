@@ -4,12 +4,14 @@ export type StatusType =
   | 'atestado'
   | 'falta'
   | 'folga'
-  | 'suspensão';
+  | 'suspensão'
+  | 'abono';
 
 export interface DayRecord {
   dia: number;
   status: StatusType;
   atraso: number; // in minutes
+  abonoMin?: number; // missing remaining minutes excused (abono parcial/integral)
 }
 
 export interface Operation {
@@ -95,6 +97,8 @@ export interface OperatorStats {
   diasAtestado: number;
   diasSuspensao: number;
   diasAtraso: number;
+  diasAbono: number;
+  minutosAbonados: number;
 }
 
 export interface SupervisorStats {
@@ -115,5 +119,7 @@ export interface OperationSummary {
   totalAtestados: number;
   totalSuspensoes: number;
   totalMinutosAtraso: number;
+  totalDiasAbono: number;
+  totalMinutosAbonados: number;
   supervisores: SupervisorStats[];
 }

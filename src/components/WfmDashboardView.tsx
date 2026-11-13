@@ -430,10 +430,11 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between flex-wrap gap-2">
             <span>Faltas: {summary.totalFaltas} d</span>
             <span>Atestados: {summary.totalAtestados} d</span>
             <span>Atrasos: {summary.totalMinutosAtraso} min</span>
+            <span>Abonos: {summary.totalDiasAbono} d ({summary.totalMinutosAbonados}m)</span>
           </div>
         </div>
 

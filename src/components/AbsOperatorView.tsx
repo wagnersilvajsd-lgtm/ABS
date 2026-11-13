@@ -91,7 +91,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
   const [opSearchTerm, setOpSearchTerm] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [dayFilter, setDayFilter] = useState<'todos' | 'desvios' | 'faltas' | 'folgas' | 'fds'>('todos');
+  const [dayFilter, setDayFilter] = useState<'todos' | 'desvios' | 'faltas' | 'abonos' | 'folgas' | 'fds'>('todos');
   const [focusedDay, setFocusedDay] = useState<number | null>(null);
 
   // List of distinct supervisors from current operators
@@ -176,11 +176,28 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const handleStatusChange = (diaNum: number, newStatus: StatusType) => {
     const updated = dias.map(d => {
       if (d.dia === diaNum) {
-        const nextAtraso = newStatus === 'dia ok/atraso' ? (d.atraso > 0 ? d.atraso : 15) : 0;
+        if (newStatus === 'dia ok/atraso') {
+          return {
+            ...d,
+            status: newStatus,
+            atraso: d.atraso > 0 ? d.atraso : 15,
+            abonoMin: undefined
+          };
+        }
+        if (newStatus === 'abono') {
+          const defaultAbono = Math.max(0, operator.jornadaMin - Math.min(120, operator.jornadaMin));
+          return {
+            ...d,
+            status: newStatus,
+            atraso: 0,
+            abonoMin: d.abonoMin !== undefined && d.abonoMin > 0 ? Math.min(operator.jornadaMin, d.abonoMin) : defaultAbono
+          };
+        }
         return {
           ...d,
           status: newStatus,
-          atraso: nextAtraso
+          atraso: 0,
+          abonoMin: undefined
         };
       }
       return d;
@@ -195,6 +212,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         return {
           ...d,
           atraso: validMinutes,
+          abonoMin: undefined,
           status: validMinutes > 0 ? ('dia ok/atraso' as StatusType) : ('dia ok' as StatusType)
         };
       }
@@ -203,9 +221,35 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     onUpdateDays(operator.id, updated);
   };
 
+  const handleAbonoWorkedChange = (diaNum: number, workedMinutes: number) => {
+    const validWorked = Math.max(0, Math.min(operator.jornadaMin, workedMinutes || 0));
+    const nextAbono = Math.max(0, operator.jornadaMin - validWorked);
+    const updated = dias.map(d => {
+      if (d.dia === diaNum) {
+        return {
+          ...d,
+          status: 'abono' as StatusType,
+          atraso: 0,
+          abonoMin: nextAbono
+        };
+      }
+      return d;
+    });
+    onUpdateDays(operator.id, updated);
+  };
+
   // Quick single-day presets
-  const handleSetRowQuick = (diaNum: number, status: StatusType, atraso: number = 0) => {
-    const updated = dias.map(d => (d.dia === diaNum ? { ...d, status, atraso } : d));
+  const handleSetRowQuick = (diaNum: number, status: StatusType, atraso: number = 0, abonoMin?: number) => {
+    const updated = dias.map(d => {
+      if (d.dia !== diaNum) return d;
+      if (status === 'abono') {
+        const defaultAbono = abonoMin !== undefined
+          ? Math.max(0, Math.min(operator.jornadaMin, abonoMin))
+          : Math.max(0, operator.jornadaMin - Math.min(120, operator.jornadaMin));
+        return { ...d, status, atraso: 0, abonoMin: defaultAbono };
+      }
+      return { ...d, status, atraso, abonoMin: undefined };
+    });
     onUpdateDays(operator.id, updated);
   };
 
@@ -213,7 +257,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const handleBatchFillWorkingDaysOk = () => {
     const updated = dias.map(d => {
       if (d.status !== 'folga') {
-        return { ...d, status: 'dia ok' as StatusType, atraso: 0 };
+        return { ...d, status: 'dia ok' as StatusType, atraso: 0, abonoMin: undefined };
       }
       return d;
     });
@@ -275,9 +319,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const countsByStatus = useMemo(() => {
     const desvios = dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão').length;
     const faltas = dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado').length;
+    const abonos = dias.filter(d => d.status === 'abono').length;
     const folgas = dias.filter(d => d.status === 'folga').length;
     const fds = dias.filter(d => isWeekendDate(year, month, d.dia)).length;
-    return { desvios, faltas, folgas, fds };
+    return { desvios, faltas, abonos, folgas, fds };
   }, [dias, year, month]);
 
   // Filtered days list for the table
@@ -288,6 +333,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     }
     if (dayFilter === 'faltas') {
       return dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado');
+    }
+    if (dayFilter === 'abonos') {
+      return dias.filter(d => d.status === 'abono');
     }
     if (dayFilter === 'folgas') {
       return dias.filter(d => d.status === 'folga');
@@ -318,6 +366,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         return 'bg-teal-50 text-[#006772] dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800/40';
       case 'dia ok/atraso':
         return 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800/40';
+      case 'abono':
+        return 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/40';
       case 'falta':
         return 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800/40';
       case 'atestado':
@@ -664,6 +714,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 <span>Atrasos: <strong>{operatorStats.diasAtraso}d</strong></span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shrink-0"></span>
+                <span>Abonos: <strong>{operatorStats.diasAbono}d</strong> ({operatorStats.minutosAbonados}m)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
                 <span>Faltas: <strong>{operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao}d</strong></span>
               </div>
@@ -841,17 +895,22 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             // Status color dot
             let dotColor = 'bg-[#006772]';
             if (d.status === 'dia ok/atraso') dotColor = 'bg-[#d89627]';
+            if (d.status === 'abono') dotColor = 'bg-cyan-500';
             if (d.status === 'falta') dotColor = 'bg-rose-500';
             if (d.status === 'atestado') dotColor = 'bg-blue-500';
             if (d.status === 'suspensão') dotColor = 'bg-purple-500';
             if (d.status === 'folga') dotColor = 'bg-slate-400';
+
+            const dotTitle = d.status === 'abono'
+              ? `Dia ${d.dia} (${weekdayName}) — Abono (${d.abonoMin || 0} min abonados)`
+              : `Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`;
 
             return (
               <button
                 key={d.dia}
                 type="button"
                 onClick={() => handleScrollToDay(d.dia)}
-                title={`Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`}
+                title={dotTitle}
                 className={`lg:flex-1 flex flex-col items-center justify-center p-1 rounded-lg border text-center transition-all hover:scale-105 active:scale-95 ${
                   focusedDay === d.dia
                     ? 'ring-2 ring-[#006772] bg-teal-100 dark:bg-teal-950 border-[#006772] shadow-md'
@@ -927,6 +986,17 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setDayFilter('abonos')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                dayFilter === 'abonos'
+                  ? 'bg-cyan-700 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-cyan-700'
+              }`}
+            >
+              Abonos ({countsByStatus.abonos})
+            </button>
+            <button
+              type="button"
               onClick={() => setDayFilter('folgas')}
               className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
                 dayFilter === 'folgas'
@@ -958,13 +1028,13 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 <th className="py-2.5 px-4 w-24 text-center border-r border-[#00383f]">
                   dias (A)
                 </th>
-                <th className="py-2.5 px-4 w-48 text-center border-r border-[#00383f]">
+                <th className="py-2.5 px-4 w-52 text-center border-r border-[#00383f]">
                   status (B)
                 </th>
-                <th className="py-2.5 px-4 w-44 text-center border-r border-[#00383f]">
-                  atraso em minutos (C)
+                <th className="py-2.5 px-4 w-64 text-center border-r border-[#00383f]">
+                  atraso / abono em min (C)
                 </th>
-                <th className="py-2.5 px-4 w-36 text-center border-r border-[#00383f]">
+                <th className="py-2.5 px-4 w-40 text-center border-r border-[#00383f]">
                   ABS diario (D)
                 </th>
                 <th className="py-2.5 px-4 text-center">
@@ -977,7 +1047,9 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 const weekdayName = getWeekdayAbbr(year, month, d.dia);
                 // Apenas finais de semana (Sábado e Domingo) em laranja
                 const isWeekend = isWeekendDate(year, month, d.dia);
-                const dailyAbs = calculateDayAbs(d.status, d.atraso, operator.jornadaMin);
+                const validAbono = Math.max(0, Math.min(operator.jornadaMin, Number(d.abonoMin) || 0));
+                const workedMinAbono = Math.max(0, operator.jornadaMin - validAbono);
+                const dailyAbs = calculateDayAbs(d.status, d.atraso, operator.jornadaMin, validAbono);
                 const isTargetRow = focusedDay === d.dia;
 
                 return (
@@ -989,6 +1061,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         ? 'bg-teal-100/80 dark:bg-teal-950/70 ring-2 ring-[#006772]'
                         : d.status === 'folga'
                         ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-80'
+                        : d.status === 'abono'
+                        ? 'bg-cyan-50/40 dark:bg-cyan-950/20'
                         : d.status === 'falta'
                         ? 'bg-rose-50/30 dark:bg-rose-950/20'
                         : d.status === 'dia ok/atraso'
@@ -1031,51 +1105,106 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       </select>
                     </td>
 
-                    {/* Atraso em Minutos (Coluna C) */}
+                    {/* Atraso / Abono em Minutos (Coluna C) */}
                     <td className="py-1.5 px-3 text-center border-r border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center justify-center gap-1">
-                        <input
-                          type="number"
-                          min="0"
-                          max={operator.jornadaMin}
-                          value={d.status === 'dia ok/atraso' ? d.atraso : 0}
-                          disabled={d.status !== 'dia ok/atraso'}
-                          onChange={(e) => handleAtrasoChange(d.dia, parseInt(e.target.value) || 0)}
-                          className={`w-20 text-center font-mono py-1 px-2 text-xs rounded border transition-colors ${
-                            d.status === 'dia ok/atraso'
-                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold border-amber-300 dark:border-amber-700'
-                              : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed'
-                          }`}
-                          placeholder="0"
-                        />
-                        <span className="text-[10px] text-slate-400 font-mono">min</span>
-
-                        {d.status === 'dia ok/atraso' && (
-                          <div className="flex items-center gap-0.5 ml-1">
-                            <button
-                              type="button"
-                              onClick={() => handleAtrasoChange(d.dia, d.atraso + 15)}
-                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
-                              title="+15 minutos"
-                            >
-                              +15
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleAtrasoChange(d.dia, d.atraso + 30)}
-                              className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
-                              title="+30 minutos"
-                            >
-                              +30
-                            </button>
+                      {d.status === 'abono' ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-[10px] font-semibold text-cyan-800 dark:text-cyan-300">
+                              Logou:
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={operator.jornadaMin}
+                              value={workedMinAbono}
+                              onChange={(e) => handleAbonoWorkedChange(d.dia, parseInt(e.target.value, 10) || 0)}
+                              title="Informe quantos minutos o colaborador trabalhou/logou no dia"
+                              className="w-16 text-center font-mono py-1 px-1.5 text-xs rounded border bg-cyan-50 dark:bg-cyan-950/40 text-cyan-950 dark:text-cyan-100 font-bold border-cyan-300 dark:border-cyan-700"
+                            />
+                            <span className="text-[10px] text-slate-400 font-mono">m</span>
+                            <div className="flex items-center gap-0.5 ml-0.5">
+                              {[60, 120, 180, 240].map((mins) => (
+                                <button
+                                  key={mins}
+                                  type="button"
+                                  onClick={() => handleAbonoWorkedChange(d.dia, Math.min(operator.jornadaMin, mins))}
+                                  className={`px-1 py-0.5 text-[10px] font-mono rounded cursor-pointer transition-colors ${
+                                    workedMinAbono === Math.min(operator.jornadaMin, mins)
+                                      ? 'bg-cyan-700 text-white font-bold'
+                                      : 'bg-cyan-100 dark:bg-cyan-900/60 hover:bg-cyan-200 text-cyan-900 dark:text-cyan-200'
+                                  }`}
+                                  title={`Logou ${mins / 60}h (${mins} min)`}
+                                >
+                                  {mins / 60}h
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                          <span className="text-[10px] font-mono font-semibold text-cyan-700 dark:text-cyan-300">
+                            Abonado: <strong>{validAbono} min</strong> ({formatMinutesToHours(validAbono)}) faltantes
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max={operator.jornadaMin}
+                            value={d.status === 'dia ok/atraso' ? d.atraso : 0}
+                            disabled={d.status !== 'dia ok/atraso'}
+                            onChange={(e) => handleAtrasoChange(d.dia, parseInt(e.target.value) || 0)}
+                            className={`w-20 text-center font-mono py-1 px-2 text-xs rounded border transition-colors ${
+                              d.status === 'dia ok/atraso'
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold border-amber-300 dark:border-amber-700'
+                                : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                            }`}
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-slate-400 font-mono">min</span>
+
+                          {d.status === 'dia ok/atraso' && (
+                            <div className="flex items-center gap-0.5 ml-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAtrasoChange(d.dia, d.atraso + 15)}
+                                className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
+                                title="+15 minutos"
+                              >
+                                +15
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAtrasoChange(d.dia, d.atraso + 30)}
+                                className="px-1 py-0.5 text-[10px] font-mono bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded cursor-pointer"
+                                title="+30 minutos"
+                              >
+                                +30
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* ABS Diário (Coluna D - Fórmula) */}
                     <td className="py-2 px-3 text-center border-r border-slate-100 dark:border-slate-800 font-mono tabular-nums">
-                      {dailyAbs === null ? (
+                      {d.status === 'abono' ? (
+                        dailyAbs === null ? (
+                          <span className="text-cyan-700 dark:text-cyan-300 font-medium text-[11px]" title="Jornada integralmente abonada (0 min escalados, 0 min perdidos)">
+                            — (abono integral)
+                          </span>
+                        ) : (
+                          <div>
+                            <span className="text-cyan-700 dark:text-cyan-300 font-bold block">
+                              0.00%
+                            </span>
+                            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans block">
+                              Abono {validAbono}m · {workedMinAbono}m trab.
+                            </span>
+                          </div>
+                        )
+                      ) : dailyAbs === null ? (
                         <span className="text-slate-400 font-normal italic" title="Folga não pontua e não distorce o cálculo">
                           — (folga)
                         </span>
@@ -1096,7 +1225,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
                     {/* Ações Rápidas por Linha */}
                     <td className="py-1.5 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'dia ok', 0)}
@@ -1107,6 +1236,19 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           }`}
                         >
                           OK
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetRowQuick(d.dia, 'abono', 0)}
+                          title="Abonar o restante dos horários faltantes"
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                            d.status === 'abono'
+                              ? 'bg-cyan-700 text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-100 dark:hover:bg-cyan-950/60'
+                          }`}
+                        >
+                          Abono
                         </button>
 
                         <button
@@ -1179,10 +1321,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               {operatorStats.minutosEscalados.toLocaleString('pt-BR')} min
             </div>
             <span className="text-[11px] text-teal-300/80 mt-0.5 block font-mono">
-              = (COUNTIF(&lt;&gt;folga) - COUNTIF("")) * {operator.jornadaMin}
+              = (Dias Úteis × {operator.jornadaMin}) − {operatorStats.minutosAbonados}m abonados
             </span>
             <span className="text-[11px] text-teal-300 mt-0.5 block">
-              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias úteis ({operatorStats.diasFolga} folgas flexíveis deduzidas)
+              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias ativos ({operatorStats.diasFolga} folgas{operatorStats.diasAbono > 0 ? ` · ${operatorStats.diasAbono}d c/ abono` : ''})
             </span>
           </div>
 

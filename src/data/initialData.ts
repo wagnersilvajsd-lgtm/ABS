@@ -84,6 +84,7 @@ export const SUPERVISORES_LIST = [
 export const STATUS_OPTIONS: { value: StatusType; label: string; desc: string }[] = [
   { value: 'dia ok', label: 'Dia OK', desc: 'Presença integral (380 min escalados, 0 perdidos)' },
   { value: 'dia ok/atraso', label: 'Dia OK / Atraso', desc: 'Presença com atraso em minutos' },
+  { value: 'abono', label: 'Abono (Horas Faltantes)', desc: 'Abona o restante dos horários faltantes (isento de perda no ABS)' },
   { value: 'atestado', label: 'Atestado Médico', desc: 'Ausência justificada (380 min perdidos)' },
   { value: 'falta', label: 'Falta Injustificada', desc: 'Ausência não justificada (380 min perdidos)' },
   { value: 'folga', label: 'Folga Escalar (DSR)', desc: 'Descanso remunerado (não entra no cálculo)' },

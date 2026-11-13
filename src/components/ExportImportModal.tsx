@@ -72,10 +72,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   // Generate CSV for Tab 3: BASE_APONTAMENTOS
   const generateBaseApontamentosCsv = () => {
-    const headers = ['OPERADOR', 'MINUTOS_PERDIDOS', 'MINUTOS_ESCALADOS'];
+    const headers = ['OPERADOR', 'MINUTOS_PERDIDOS', 'MINUTOS_ESCALADOS', 'MINUTOS_ABONADOS'];
     for (let d = 1; d <= totalDays; d++) {
       headers.push(`D${d}_STATUS`);
-      headers.push(`D${d}_ATRASO`);
+      headers.push(`D${d}_ATRASO_OU_ABONO`);
     }
 
     const rows = operators.map(op => {
@@ -84,12 +84,19 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       const rowVals: (string | number)[] = [
         `"${op.nome}"`,
         stats.minutosPerdidos,
-        stats.minutosEscalados
+        stats.minutosEscalados,
+        stats.minutosAbonados
       ];
       for (let d = 1; d <= totalDays; d++) {
         const record = opData.dias.find(item => item.dia === d);
         rowVals.push(`"${record ? record.status : 'dia ok'}"`);
-        rowVals.push(record ? record.atraso : 0);
+        rowVals.push(
+          record
+            ? record.status === 'abono'
+              ? record.abonoMin || 0
+              : record.atraso
+            : 0
+        );
       }
       return rowVals.join(';');
     });
