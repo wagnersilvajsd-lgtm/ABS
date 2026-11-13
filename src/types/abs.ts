@@ -1,17 +1,20 @@
 export type StatusType =
   | 'dia ok'
   | 'dia ok/atraso'
+  | 'abono' // Declaração médica/universidade etc. (horas faltantes justificadas que GERAM ABS)
+  | 'abono_legal' // Saída antecipada programada com banco de horas (NÃO gera ABS)
+  | 'banco_horas_integral' // Dia integral em banco de horas (NÃO gera ABS)
+  | 'folga_aniversario' // Folga aniversário (NÃO gera ABS)
   | 'atestado'
   | 'falta'
   | 'folga'
-  | 'suspensão'
-  | 'abono';
+  | 'suspensão';
 
 export interface DayRecord {
   dia: number;
   status: StatusType;
   atraso: number; // in minutes
-  abonoMin?: number; // missing remaining minutes excused (abono parcial/integral)
+  abonoMin?: number; // missing minutes in 'abono' (generates ABS) or BH minutes in 'abono_legal' (no ABS)
 }
 
 export interface Operation {
@@ -99,6 +102,10 @@ export interface OperatorStats {
   diasAtraso: number;
   diasAbono: number;
   minutosAbonados: number;
+  diasAbonoLegal: number;
+  minutosAbonoLegal: number;
+  diasFolgaAniversario: number;
+  diasBancoHorasIntegral: number;
 }
 
 export interface SupervisorStats {
@@ -121,5 +128,9 @@ export interface OperationSummary {
   totalMinutosAtraso: number;
   totalDiasAbono: number;
   totalMinutosAbonados: number;
+  totalDiasAbonoLegal: number;
+  totalMinutosAbonoLegal: number;
+  totalFolgaAniversario: number;
+  totalBancoHorasIntegral: number;
   supervisores: SupervisorStats[];
 }

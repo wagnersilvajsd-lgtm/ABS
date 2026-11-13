@@ -83,8 +83,27 @@ export const SUPERVISORES_LIST = [
 
 export const STATUS_OPTIONS: { value: StatusType; label: string; desc: string }[] = [
   { value: 'dia ok', label: 'Dia OK', desc: 'Presença integral (380 min escalados, 0 perdidos)' },
-  { value: 'dia ok/atraso', label: 'Dia OK / Atraso', desc: 'Presença com atraso em minutos' },
-  { value: 'abono', label: 'Abono (Horas Faltantes)', desc: 'Abona o restante dos horários faltantes (isento de perda no ABS)' },
+  { value: 'dia ok/atraso', label: 'Dia OK / Atraso', desc: 'Presença com atraso em minutos (gera ABS)' },
+  {
+    value: 'abono',
+    label: 'Abono (Horas Faltantes)',
+    desc: 'Declaração médica/universidade — horas faltantes justificadas geram ABS'
+  },
+  {
+    value: 'abono_legal',
+    label: 'Abono Legal (Saída Prog. BH)',
+    desc: 'Saída antecipada programada com Banco de Horas (não gera ABS)'
+  },
+  {
+    value: 'banco_horas_integral',
+    label: 'Banco de Horas Integral',
+    desc: 'Ausência integral compensada com Banco de Horas (não gera ABS)'
+  },
+  {
+    value: 'folga_aniversario',
+    label: 'Folga Aniversário',
+    desc: 'Folga comemorativa de aniversário (não gera ABS)'
+  },
   { value: 'atestado', label: 'Atestado Médico', desc: 'Ausência justificada (380 min perdidos)' },
   { value: 'falta', label: 'Falta Injustificada', desc: 'Ausência não justificada (380 min perdidos)' },
   { value: 'folga', label: 'Folga Escalar (DSR)', desc: 'Descanso remunerado (não entra no cálculo)' },

@@ -92,7 +92,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         rowVals.push(`"${record ? record.status : 'dia ok'}"`);
         rowVals.push(
           record
-            ? record.status === 'abono'
+            ? record.status === 'abono' || record.status === 'abono_legal'
               ? record.abonoMin || 0
               : record.atraso
             : 0

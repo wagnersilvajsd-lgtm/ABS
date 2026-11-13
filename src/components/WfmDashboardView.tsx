@@ -87,6 +87,12 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             } else if (d.status === 'dia ok/atraso') {
               days[d.dia - 1].minutosPerdidos += Math.max(0, Math.min(op.jornadaMin, d.atraso || 0));
               days[d.dia - 1].ocorrencias += 1;
+            } else if (d.status === 'abono') {
+              const missingMin = Math.max(0, Math.min(op.jornadaMin, Number(d.abonoMin) || 0));
+              if (missingMin > 0) {
+                days[d.dia - 1].minutosPerdidos += missingMin;
+                days[d.dia - 1].ocorrencias += 1;
+              }
             }
           }
         });
@@ -434,7 +440,8 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             <span>Faltas: {summary.totalFaltas} d</span>
             <span>Atestados: {summary.totalAtestados} d</span>
             <span>Atrasos: {summary.totalMinutosAtraso} min</span>
-            <span>Abonos: {summary.totalDiasAbono} d ({summary.totalMinutosAbonados}m)</span>
+            <span>Decl. (ABS): {summary.totalDiasAbono} d ({summary.totalMinutosAbonados}m)</span>
+            <span>BH / Aniv.: {summary.totalDiasAbonoLegal + summary.totalBancoHorasIntegral + summary.totalFolgaAniversario} d</span>
           </div>
         </div>
 

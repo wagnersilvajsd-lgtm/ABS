@@ -69,7 +69,10 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
           ...d,
           status: editingCell.status,
           atraso: editingCell.status === 'dia ok/atraso' ? editingCell.atraso : 0,
-          abonoMin: editingCell.status === 'abono' ? editingCell.abonoMin : undefined
+          abonoMin:
+            editingCell.status === 'abono' || editingCell.status === 'abono_legal'
+              ? editingCell.abonoMin
+              : undefined
         };
       }
       return d;
@@ -265,6 +268,9 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       const isOk = d.status === 'dia ok';
                       const isAtraso = d.status === 'dia ok/atraso';
                       const isAbono = d.status === 'abono';
+                      const isAbonoLegal = d.status === 'abono_legal';
+                      const isBhIntegral = d.status === 'banco_horas_integral';
+                      const isAniversario = d.status === 'folga_aniversario';
                       const isFalta = d.status === 'falta';
                       const isAtestado = d.status === 'atestado';
                       const isSuspensao = d.status === 'suspensão';
@@ -282,7 +288,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                               status: d.status,
                               atraso: d.atraso,
                               abonoMin:
-                                d.status === 'abono'
+                                d.status === 'abono' || d.status === 'abono_legal'
                                   ? validAbono
                                   : Math.max(0, op.jornadaMin - Math.min(120, op.jornadaMin))
                             })
@@ -292,7 +298,13 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                             isAtraso
                               ? `(${d.atraso} min)`
                               : isAbono
-                              ? `(${validAbono} min abonados / ${Math.max(0, op.jornadaMin - validAbono)} min logados)`
+                              ? `(${validAbono} min faltantes / ${Math.max(0, op.jornadaMin - validAbono)} min logados — gera ABS)`
+                              : isAbonoLegal
+                              ? `(${validAbono} min BH prog. / ${Math.max(0, op.jornadaMin - validAbono)} min logados — sem ABS)`
+                              : isBhIntegral
+                              ? '(Banco de Horas Integral — sem ABS)'
+                              : isAniversario
+                              ? '(Folga Aniversário — sem ABS)'
                               : ''
                           } (Clique para alterar)`}
                         >
@@ -303,7 +315,13 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                 : isAtraso
                                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300'
                                 : isAbono
+                                ? 'bg-orange-500 text-white'
+                                : isAbonoLegal
                                 ? 'bg-cyan-600 text-white'
+                                : isBhIntegral
+                                ? 'bg-indigo-600 text-white'
+                                : isAniversario
+                                ? 'bg-emerald-600 text-white'
                                 : isFalta
                                 ? 'bg-rose-600 text-white'
                                 : isAtestado
@@ -313,7 +331,25 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800/50 dark:text-slate-500'
                             }`}
                           >
-                            {isOk ? 'OK' : isAtraso ? `${d.atraso}` : isAbono ? 'AB' : isFalta ? 'F' : isAtestado ? 'A' : isSuspensao ? 'S' : '—'}
+                            {isOk
+                              ? 'OK'
+                              : isAtraso
+                              ? `${d.atraso}`
+                              : isAbono
+                              ? 'DC'
+                              : isAbonoLegal
+                              ? 'AL'
+                              : isBhIntegral
+                              ? 'BH'
+                              : isAniversario
+                              ? 'AN'
+                              : isFalta
+                              ? 'F'
+                              : isAtestado
+                              ? 'A'
+                              : isSuspensao
+                              ? 'S'
+                              : '—'}
                           </div>
                         </td>
                       );
@@ -363,7 +399,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                           status: opt.value,
                           atraso: opt.value === 'dia ok/atraso' ? (editingCell.atraso || 15) : 0,
                           abonoMin:
-                            opt.value === 'abono'
+                            opt.value === 'abono' || opt.value === 'abono_legal'
                               ? editingCell.abonoMin || Math.max(0, editingCell.jornadaMin - Math.min(120, editingCell.jornadaMin))
                               : editingCell.abonoMin
                         })
@@ -401,13 +437,31 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                 </div>
               )}
 
-              {editingCell.status === 'abono' && (
-                <div className="p-3 rounded-lg bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 space-y-2.5">
+              {(editingCell.status === 'abono' || editingCell.status === 'abono_legal') && (
+                <div
+                  className={`p-3 rounded-lg border space-y-2.5 ${
+                    editingCell.status === 'abono'
+                      ? 'bg-orange-50/70 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
+                      : 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-200 dark:border-cyan-800'
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs font-bold text-cyan-900 dark:text-cyan-200">
+                    <label
+                      className={`text-xs font-bold ${
+                        editingCell.status === 'abono'
+                          ? 'text-orange-900 dark:text-orange-200'
+                          : 'text-cyan-900 dark:text-cyan-200'
+                      }`}
+                    >
                       Tempo Trabalhado / Logado (min):
                     </label>
-                    <span className="text-[11px] font-mono text-cyan-700 dark:text-cyan-300">
+                    <span
+                      className={`text-[11px] font-mono ${
+                        editingCell.status === 'abono'
+                          ? 'text-orange-700 dark:text-orange-300'
+                          : 'text-cyan-700 dark:text-cyan-300'
+                      }`}
+                    >
                       Jornada: {editingCell.jornadaMin} min
                     </span>
                   </div>
@@ -424,7 +478,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                           abonoMin: Math.max(0, editingCell.jornadaMin - worked)
                         });
                       }}
-                      className="w-28 h-9 px-3 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 rounded-lg font-mono text-sm font-bold text-cyan-950 dark:text-cyan-100"
+                      className="w-28 h-9 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-mono text-sm font-bold text-slate-900 dark:text-slate-100"
                     />
                     <div className="flex items-center gap-1 flex-wrap">
                       {[
@@ -448,8 +502,10 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                             }
                             className={`px-2 py-1 text-[11px] font-mono rounded cursor-pointer transition-colors ${
                               active
-                                ? 'bg-cyan-700 text-white font-bold'
-                                : 'bg-white dark:bg-slate-800 border border-cyan-200 dark:border-cyan-700 text-cyan-800 dark:text-cyan-200 hover:bg-cyan-100'
+                                ? editingCell.status === 'abono'
+                                  ? 'bg-orange-600 text-white font-bold'
+                                  : 'bg-cyan-700 text-white font-bold'
+                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
                             }`}
                           >
                             {preset.label}
@@ -458,10 +514,17 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       })}
                     </div>
                   </div>
-                  <p className="text-[11px] text-cyan-800 dark:text-cyan-300 font-medium">
-                    Restante abonado: <strong>{editingCell.abonoMin} min</strong> (não contabiliza como perda no ABS; apenas os{' '}
-                    <strong>{Math.max(0, editingCell.jornadaMin - editingCell.abonoMin)} min</strong> trabalhados compõem a escala do dia).
-                  </p>
+                  {editingCell.status === 'abono' ? (
+                    <p className="text-[11px] text-orange-800 dark:text-orange-300 font-medium">
+                      Horas faltantes (declaração): <strong>{editingCell.abonoMin} min</strong> serão somados como minutos perdidos e{' '}
+                      <strong>geram ABS</strong> no mês ({Math.max(0, editingCell.jornadaMin - editingCell.abonoMin)} min trabalhados).
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-cyan-800 dark:text-cyan-300 font-medium">
+                      Saída antecipada programada (BH): <strong>{editingCell.abonoMin} min</strong> cobertos pelo Banco de Horas —{' '}
+                      <strong>não gera ABS</strong> ({Math.max(0, editingCell.jornadaMin - editingCell.abonoMin)} min trabalhados).
+                    </p>
+                  )}
                 </div>
               )}
             </div>

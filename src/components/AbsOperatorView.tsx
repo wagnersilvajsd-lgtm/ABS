@@ -184,7 +184,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             abonoMin: undefined
           };
         }
-        if (newStatus === 'abono') {
+        if (newStatus === 'abono' || newStatus === 'abono_legal') {
           const defaultAbono = Math.max(0, operator.jornadaMin - Math.min(120, operator.jornadaMin));
           return {
             ...d,
@@ -221,14 +221,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     onUpdateDays(operator.id, updated);
   };
 
-  const handleAbonoWorkedChange = (diaNum: number, workedMinutes: number) => {
+  const handleAbonoWorkedChange = (
+    diaNum: number,
+    workedMinutes: number,
+    targetStatus: 'abono' | 'abono_legal' = 'abono'
+  ) => {
     const validWorked = Math.max(0, Math.min(operator.jornadaMin, workedMinutes || 0));
     const nextAbono = Math.max(0, operator.jornadaMin - validWorked);
     const updated = dias.map(d => {
       if (d.dia === diaNum) {
         return {
           ...d,
-          status: 'abono' as StatusType,
+          status: targetStatus as StatusType,
           atraso: 0,
           abonoMin: nextAbono
         };
@@ -242,7 +246,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const handleSetRowQuick = (diaNum: number, status: StatusType, atraso: number = 0, abonoMin?: number) => {
     const updated = dias.map(d => {
       if (d.dia !== diaNum) return d;
-      if (status === 'abono') {
+      if (status === 'abono' || status === 'abono_legal') {
         const defaultAbono = abonoMin !== undefined
           ? Math.max(0, Math.min(operator.jornadaMin, abonoMin))
           : Math.max(0, operator.jornadaMin - Math.min(120, operator.jornadaMin));
@@ -317,10 +321,25 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
   // Counts of days for interactive filter tabs
   const countsByStatus = useMemo(() => {
-    const desvios = dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão').length;
+    const desvios = dias.filter(
+      d =>
+        d.status === 'dia ok/atraso' ||
+        d.status === 'abono' ||
+        d.status === 'falta' ||
+        d.status === 'atestado' ||
+        d.status === 'suspensão'
+    ).length;
     const faltas = dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado').length;
-    const abonos = dias.filter(d => d.status === 'abono').length;
-    const folgas = dias.filter(d => d.status === 'folga').length;
+    const abonos = dias.filter(
+      d =>
+        d.status === 'abono' ||
+        d.status === 'abono_legal' ||
+        d.status === 'banco_horas_integral' ||
+        d.status === 'folga_aniversario'
+    ).length;
+    const folgas = dias.filter(
+      d => d.status === 'folga' || d.status === 'folga_aniversario' || d.status === 'banco_horas_integral'
+    ).length;
     const fds = dias.filter(d => isWeekendDate(year, month, d.dia)).length;
     return { desvios, faltas, abonos, folgas, fds };
   }, [dias, year, month]);
@@ -329,16 +348,31 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const displayedDias = useMemo(() => {
     if (dayFilter === 'todos') return dias;
     if (dayFilter === 'desvios') {
-      return dias.filter(d => d.status === 'dia ok/atraso' || d.status === 'falta' || d.status === 'atestado' || d.status === 'suspensão');
+      return dias.filter(
+        d =>
+          d.status === 'dia ok/atraso' ||
+          d.status === 'abono' ||
+          d.status === 'falta' ||
+          d.status === 'atestado' ||
+          d.status === 'suspensão'
+      );
     }
     if (dayFilter === 'faltas') {
       return dias.filter(d => d.status === 'falta' || d.status === 'suspensão' || d.status === 'atestado');
     }
     if (dayFilter === 'abonos') {
-      return dias.filter(d => d.status === 'abono');
+      return dias.filter(
+        d =>
+          d.status === 'abono' ||
+          d.status === 'abono_legal' ||
+          d.status === 'banco_horas_integral' ||
+          d.status === 'folga_aniversario'
+      );
     }
     if (dayFilter === 'folgas') {
-      return dias.filter(d => d.status === 'folga');
+      return dias.filter(
+        d => d.status === 'folga' || d.status === 'folga_aniversario' || d.status === 'banco_horas_integral'
+      );
     }
     if (dayFilter === 'fds') {
       return dias.filter(d => isWeekendDate(year, month, d.dia));
@@ -356,8 +390,6 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   const totalDays = dias.length || monthWeekends.totalDays;
   const pctOk = Math.round((operatorStats.diasTrabalhados / totalDays) * 100);
   const pctFolga = Math.round((operatorStats.diasFolga / totalDays) * 100);
-  const pctAtraso = Math.round((operatorStats.diasAtraso / totalDays) * 100);
-  const pctFalta = Math.round(((operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao) / totalDays) * 100);
 
   // Helper function to get status badge styling
   const getStatusBadgeClass = (status: StatusType) => {
@@ -367,7 +399,13 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
       case 'dia ok/atraso':
         return 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800/40';
       case 'abono':
+        return 'bg-orange-50 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300 border-orange-200 dark:border-orange-800/40';
+      case 'abono_legal':
         return 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/40';
+      case 'banco_horas_integral':
+        return 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/40';
+      case 'folga_aniversario':
+        return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40';
       case 'falta':
         return 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800/40';
       case 'atestado':
@@ -714,16 +752,26 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 <span>Atrasos: <strong>{operatorStats.diasAtraso}d</strong></span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shrink-0"></span>
-                <span>Abonos: <strong>{operatorStats.diasAbono}d</strong> ({operatorStats.minutosAbonados}m)</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
+                <span>Decl./Falt. (ABS): <strong>{operatorStats.diasAbono}d</strong> ({operatorStats.minutosAbonados}m)</span>
               </div>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shrink-0"></span>
+                <span>Abono Legal/BH: <strong>{operatorStats.diasAbonoLegal + operatorStats.diasBancoHorasIntegral}d</strong></span>
+              </div>
+              {operatorStats.diasFolgaAniversario > 0 && (
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                  <span>Aniversário: <strong>{operatorStats.diasFolgaAniversario}d</strong></span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
                 <span>Faltas: <strong>{operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao}d</strong></span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
-                <span>Folgas: <strong>{operatorStats.diasFolga}d</strong> ({pctFolga}%)</span>
+                <span>Folgas DSR: <strong>{operatorStats.diasFolga}d</strong> ({pctFolga}%)</span>
               </div>
             </div>
           </div>
@@ -895,15 +943,25 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             // Status color dot
             let dotColor = 'bg-[#006772]';
             if (d.status === 'dia ok/atraso') dotColor = 'bg-[#d89627]';
-            if (d.status === 'abono') dotColor = 'bg-cyan-500';
+            if (d.status === 'abono') dotColor = 'bg-orange-500';
+            if (d.status === 'abono_legal') dotColor = 'bg-cyan-500';
+            if (d.status === 'banco_horas_integral') dotColor = 'bg-indigo-500';
+            if (d.status === 'folga_aniversario') dotColor = 'bg-emerald-500';
             if (d.status === 'falta') dotColor = 'bg-rose-500';
             if (d.status === 'atestado') dotColor = 'bg-blue-500';
             if (d.status === 'suspensão') dotColor = 'bg-purple-500';
             if (d.status === 'folga') dotColor = 'bg-slate-400';
 
-            const dotTitle = d.status === 'abono'
-              ? `Dia ${d.dia} (${weekdayName}) — Abono (${d.abonoMin || 0} min abonados)`
-              : `Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`;
+            const dotTitle =
+              d.status === 'abono'
+                ? `Dia ${d.dia} (${weekdayName}) — Declaração / Horas Faltantes (${d.abonoMin || 0} min faltantes — gera ABS)`
+                : d.status === 'abono_legal'
+                ? `Dia ${d.dia} (${weekdayName}) — Abono Legal BH (${d.abonoMin || 0} min BH — sem ABS)`
+                : d.status === 'banco_horas_integral'
+                ? `Dia ${d.dia} (${weekdayName}) — Banco de Horas Integral (sem ABS)`
+                : d.status === 'folga_aniversario'
+                ? `Dia ${d.dia} (${weekdayName}) — Folga Aniversário (sem ABS)`
+                : `Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`;
 
             return (
               <button
@@ -1062,7 +1120,13 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         : d.status === 'folga'
                         ? 'bg-slate-50/40 dark:bg-slate-900/40 opacity-80'
                         : d.status === 'abono'
+                        ? 'bg-orange-50/40 dark:bg-orange-950/20'
+                        : d.status === 'abono_legal'
                         ? 'bg-cyan-50/40 dark:bg-cyan-950/20'
+                        : d.status === 'banco_horas_integral'
+                        ? 'bg-indigo-50/40 dark:bg-indigo-950/20'
+                        : d.status === 'folga_aniversario'
+                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20'
                         : d.status === 'falta'
                         ? 'bg-rose-50/30 dark:bg-rose-950/20'
                         : d.status === 'dia ok/atraso'
@@ -1105,12 +1169,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       </select>
                     </td>
 
-                    {/* Atraso / Abono em Minutos (Coluna C) */}
+                    {/* Atraso / Abono / BH em Minutos (Coluna C) */}
                     <td className="py-1.5 px-3 text-center border-r border-slate-100 dark:border-slate-800">
-                      {d.status === 'abono' ? (
+                      {d.status === 'abono' || d.status === 'abono_legal' ? (
                         <div className="flex flex-col items-center gap-1">
                           <div className="flex items-center justify-center gap-1">
-                            <span className="text-[10px] font-semibold text-cyan-800 dark:text-cyan-300">
+                            <span
+                              className={`text-[10px] font-semibold ${
+                                d.status === 'abono'
+                                  ? 'text-orange-800 dark:text-orange-300'
+                                  : 'text-cyan-800 dark:text-cyan-300'
+                              }`}
+                            >
                               Logou:
                             </span>
                             <input
@@ -1118,9 +1188,19 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                               min="0"
                               max={operator.jornadaMin}
                               value={workedMinAbono}
-                              onChange={(e) => handleAbonoWorkedChange(d.dia, parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) =>
+                                handleAbonoWorkedChange(
+                                  d.dia,
+                                  parseInt(e.target.value, 10) || 0,
+                                  d.status as 'abono' | 'abono_legal'
+                                )
+                              }
                               title="Informe quantos minutos o colaborador trabalhou/logou no dia"
-                              className="w-16 text-center font-mono py-1 px-1.5 text-xs rounded border bg-cyan-50 dark:bg-cyan-950/40 text-cyan-950 dark:text-cyan-100 font-bold border-cyan-300 dark:border-cyan-700"
+                              className={`w-16 text-center font-mono py-1 px-1.5 text-xs rounded border font-bold ${
+                                d.status === 'abono'
+                                  ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-950 dark:text-orange-100 border-orange-300 dark:border-orange-700'
+                                  : 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-950 dark:text-cyan-100 border-cyan-300 dark:border-cyan-700'
+                              }`}
                             />
                             <span className="text-[10px] text-slate-400 font-mono">m</span>
                             <div className="flex items-center gap-0.5 ml-0.5">
@@ -1128,10 +1208,20 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                                 <button
                                   key={mins}
                                   type="button"
-                                  onClick={() => handleAbonoWorkedChange(d.dia, Math.min(operator.jornadaMin, mins))}
+                                  onClick={() =>
+                                    handleAbonoWorkedChange(
+                                      d.dia,
+                                      Math.min(operator.jornadaMin, mins),
+                                      d.status as 'abono' | 'abono_legal'
+                                    )
+                                  }
                                   className={`px-1 py-0.5 text-[10px] font-mono rounded cursor-pointer transition-colors ${
                                     workedMinAbono === Math.min(operator.jornadaMin, mins)
-                                      ? 'bg-cyan-700 text-white font-bold'
+                                      ? d.status === 'abono'
+                                        ? 'bg-orange-600 text-white font-bold'
+                                        : 'bg-cyan-700 text-white font-bold'
+                                      : d.status === 'abono'
+                                      ? 'bg-orange-100 dark:bg-orange-900/60 hover:bg-orange-200 text-orange-900 dark:text-orange-200'
                                       : 'bg-cyan-100 dark:bg-cyan-900/60 hover:bg-cyan-200 text-cyan-900 dark:text-cyan-200'
                                   }`}
                                   title={`Logou ${mins / 60}h (${mins} min)`}
@@ -1141,10 +1231,24 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                               ))}
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono font-semibold text-cyan-700 dark:text-cyan-300">
-                            Abonado: <strong>{validAbono} min</strong> ({formatMinutesToHours(validAbono)}) faltantes
-                          </span>
+                          {d.status === 'abono' ? (
+                            <span className="text-[10px] font-mono font-semibold text-orange-700 dark:text-orange-300">
+                              Faltantes: <strong>{validAbono} min</strong> ({formatMinutesToHours(validAbono)}) · gera ABS
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono font-semibold text-cyan-700 dark:text-cyan-300">
+                              Saída Prog. BH: <strong>{validAbono} min</strong> ({formatMinutesToHours(validAbono)}) · 0 ABS
+                            </span>
+                          )}
                         </div>
+                      ) : d.status === 'banco_horas_integral' ? (
+                        <span className="inline-block px-2 py-1 text-[11px] font-mono font-semibold rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
+                          BH Integral ({operator.jornadaMin}m · sem ABS)
+                        </span>
+                      ) : d.status === 'folga_aniversario' ? (
+                        <span className="inline-block px-2 py-1 text-[11px] font-mono font-semibold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                          Folga Aniversário (sem ABS)
+                        </span>
                       ) : (
                         <div className="flex items-center justify-center gap-1">
                           <input
@@ -1190,9 +1294,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                     {/* ABS Diário (Coluna D - Fórmula) */}
                     <td className="py-2 px-3 text-center border-r border-slate-100 dark:border-slate-800 font-mono tabular-nums">
                       {d.status === 'abono' ? (
+                        <div>
+                          <span className="text-orange-700 dark:text-orange-300 font-bold block">
+                            {((dailyAbs || 0) * 100).toFixed(2)}%
+                          </span>
+                          <span className="text-[9px] text-orange-600 dark:text-orange-400 font-sans block">
+                            Decl. {validAbono}m falt. · {workedMinAbono}m trab.
+                          </span>
+                        </div>
+                      ) : d.status === 'abono_legal' ? (
                         dailyAbs === null ? (
-                          <span className="text-cyan-700 dark:text-cyan-300 font-medium text-[11px]" title="Jornada integralmente abonada (0 min escalados, 0 min perdidos)">
-                            — (abono integral)
+                          <span className="text-cyan-700 dark:text-cyan-300 font-medium text-[11px]">
+                            — (BH integral)
                           </span>
                         ) : (
                           <div>
@@ -1200,10 +1313,18 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                               0.00%
                             </span>
                             <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans block">
-                              Abono {validAbono}m · {workedMinAbono}m trab.
+                              Abono Legal {validAbono}m BH · {workedMinAbono}m trab.
                             </span>
                           </div>
                         )
+                      ) : d.status === 'banco_horas_integral' ? (
+                        <span className="text-indigo-600 dark:text-indigo-300 font-normal italic" title="Banco de Horas Integral não gera ABS">
+                          — (BH integral)
+                        </span>
+                      ) : d.status === 'folga_aniversario' ? (
+                        <span className="text-emerald-600 dark:text-emerald-300 font-normal italic" title="Folga Aniversário não gera ABS">
+                          — (aniversário)
+                        </span>
                       ) : dailyAbs === null ? (
                         <span className="text-slate-400 font-normal italic" title="Folga não pontua e não distorce o cálculo">
                           — (folga)
@@ -1225,7 +1346,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
                     {/* Ações Rápidas por Linha */}
                     <td className="py-1.5 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'dia ok', 0)}
@@ -1241,14 +1362,53 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetRowQuick(d.dia, 'abono', 0)}
-                          title="Abonar o restante dos horários faltantes"
+                          title="Abono por declaração médica/universidade (horas faltantes geram ABS)"
                           className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
                             d.status === 'abono'
+                              ? 'bg-orange-600 text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-orange-100 dark:hover:bg-orange-950/60'
+                          }`}
+                        >
+                          Decl.
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetRowQuick(d.dia, 'abono_legal', 0)}
+                          title="Abono Legal — Saída antecipada programada com Banco de Horas (não gera ABS)"
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                            d.status === 'abono_legal'
                               ? 'bg-cyan-700 text-white font-bold'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-100 dark:hover:bg-cyan-950/60'
                           }`}
                         >
-                          Abono
+                          Abono Legal
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetRowQuick(d.dia, 'banco_horas_integral', 0)}
+                          title="Banco de Horas Integral (não gera ABS)"
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                            d.status === 'banco_horas_integral'
+                              ? 'bg-indigo-700 text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/60'
+                          }`}
+                        >
+                          BH Int.
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetRowQuick(d.dia, 'folga_aniversario', 0)}
+                          title="Folga Aniversário (não gera ABS)"
+                          className={`px-2 py-0.5 text-[10px] rounded transition-colors cursor-pointer ${
+                            d.status === 'folga_aniversario'
+                              ? 'bg-emerald-700 text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
+                          }`}
+                        >
+                          Aniv.
                         </button>
 
                         <button
@@ -1321,10 +1481,12 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
               {operatorStats.minutosEscalados.toLocaleString('pt-BR')} min
             </div>
             <span className="text-[11px] text-teal-300/80 mt-0.5 block font-mono">
-              = (Dias Úteis × {operator.jornadaMin}) − {operatorStats.minutosAbonados}m abonados
+              = (Dias Úteis × {operator.jornadaMin}) − {operatorStats.minutosAbonoLegal}m BH Legal
             </span>
             <span className="text-[11px] text-teal-300 mt-0.5 block">
-              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias ativos ({operatorStats.diasFolga} folgas{operatorStats.diasAbono > 0 ? ` · ${operatorStats.diasAbono}d c/ abono` : ''})
+              {operatorStats.diasTrabalhados + operatorStats.diasFalta + operatorStats.diasAtestado + operatorStats.diasSuspensao} dias ativos ({operatorStats.diasFolga} DSR
+              {operatorStats.diasFolgaAniversario > 0 ? ` · ${operatorStats.diasFolgaAniversario}d aniv.` : ''}
+              {operatorStats.diasBancoHorasIntegral > 0 ? ` · ${operatorStats.diasBancoHorasIntegral}d BH int.` : ''})
             </span>
           </div>
 

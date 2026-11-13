@@ -13,16 +13,22 @@ export function calculateDayAbs(
   jornadaMin: number = 380,
   abonoMin: number = 0
 ): number | null {
-  if (status === 'folga') {
-    return null; // Empty in spreadsheet, doesn't penalize or count
+  if (status === 'folga' || status === 'folga_aniversario' || status === 'banco_horas_integral') {
+    return null; // Não pontua e não gera ABS
   }
   if (status === 'dia ok') {
     return 0;
   }
   if (status === 'abono') {
-    const validAbono = Math.max(0, Math.min(jornadaMin, Number(abonoMin) || 0));
-    const workedMin = Math.max(0, jornadaMin - validAbono);
-    return workedMin > 0 ? 0 : null; // Abono isenta o restante faltante de perda no ABS
+    // Declaração médica/universidade etc.: horas faltantes justificadas GERAM ABS
+    const validMissing = Math.max(0, Math.min(jornadaMin, Number(abonoMin) || 0));
+    return jornadaMin > 0 ? validMissing / jornadaMin : 0;
+  }
+  if (status === 'abono_legal') {
+    // Saída antecipada programada com Banco de Horas: NÃO gera ABS
+    const validBh = Math.max(0, Math.min(jornadaMin, Number(abonoMin) || 0));
+    const workedMin = Math.max(0, jornadaMin - validBh);
+    return workedMin > 0 ? 0 : null;
   }
   if (status === 'dia ok/atraso') {
     const validDelay = Math.max(0, Math.min(jornadaMin, Number(atraso) || 0));
@@ -36,12 +42,13 @@ export function calculateDayAbs(
 
 /**
  * Calculates operator monthly stats matching Google Sheets formulas:
- * D39 (Minutos Perdidos): SUM(C7:C37) + (COUNTIF(B7:B37, "falta") + COUNTIF(B7:B37, "atestado") + COUNTIF(B7:B37, "suspensão")) * D3
- * D40 (Minutos Escalados): (COUNTIF(B7:B37, "<>folga") - COUNTIF(B7:B37, "")) * D3 - SUM(minutosAbonados)
- * D38 (ABS Consolidado): D39 / D40
+ * - 'abono' (Declaração / Horas Faltantes): soma horas faltantes em Minutos Perdidos (GERA ABS) e mantém jornadaMin em Escalados.
+ * - 'abono_legal' (Saída Antecipada Programada com BH): NÃO gera ABS (0 min perdidos, apenas horas logadas em Escalados).
+ * - 'folga', 'folga_aniversario', 'banco_horas_integral': NÃO geram ABS e NÃO entram em Minutos Escalados.
  */
 export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 380): OperatorStats {
   let minutosAtraso = 0;
+  let minutosAbonoFaltante = 0;
   let countFalta = 0;
   let countAtestado = 0;
   let countSuspensao = 0;
@@ -49,27 +56,53 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
   let countDiaOkAtraso = 0;
   let countFolga = 0;
   let countAbono = 0;
-  let minutosAbonados = 0;
+  let countAbonoLegal = 0;
+  let minutosAbonoLegal = 0;
+  let countFolgaAniversario = 0;
+  let countBancoHorasIntegral = 0;
   let minutosEscalados = 0;
-  let diasTrabalhadosAbono = 0;
+  let diasTrabalhadosParciais = 0;
 
   for (const d of dias) {
     const status = (d.status || '').trim().toLowerCase();
 
-    // Status vazio ou folga NÃO entra em minutos escalados
+    // Status vazio, folga DSR, folga aniversário ou banco de horas integral NÃO entra em minutos escalados e NÃO gera ABS
     if (status === 'folga' || !status) {
       countFolga++;
       continue;
     }
 
-    if (status === 'abono') {
-      countAbono++;
-      const validAbono = Math.max(0, Math.min(jornadaMin, Number(d.abonoMin) || 0));
-      const workedMin = Math.max(0, jornadaMin - validAbono);
-      minutosAbonados += validAbono;
+    if (status === 'folga_aniversario') {
+      countFolgaAniversario++;
+      continue;
+    }
+
+    if (status === 'banco_horas_integral') {
+      countBancoHorasIntegral++;
+      continue;
+    }
+
+    if (status === 'abono_legal') {
+      countAbonoLegal++;
+      const validBh = Math.max(0, Math.min(jornadaMin, Number(d.abonoMin) || 0));
+      const workedMin = Math.max(0, jornadaMin - validBh);
+      minutosAbonoLegal += validBh;
       minutosEscalados += workedMin;
       if (workedMin > 0) {
-        diasTrabalhadosAbono++;
+        diasTrabalhadosParciais++;
+      }
+      continue;
+    }
+
+    if (status === 'abono') {
+      // Declaração médica/universidade etc.: horas faltantes justificadas GERAM ABS
+      countAbono++;
+      const validMissing = Math.max(0, Math.min(jornadaMin, Number(d.abonoMin) || 0));
+      const workedMin = Math.max(0, jornadaMin - validMissing);
+      minutosAbonoFaltante += validMissing;
+      minutosEscalados += jornadaMin;
+      if (workedMin > 0) {
+        diasTrabalhadosParciais++;
       }
       continue;
     }
@@ -97,9 +130,11 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
     }
   }
 
-  // Minutos Perdidos (Numerador): soma dos atrasos + faltas/atestados/suspensões * jornadaMin
-  // Nota: horas faltantes abonadas ('abono') NÃO contabilizam como minutos perdidos
-  const minutosPerdidos = minutosAtraso + (countFalta + countAtestado + countSuspensao) * jornadaMin;
+  // Minutos Perdidos (Numerador): atrasos + horas faltantes em 'abono' (declaração) + faltas/atestados/suspensões * jornadaMin
+  const minutosPerdidos =
+    minutosAtraso +
+    minutosAbonoFaltante +
+    (countFalta + countAtestado + countSuspensao) * jornadaMin;
 
   // ABS Consolidado
   const absMensal = minutosEscalados > 0 ? minutosPerdidos / minutosEscalados : 0;
@@ -108,14 +143,18 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
     minutosPerdidos,
     minutosEscalados,
     absMensal,
-    diasTrabalhados: countDiaOk + countDiaOkAtraso + diasTrabalhadosAbono,
+    diasTrabalhados: countDiaOk + countDiaOkAtraso + diasTrabalhadosParciais,
     diasFolga: countFolga,
     diasFalta: countFalta,
     diasAtestado: countAtestado,
     diasSuspensao: countSuspensao,
     diasAtraso: countDiaOkAtraso,
     diasAbono: countAbono,
-    minutosAbonados
+    minutosAbonados: minutosAbonoFaltante,
+    diasAbonoLegal: countAbonoLegal,
+    minutosAbonoLegal,
+    diasFolgaAniversario: countFolgaAniversario,
+    diasBancoHorasIntegral: countBancoHorasIntegral
   };
 }
 
@@ -170,6 +209,10 @@ export function calculateOperationSummary(
   let totalMinutosAtraso = 0;
   let totalDiasAbono = 0;
   let totalMinutosAbonados = 0;
+  let totalDiasAbonoLegal = 0;
+  let totalMinutosAbonoLegal = 0;
+  let totalFolgaAniversario = 0;
+  let totalBancoHorasIntegral = 0;
 
   operators.forEach(op => {
     const opData = monthlyData[op.id];
@@ -182,6 +225,10 @@ export function calculateOperationSummary(
       totalSuspensoes += stats.diasSuspensao;
       totalDiasAbono += stats.diasAbono;
       totalMinutosAbonados += stats.minutosAbonados;
+      totalDiasAbonoLegal += stats.diasAbonoLegal;
+      totalMinutosAbonoLegal += stats.minutosAbonoLegal;
+      totalFolgaAniversario += stats.diasFolgaAniversario;
+      totalBancoHorasIntegral += stats.diasBancoHorasIntegral;
       // Extract delay minutes specifically
       opData.dias.forEach(d => {
         if (d.status === 'dia ok/atraso') {
@@ -208,6 +255,10 @@ export function calculateOperationSummary(
     totalMinutosAtraso,
     totalDiasAbono,
     totalMinutosAbonados,
+    totalDiasAbonoLegal,
+    totalMinutosAbonoLegal,
+    totalFolgaAniversario,
+    totalBancoHorasIntegral,
     supervisores: supervisorStatsList
   };
 }
