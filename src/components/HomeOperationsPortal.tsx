@@ -12,7 +12,6 @@ import {
   Image as ImageIcon,
   Moon,
   Plus,
-  Search,
   Sun,
   Trophy,
   Upload
@@ -39,7 +38,6 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
   onEnterOperation,
   onAddOperation
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [brokenLogos, setBrokenLogos] = useState<Record<string, boolean>>({});
@@ -128,18 +126,6 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
       totalOperators: operators.length
     };
   }, [operations.length, operationCards, operators]);
-
-  // Filtered operations
-  const filteredCards = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return operationCards;
-    return operationCards.filter(
-      ({ op }) =>
-        op.nome.toLowerCase().includes(term) ||
-        op.cliente.toLowerCase().includes(term) ||
-        (op.descricao || '').toLowerCase().includes(term)
-    );
-  }, [operationCards, searchTerm]);
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
@@ -263,9 +249,9 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8 animate-view-enter">
-        {/* Hero & Filter Strip */}
+        {/* Hero Strip */}
         <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-slate-200/70 dark:border-slate-800">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] mb-1.5">
                 Controle de Absenteísmo e Escalas
@@ -299,23 +285,6 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                   {totals.totalOperators}
                 </span>
               </div>
-            </div>
-          </div>
-
-          <div className="pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar operação pelo nome ou cliente..."
-                className="w-full h-10 pl-10 pr-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-              />
-            </div>
-
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-              {filteredCards.length} de {operations.length} operação(ões) exibida(s)
             </div>
           </div>
         </section>
@@ -549,19 +518,19 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
         </section>
 
         {/* Operations Selection Grid */}
-        {filteredCards.length === 0 ? (
+        {operationCards.length === 0 ? (
           <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
             <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
             <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
-              Nenhuma operação encontrada
+              Nenhuma operação cadastrada
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Ajuste o termo de busca ou cadastre uma nova operação.
+              Cadastre uma nova operação para começar.
             </p>
           </section>
         ) : (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-            {filteredCards.map(({ op, supervisorsCount, operatorsCount, absGeral, isOpenForSetup }) => {
+            {operationCards.map(({ op, supervisorsCount, operatorsCount, absGeral, isOpenForSetup }) => {
               const withinMeta = absGeral <= (op.metaAbs || 0.03);
               const showFallback = !op.logoUrl || brokenLogos[op.id];
 
