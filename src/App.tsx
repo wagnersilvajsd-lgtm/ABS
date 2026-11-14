@@ -36,7 +36,7 @@ import {
   parseMonthKey,
   WeekendFolgaMode
 } from './utils/calendar';
-import { calculateOperationSummary } from './utils/calculations';
+import { calculateOperationSummary, getOperationMetaForMonth } from './utils/calculations';
 import { Navbar } from './components/Navbar';
 import { HomeOperationsPortal } from './components/HomeOperationsPortal';
 import { OperacoesView } from './components/OperacoesView';
@@ -1043,6 +1043,7 @@ export default function App() {
         onResetDefaults={() => setIsResetConfirmOpen(true)}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         absGeral={globalSummary.absGeral}
+        activeMetaAbs={getOperationMetaForMonth(activeOperation, selectedMonthKey)}
         activeOperationName={activeOperation?.nome}
         operations={operations}
         selectedOperationId={selectedOperationId}
@@ -1135,6 +1136,7 @@ export default function App() {
           <OperacoesView
             operations={operations}
             selectedOperationId={selectedOperationId}
+            selectedMonthKey={selectedMonthKey}
             onSelectOperation={handleSelectOperation}
             onAddOperation={handleAddOperation}
             onUpdateOperation={handleUpdateOperation}

@@ -23,6 +23,7 @@ export interface Operation {
   cliente: string;
   logoUrl?: string;
   metaAbs: number; // e.g. 0.03 (3.00%)
+  monthlyMetas?: Record<string, number>; // per-month overrides keyed by 'YYYY-MM', e.g. { '2026-11': 0.035 }
   jornadaPadraoMin: number; // typically 380 min (6h20)
   descricao?: string;
   supervisores: string[];

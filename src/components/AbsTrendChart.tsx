@@ -9,6 +9,7 @@ interface AbsTrendChartProps {
   points3M: MonthlyAbsPoint[];
   points6M: MonthlyAbsPoint[];
   metaAbs?: number;
+  metaAbsByMonth?: Record<string, number>;
   selectedMonthKey: string;
   onSelectMonthKey?: (monthKey: string) => void;
   headerRight?: React.ReactNode;
@@ -20,6 +21,7 @@ export const AbsTrendChart: React.FC<AbsTrendChartProps> = ({
   points3M,
   points6M,
   metaAbs = 0.03,
+  metaAbsByMonth,
   selectedMonthKey,
   onSelectMonthKey,
   headerRight
@@ -129,10 +131,11 @@ export const AbsTrendChart: React.FC<AbsTrendChartProps> = ({
 
         <div className="h-full flex items-end justify-between gap-3">
           {points.map((pt, idx) => {
+            const barMeta = metaAbsByMonth?.[pt.monthKey] ?? metaAbs;
             const barHeightPct = pt.hasSavedData
               ? Math.max(6, Math.min(100, Math.round((pt.absPercent / maxAbs) * 100)))
               : 6;
-            const isAboveMeta = pt.absPercent > metaAbs;
+            const isAboveMeta = pt.absPercent > barMeta;
             const isActiveMonth = pt.monthKey === selectedMonthKey;
             const isHovered = hoveredIdx === idx;
 
@@ -144,7 +147,7 @@ export const AbsTrendChart: React.FC<AbsTrendChartProps> = ({
                 onMouseLeave={() => setHoveredIdx(null)}
                 onClick={() => onSelectMonthKey && onSelectMonthKey(pt.monthKey)}
                 disabled={!onSelectMonthKey}
-                title={`${pt.fullLabel}: ${formatPercent(pt.absPercent)}`}
+                title={`${pt.fullLabel}: ${formatPercent(pt.absPercent)} (Meta ${(barMeta * 100).toFixed(1)}%)`}
                 className={`flex-1 h-full flex flex-col items-center justify-end gap-1.5 relative group ${
                   onSelectMonthKey ? 'cursor-pointer' : 'cursor-default'
                 }`}
@@ -155,7 +158,7 @@ export const AbsTrendChart: React.FC<AbsTrendChartProps> = ({
                     <div className="font-bold text-teal-300">{pt.fullLabel}</div>
                     {pt.hasSavedData ? (
                       <>
-                        <div>ABS: {formatPercent(pt.absPercent)}</div>
+                        <div>ABS: {formatPercent(pt.absPercent)} (Meta {(barMeta * 100).toFixed(1)}%)</div>
                         <div>
                           Perd: {pt.minutosPerdidos.toLocaleString('pt-BR')}m (
                           {formatMinutesToHours(pt.minutosPerdidos)})

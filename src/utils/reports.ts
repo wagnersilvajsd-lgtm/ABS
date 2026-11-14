@@ -3,7 +3,8 @@ import { Operation, Operator, OperatorMonthlyData } from '../types/abs';
 import {
   calculateOperationSummary,
   calculateOperatorStats,
-  formatMinutesToHours
+  formatMinutesToHours,
+  getOperationMetaForMonth
 } from './calculations';
 import { formatMonthLabel, getDaysInMonth, parseMonthKey } from './calendar';
 
@@ -409,7 +410,7 @@ export async function exportOperationExcelReport(params: {
   const totalDays = getDaysInMonth(year, month);
   const supervisors = getOperationSupervisors(operation, operators);
   const summary = calculateOperationSummary(operators, monthlyData, supervisors);
-  const metaLimit = operation.metaAbs || 0.03;
+  const metaLimit = getOperationMetaForMonth(operation, selectedMonthKey);
   const generatedStr = new Date().toLocaleString('pt-BR');
 
   const wb = new ExcelJS.Workbook();
@@ -896,7 +897,7 @@ export async function exportMultiOperationExcelReport(params: {
   let rankCursor = rankHeaderRowNum;
   enriched.forEach(({ op, opOps, sups, summary }, idx) => {
     rankCursor++;
-    const metaLimit = op.metaAbs || 0.03;
+    const metaLimit = getOperationMetaForMonth(op, selectedMonthKey);
     const status =
       opOps.length === 0
         ? 'Em Aberto'
@@ -1018,7 +1019,7 @@ export async function exportMultiOperationExcelReport(params: {
 
   let supCursor = supHeaderRowNum;
   enriched.forEach(({ op, summary }) => {
-    const metaLimit = op.metaAbs || 0.03;
+    const metaLimit = getOperationMetaForMonth(op, selectedMonthKey);
     summary.supervisores.forEach((s) => {
       supCursor++;
       const status =
@@ -1097,7 +1098,7 @@ export async function exportMultiOperationExcelReport(params: {
 
   let opCursor = opHeaderRowNum;
   enriched.forEach(({ op, opOps }) => {
-    const metaLimit = op.metaAbs || 0.03;
+    const metaLimit = getOperationMetaForMonth(op, selectedMonthKey);
     opOps.forEach((o) => {
       opCursor++;
       const d = monthlyData[o.id] || { operatorId: o.id, dias: [] };

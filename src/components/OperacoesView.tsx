@@ -1,6 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Operation, Operator, OperatorMonthlyData, StatusType, DayRecord } from '../types/abs';
-import { calculateOperatorStats, calculateSupervisorStats, formatMinutesToHours, formatPercent } from '../utils/calculations';
+import {
+  calculateOperatorStats,
+  calculateSupervisorStats,
+  formatMinutesToHours,
+  formatPercent,
+  getOperationMetaForMonth
+} from '../utils/calculations';
+import {
+  MONTH_NAMES_PT,
+  formatMonthKey,
+  formatMonthLabel,
+  getDefaultMonthKey,
+  parseMonthKey
+} from '../utils/calendar';
 import {
   Building2,
   Plus,
@@ -14,6 +27,8 @@ import {
   Search,
   Briefcase,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Clock,
   UserPlus,
   FolderPlus,
@@ -25,12 +40,17 @@ import {
   Upload,
   Image as ImageIcon,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  SlidersHorizontal,
+  CalendarDays,
+  RotateCcw,
+  Check
 } from 'lucide-react';
 
 interface OperacoesViewProps {
   operations: Operation[];
   selectedOperationId: string;
+  selectedMonthKey?: string;
   onSelectOperation: (id: string) => void;
   onAddOperation: (op: Omit<Operation, 'id'>) => void;
   onUpdateOperation: (op: Operation) => void;
@@ -52,6 +72,7 @@ interface OperacoesViewProps {
 export const OperacoesView: React.FC<OperacoesViewProps> = ({
   operations,
   selectedOperationId,
+  selectedMonthKey,
   onSelectOperation,
   onAddOperation,
   onUpdateOperation,
@@ -69,6 +90,9 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   operatorHistoryCounts = {},
   onOpenBulkImport
 }) => {
+  const activeMonthKey = selectedMonthKey || getDefaultMonthKey();
+  const activeMonthLabel = formatMonthLabel(activeMonthKey);
+  const { year: activeYear } = parseMonthKey(activeMonthKey);
   // Modal states
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
   const [isEditOpModalOpen, setIsEditOpModalOpen] = useState(false);
@@ -112,6 +136,79 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   const activeOp = useMemo(() => {
     return operations.find(o => o.id === selectedOperationId) || operations[0];
   }, [operations, selectedOperationId]);
+
+  const activeMetaLimit = getOperationMetaForMonth(activeOp, activeMonthKey);
+  const hasCustomMonthMeta =
+    typeof activeOp?.monthlyMetas?.[activeMonthKey] === 'number';
+
+  // Monthly absenteeism target settings state
+  const [defaultMetaInput, setDefaultMetaInput] = useState('3.0');
+  const [monthMetaInput, setMonthMetaInput] = useState('3.0');
+  const [showAnnualMetaGrid, setShowAnnualMetaGrid] = useState(false);
+  const [metaSavedFlash, setMetaSavedFlash] = useState(false);
+
+  useEffect(() => {
+    if (!activeOp) return;
+    const defaultPct = ((activeOp.metaAbs || 0.03) * 100).toFixed(1);
+    const monthPct = (getOperationMetaForMonth(activeOp, activeMonthKey) * 100).toFixed(1);
+    setDefaultMetaInput(defaultPct);
+    setMonthMetaInput(monthPct);
+  }, [activeOp, activeMonthKey]);
+
+  const handleSaveMonthlyGoalSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeOp) return;
+    const parsedDefault = Math.max(0.1, Math.min(50, parseFloat(defaultMetaInput) || 3.0));
+    const parsedMonth = Math.max(0.1, Math.min(50, parseFloat(monthMetaInput) || parsedDefault));
+    const nextMonthlyMetas = { ...(activeOp.monthlyMetas || {}) };
+
+    if (Math.abs(parsedMonth - parsedDefault) < 0.001) {
+      delete nextMonthlyMetas[activeMonthKey];
+    } else {
+      nextMonthlyMetas[activeMonthKey] = parsedMonth / 100;
+    }
+
+    onUpdateOperation({
+      ...activeOp,
+      metaAbs: parsedDefault / 100,
+      monthlyMetas: nextMonthlyMetas
+    });
+    setMetaSavedFlash(true);
+    setTimeout(() => setMetaSavedFlash(false), 2200);
+  };
+
+  const handleResetActiveMonthMeta = () => {
+    if (!activeOp) return;
+    const nextMonthlyMetas = { ...(activeOp.monthlyMetas || {}) };
+    delete nextMonthlyMetas[activeMonthKey];
+    onUpdateOperation({
+      ...activeOp,
+      monthlyMetas: nextMonthlyMetas
+    });
+    setMonthMetaInput(((activeOp.metaAbs || 0.03) * 100).toFixed(1));
+  };
+
+  const handleSetYearMonthMeta = (monthKey: string, rawPct: string) => {
+    if (!activeOp) return;
+    const nextMonthlyMetas = { ...(activeOp.monthlyMetas || {}) };
+    const trimmed = rawPct.trim();
+    if (!trimmed) {
+      delete nextMonthlyMetas[monthKey];
+    } else {
+      const val = parseFloat(trimmed);
+      if (isNaN(val)) return;
+      const clamped = Math.max(0.1, Math.min(50, val));
+      if (Math.abs(clamped - (activeOp.metaAbs || 0.03) * 100) < 0.001) {
+        delete nextMonthlyMetas[monthKey];
+      } else {
+        nextMonthlyMetas[monthKey] = clamped / 100;
+      }
+    }
+    onUpdateOperation({
+      ...activeOp,
+      monthlyMetas: nextMonthlyMetas
+    });
+  };
 
   // Operators associated with active operation
   const opOperators = useMemo(() => {
@@ -347,7 +444,9 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                 <span className="font-medium text-slate-700 dark:text-slate-300">{activeOp?.cliente || 'JSD Telecom'}</span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">Meta ABS ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%</span>
+                <span className="font-mono tabular-nums">
+                  Meta {hasCustomMonthMeta ? activeMonthLabel : 'ABS'} ≤ {(activeMetaLimit * 100).toFixed(1)}%
+                </span>
                 <span aria-hidden="true">·</span>
                 <span className="font-mono tabular-nums">Jornada {activeOp?.jornadaPadraoMin || 380} min</span>
               </div>
@@ -449,30 +548,62 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       {/* Symmetrical 4-Column KPI Strip */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
         {/* KPI 1: ABS da Operação */}
-        <div className="h-full bg-[#005059] text-white rounded-xl p-5 border border-[#003e45] flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-teal-100">
-              ABS da Operação
-            </span>
-            <Target className="w-4 h-4 text-teal-200 shrink-0" />
-          </div>
-          <div className="my-4">
-            <div className="text-3xl font-bold font-mono tabular-nums tracking-tight">
-              {formatPercent(opStats.absPercent)}
+        {(() => {
+          const isOpOver = opStats.totalOperadores > 0 && opStats.absPercent > activeMetaLimit;
+          const isOpWarn =
+            opStats.totalOperadores > 0 &&
+            !isOpOver &&
+            opStats.absPercent >= activeMetaLimit * 0.85;
+          const diffPp = (opStats.absPercent - activeMetaLimit) * 100;
+          return (
+            <div
+              className={`h-full text-white rounded-xl p-5 border flex flex-col justify-between transition-colors ${
+                isOpOver
+                  ? 'bg-rose-700 border-rose-900'
+                  : isOpWarn
+                  ? 'bg-amber-700 border-amber-900'
+                  : 'bg-[#005059] border-[#003e45]'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-white/90">
+                  ABS da Operação
+                </span>
+                {isOpOver ? (
+                  <AlertTriangle className="w-4 h-4 text-rose-200 shrink-0" />
+                ) : (
+                  <Target className="w-4 h-4 text-teal-200 shrink-0" />
+                )}
+              </div>
+              <div className="my-4">
+                <div className="text-3xl font-bold font-mono tabular-nums tracking-tight">
+                  {formatPercent(opStats.absPercent)}
+                </div>
+                <p
+                  className={`text-xs font-medium mt-1 ${
+                    isOpOver
+                      ? 'text-rose-100'
+                      : isOpWarn
+                      ? 'text-amber-100'
+                      : 'text-teal-200'
+                  }`}
+                >
+                  {opStats.totalOperadores === 0
+                    ? 'Aguardando cadastro'
+                    : isOpOver
+                    ? `Limite excedido (+${diffPp.toFixed(2)} p.p.)`
+                    : isOpWarn
+                    ? `Próximo ao limite (${diffPp.toFixed(2)} p.p.)`
+                    : `Dentro da meta (${diffPp.toFixed(2)} p.p.)`}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-white/15 text-xs font-mono tabular-nums text-white/85 flex items-center justify-between">
+                <span>Meta ≤ {(activeMetaLimit * 100).toFixed(1)}%</span>
+                <span>{opStats.minutosPerdidos.toLocaleString('pt-BR')} min perd.</span>
+              </div>
             </div>
-            <p className={`text-xs font-medium mt-1 ${
-              opStats.absPercent <= (activeOp?.metaAbs || 0.03) ? 'text-teal-200' : 'text-amber-300'
-            }`}>
-              {opStats.absPercent <= (activeOp?.metaAbs || 0.03)
-                ? `Dentro da meta (${(((opStats.absPercent - (activeOp?.metaAbs || 0.03)) * 100)).toFixed(2)} p.p.)`
-                : `Acima da meta (+${(((opStats.absPercent - (activeOp?.metaAbs || 0.03)) * 100)).toFixed(2)} p.p.)`}
-            </p>
-          </div>
-          <div className="pt-3 border-t border-white/15 text-xs font-mono tabular-nums text-teal-200 flex items-center justify-between">
-            <span>Meta ≤ {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%</span>
-            <span>{opStats.minutosPerdidos.toLocaleString('pt-BR')} min perd.</span>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* KPI 2: Colaboradores */}
         <div className="h-full bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
@@ -540,6 +671,195 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
         </div>
       </section>
 
+      {/* Operation Settings: Monthly Absenteeism Targets (%) */}
+      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200/70 dark:border-slate-800">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 flex items-center justify-center shrink-0 mt-0.5">
+              <SlidersHorizontal className="w-4 h-4 text-[#006772] dark:text-[#2dd4bf]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
+                  Configurações da Operação · Metas Mensais de Absenteísmo (%)
+                </h2>
+                <span
+                  className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md border ${
+                    hasCustomMonthMeta
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {activeMonthLabel}: {(activeMetaLimit * 100).toFixed(1)}% ({hasCustomMonthMeta ? 'Meta do mês' : 'Padrão'})
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Defina o limite padrão e metas específicas por mês. O painel WFM alerta automaticamente em vermelho quando a operação ou um supervisor ultrapassar a meta.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAnnualMetaGrid((prev) => !prev)}
+            className="h-9 px-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <CalendarDays className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+            <span>{showAnnualMetaGrid ? `Recolher Grade ${activeYear}` : `Configurar 12 Meses (${activeYear})`}</span>
+            {showAnnualMetaGrid ? (
+              <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            )}
+          </button>
+        </div>
+
+        <form onSubmit={handleSaveMonthlyGoalSettings} className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+          <div className="lg:col-span-3">
+            <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1 uppercase tracking-wide">
+              Meta Padrão da Operação (%)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="50"
+                value={defaultMetaInput}
+                onChange={(e) => setDefaultMetaInput(e.target.value)}
+                className="w-full h-10 pl-3 pr-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">%</span>
+            </div>
+          </div>
+
+          <div className="lg:col-span-4">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                Meta de {activeMonthLabel} (%)
+              </label>
+              {hasCustomMonthMeta && (
+                <button
+                  type="button"
+                  onClick={handleResetActiveMonthMeta}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-[#006772] dark:text-slate-400 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Usar padrão</span>
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="50"
+                value={monthMetaInput}
+                onChange={(e) => setMonthMetaInput(e.target.value)}
+                className="w-full h-10 pl-3 pr-8 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">%</span>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {['2.0', '2.5', '3.0', '3.5', '4.0', '5.0'].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setMonthMetaInput(preset)}
+                  className={`h-8 px-2.5 text-[11px] font-mono font-semibold rounded-md border transition-colors cursor-pointer ${
+                    parseFloat(monthMetaInput).toFixed(1) === preset
+                      ? 'bg-[#006772] text-white border-[#006772]'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {preset}%
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              className="h-10 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg btn-press whitespace-nowrap cursor-pointer"
+            >
+              {metaSavedFlash ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-teal-200" />
+                  <span>Meta Salva</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Salvar Metas</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {showAnnualMetaGrid && (
+          <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Metas Mensais Específicas para {activeYear} (deixe em branco ou igual ao padrão para herdar {((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}%)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {MONTH_NAMES_PT.map((mName, idx) => {
+                const mk = formatMonthKey(activeYear, idx + 1);
+                const customVal = activeOp?.monthlyMetas?.[mk];
+                const isCustom = typeof customVal === 'number';
+                const isCurrent = mk === activeMonthKey;
+                return (
+                  <div
+                    key={mk}
+                    className={`p-2.5 rounded-lg border ${
+                      isCurrent
+                        ? 'border-[#006772] dark:border-[#2dd4bf] bg-teal-50/40 dark:bg-teal-950/20'
+                        : isCustom
+                        ? 'border-amber-200 dark:border-amber-800/70 bg-amber-50/30 dark:bg-amber-950/15'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                        {mName.slice(0, 3)}/{String(activeYear).slice(-2)}
+                      </span>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetYearMonthMeta(mk, '')}
+                          title="Voltar para meta padrão"
+                          className="text-[10px] text-slate-400 hover:text-rose-500 cursor-pointer"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="50"
+                        placeholder={((activeOp?.metaAbs || 0.03) * 100).toFixed(1)}
+                        value={isCustom ? (customVal * 100).toFixed(1) : ''}
+                        onChange={(e) => handleSetYearMonthMeta(mk, e.target.value)}
+                        className="w-full h-8 pl-2 pr-6 text-xs font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-[#006772]"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400">%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Symmetrical Supervisors Grid */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70 dark:border-slate-800">
@@ -579,20 +899,46 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
         ) : (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
             {supervisorStatsList.map((sup) => {
-              const metaLimit = activeOp?.metaAbs || 0.03;
-              const isWithinMeta = sup.absPercent <= metaLimit;
+              const metaLimit = activeMetaLimit;
+              const isExceeded = sup.totalOperadores > 0 && sup.absPercent > metaLimit;
+              const isWarning = sup.totalOperadores > 0 && !isExceeded && sup.absPercent >= metaLimit * 0.85;
               const barPct = Math.min(100, (sup.absPercent / (metaLimit * 2)) * 100);
               return (
                 <div
                   key={sup.supervisor}
-                  className="h-full p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 flex flex-col justify-between hover-lift"
+                  className={`h-full p-5 rounded-xl border border-t-[3px] flex flex-col justify-between hover-lift transition-colors ${
+                    isExceeded
+                      ? 'border-rose-200 dark:border-rose-900/60 border-t-rose-500 bg-rose-50/50 dark:bg-rose-950/20'
+                      : isWarning
+                      ? 'border-amber-200 dark:border-amber-900/60 border-t-amber-500 bg-amber-50/40 dark:bg-amber-950/15'
+                      : 'border-slate-200 dark:border-slate-800 border-t-[#006772] dark:border-t-[#2dd4bf] bg-slate-50/60 dark:bg-slate-800/30'
+                  }`}
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                          {sup.supervisor}
-                        </h3>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                            {sup.supervisor}
+                          </h3>
+                          {isExceeded && (
+                            <span
+                              title={`Supervisor acima da meta de ${formatPercent(metaLimit)}`}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9px] font-bold uppercase tracking-wider shrink-0"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                              Alerta
+                            </span>
+                          )}
+                          {isWarning && (
+                            <span
+                              title={`Supervisor próximo ao limite de ${formatPercent(metaLimit)}`}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider shrink-0"
+                            >
+                              Atenção
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono tabular-nums">
                           {sup.totalOperadores} colaborador(es)
                         </p>
@@ -608,15 +954,31 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                     </div>
 
                     <div className="mt-4 flex items-baseline justify-between gap-2">
-                      <span className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+                      <span
+                        className={`text-2xl font-bold font-mono tabular-nums ${
+                          isExceeded
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : isWarning
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-slate-900 dark:text-slate-100'
+                        }`}
+                      >
                         {formatPercent(sup.absPercent)}
                       </span>
-                      <span className={`text-xs font-semibold ${
-                        isWithinMeta
-                          ? 'text-[#006772] dark:text-[#2dd4bf]'
-                          : 'text-rose-600 dark:text-rose-400'
-                      }`}>
-                        {isWithinMeta ? 'Dentro da meta' : 'Acima da meta'}
+                      <span
+                        className={`text-xs font-semibold ${
+                          isExceeded
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : isWarning
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-[#006772] dark:text-[#2dd4bf]'
+                        }`}
+                      >
+                        {isExceeded
+                          ? `Acima (+${((sup.absPercent - metaLimit) * 100).toFixed(2)} p.p.)`
+                          : isWarning
+                          ? 'Próximo ao limite'
+                          : 'Dentro da meta'}
                       </span>
                     </div>
 
@@ -624,7 +986,11 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                       <div
                         style={{ width: `${barPct}%` }}
                         className={`h-full rounded-full transition-all duration-300 ${
-                          isWithinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
+                          isExceeded
+                            ? 'bg-rose-500'
+                            : isWarning
+                            ? 'bg-amber-500'
+                            : 'bg-[#006772] dark:bg-[#2dd4bf]'
                         }`}
                       />
                     </div>
@@ -765,7 +1131,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 filteredOperators.map((op, idx) => {
                   const data = monthlyData[op.id] || { operatorId: op.id, dias: [] };
                   const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 380);
-                  const isHigh = st.absMensal > (activeOp?.metaAbs || 0.03);
+                  const isHigh = st.absMensal > activeMetaLimit;
                   const historyCount = operatorHistoryCounts[op.id] || 0;
 
                   return (

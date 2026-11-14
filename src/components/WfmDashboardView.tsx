@@ -5,7 +5,8 @@ import {
   calculateOperationSummary,
   calculateOperatorStats,
   formatMinutesToHours,
-  formatPercent
+  formatPercent,
+  getOperationMetaForMonth
 } from '../utils/calculations';
 import { computeMonthlyTrend } from '../utils/history';
 import {
@@ -18,16 +19,14 @@ import { ExcelStyleConfigModal } from './ExcelStyleConfigPanel';
 import { AbsTrendChart } from './AbsTrendChart';
 import { formatPeriodSummary } from './PeriodCalendarPopover';
 import {
-  TrendingDown,
   Clock,
   Users,
-  Award,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
   FileSpreadsheet,
   Activity,
-  ArrowUpRight,
   ShieldCheck,
-  Calendar,
   Palette
 } from 'lucide-react';
 
@@ -183,13 +182,27 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
       ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
       : undefined;
 
-  const targetWfmAbs = resolvedOperation.metaAbs || 0.03;
+  const targetWfmAbs = getOperationMetaForMonth(resolvedOperation, selectedMonthKey);
+  const hasCustomMonthMeta =
+    typeof resolvedOperation.monthlyMetas?.[selectedMonthKey] === 'number';
   const isTargetMet = summary.absGeral <= targetWfmAbs;
+  const isOpExceeded = operators.length > 0 && summary.absGeral > targetWfmAbs;
+  const isOpWarning =
+    operators.length > 0 && !isOpExceeded && summary.absGeral >= targetWfmAbs * 0.85;
+  const exceededSupervisors = sortedSupervisors.filter(
+    (s) => s.totalOperadores > 0 && s.absPercent > targetWfmAbs
+  );
+  const warningSupervisors = sortedSupervisors.filter(
+    (s) =>
+      s.totalOperadores > 0 &&
+      s.absPercent <= targetWfmAbs &&
+      s.absPercent >= targetWfmAbs * 0.85
+  );
 
   return (
     <div className="space-y-6">
 
-      {/* Executive Summary Header + Symmetrical 4-Column KPI Strip */}
+      {/* Executive Summary Header + Alert Strip + Symmetrical 4-Column KPI Strip */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200/70 dark:border-slate-800">
           <div>
@@ -202,9 +215,17 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            <div className="flex items-center gap-1.5 text-xs mr-1">
-              <span className="text-slate-500 dark:text-slate-400">Meta:</span>
-              <span className="font-mono tabular-nums font-bold text-[#006772] dark:text-[#2dd4bf]">
+            <div
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border ${
+                isOpExceeded
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                  : isOpWarning
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
+                  : 'bg-teal-50/70 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800 text-[#006772] dark:text-[#2dd4bf]'
+              }`}
+            >
+              <span>Meta {hasCustomMonthMeta ? 'do mês' : 'padrão'}:</span>
+              <span className="font-mono tabular-nums font-bold">
                 ABS &le; {(targetWfmAbs * 100).toFixed(1)}%
               </span>
             </div>
@@ -250,27 +271,129 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           </div>
         </div>
 
+        {/* Visual Alert Banner when Operation or Supervisors exceed monthly limit */}
+        {operators.length > 0 && (
+          <div
+            className={`mt-4 px-4 py-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+              isOpExceeded
+                ? 'bg-rose-50 dark:bg-rose-950/35 border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-200'
+                : exceededSupervisors.length > 0
+                ? 'bg-amber-50 dark:bg-amber-950/35 border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200'
+                : isOpWarning || warningSupervisors.length > 0
+                ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300'
+                : 'bg-emerald-50/70 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+            }`}
+          >
+            <div className="flex items-start sm:items-center gap-2.5">
+              {isOpExceeded || exceededSupervisors.length > 0 || isOpWarning || warningSupervisors.length > 0 ? (
+                <AlertTriangle
+                  className={`w-4 h-4 shrink-0 mt-0.5 sm:mt-0 ${
+                    isOpExceeded ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
+                  }`}
+                />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-0" />
+              )}
+              <div>
+                {isOpExceeded ? (
+                  <span>
+                    <strong>Alerta de Limite Ultrapassado:</strong> a operação está com{' '}
+                    <strong className="font-mono">{formatPercent(summary.absGeral)}</strong> acima do limite de{' '}
+                    <strong className="font-mono">{(targetWfmAbs * 100).toFixed(1)}%</strong> para {monthLabel}
+                    {exceededSupervisors.length > 0
+                      ? ` · ${exceededSupervisors.length} supervisão(ões) fora da meta (${exceededSupervisors
+                          .map((s) => s.supervisor.split(' ')[0])
+                          .join(', ')}).`
+                      : '.'}
+                  </span>
+                ) : exceededSupervisors.length > 0 ? (
+                  <span>
+                    <strong>Alerta por Supervisão:</strong> operação dentro do limite, porém{' '}
+                    <strong>{exceededSupervisors.length} supervisor(es)</strong> ultrapassaram a meta de{' '}
+                    <strong className="font-mono">{(targetWfmAbs * 100).toFixed(1)}%</strong>:{' '}
+                    {exceededSupervisors
+                      .map((s) => `${s.supervisor.split(' ')[0]} (${formatPercent(s.absPercent)})`)
+                      .join(', ')}.
+                  </span>
+                ) : isOpWarning || warningSupervisors.length > 0 ? (
+                  <span>
+                    <strong>Zona de Atenção:</strong> índice próximo ao limite mensal de{' '}
+                    <strong className="font-mono">{(targetWfmAbs * 100).toFixed(1)}%</strong> (≥ 85% do teto).
+                  </span>
+                ) : (
+                  <span>
+                    <strong>Meta Cumprida:</strong> operação e todas as supervisões estão abaixo do limite mensal de{' '}
+                    <strong className="font-mono">{(targetWfmAbs * 100).toFixed(1)}%</strong>.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 font-mono tabular-nums text-[11px] shrink-0">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                {exceededSupervisors.length} acima
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                {warningSupervisors.length} atenção
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {sortedSupervisors.filter((s) => s.totalOperadores > 0 && s.absPercent < targetWfmAbs * 0.85).length} ok
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-          {/* KPI 1: ABS Geral */}
-          <div className="h-full bg-[#005059] text-white rounded-xl p-5 border border-[#003e45] flex flex-col justify-between">
+          {/* KPI 1: ABS Geral (Color shifts when exceeding or approaching monthly target) */}
+          <div
+            className={`h-full text-white rounded-xl p-5 border flex flex-col justify-between transition-colors ${
+              isOpExceeded
+                ? 'bg-rose-700 border-rose-900'
+                : isOpWarning
+                ? 'bg-amber-700 border-amber-900'
+                : 'bg-[#005059] border-[#003e45]'
+            }`}
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-teal-100">
+              <span className="text-xs font-semibold text-white/90">
                 ABS Geral
               </span>
-              <Activity className="w-4 h-4 text-teal-200 shrink-0" />
+              {isOpExceeded ? (
+                <AlertTriangle className="w-4 h-4 text-rose-200 shrink-0" />
+              ) : (
+                <Activity className="w-4 h-4 text-teal-200 shrink-0" />
+              )}
             </div>
             <div className="my-4">
               <div className="text-3xl font-bold font-mono tabular-nums">
                 {formatPercent(summary.absGeral)}
               </div>
-              <p className={`text-xs mt-1 ${isTargetMet ? 'text-teal-200' : 'text-amber-300'}`}>
-                {isTargetMet
-                  ? `Dentro da meta (${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`
-                  : `Acima da meta (+${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`}
+              <p
+                className={`text-xs mt-1 font-medium ${
+                  isOpExceeded
+                    ? 'text-rose-100'
+                    : isOpWarning
+                    ? 'text-amber-100'
+                    : isTargetMet
+                    ? 'text-teal-200'
+                    : 'text-amber-300'
+                }`}
+              >
+                {isOpExceeded
+                  ? `Limite excedido (+${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`
+                  : isOpWarning
+                  ? `Próximo ao limite (${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`
+                  : `Dentro da meta (${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`}
               </p>
             </div>
-            <div className="text-xs text-teal-200/90 border-t border-white/15 pt-3 font-mono tabular-nums">
-              Perdido / Escalado
+            <div className="text-xs text-white/80 border-t border-white/15 pt-3 flex items-center justify-between font-mono tabular-nums">
+              <span>Perdido / Escalado</span>
+              <span className="font-bold">
+                {isOpExceeded ? 'ALERTA' : isOpWarning ? 'ATENÇÃO' : 'OK'}
+              </span>
             </div>
           </div>
 
@@ -342,18 +465,26 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
 
       {/* Supervisor Comparison Grid */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200/70 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200/70 dark:border-slate-800">
           <div>
             <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
               Desempenho por Supervisão
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Comparativo ordenado do menor para o maior índice de absenteísmo
+              Comparativo ordenado do menor para o maior índice · Limite mensal: {(targetWfmAbs * 100).toFixed(1)}%
             </p>
           </div>
-          <span className="text-xs font-mono tabular-nums text-slate-500 dark:text-slate-400">
-            {supervisorsList.length} supervisão(ões)
-          </span>
+          <div className="flex items-center gap-3 text-xs font-mono tabular-nums">
+            {exceededSupervisors.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {exceededSupervisors.length} em alerta
+              </span>
+            )}
+            <span className="text-slate-500 dark:text-slate-400">
+              {supervisorsList.length} supervisão(ões)
+            </span>
+          </div>
         </div>
 
         {sortedSupervisors.length === 0 ? (
@@ -363,24 +494,39 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
         ) : (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
             {sortedSupervisors.map((sup, idx) => {
-            const isBest = idx === 0;
+            const isBest = idx === 0 && sup.totalOperadores > 0;
             const withinMeta = sup.absPercent <= targetWfmAbs;
+            const isWarning =
+              sup.totalOperadores > 0 && withinMeta && sup.absPercent >= targetWfmAbs * 0.85;
+            const isExceeded = sup.totalOperadores > 0 && !withinMeta;
+            const diffPp = (sup.absPercent - targetWfmAbs) * 100;
             const barPct = Math.min(100, (sup.absPercent / (targetWfmAbs * 2)) * 100);
             return (
               <div
                 key={sup.supervisor}
-                className="h-full bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover-lift"
+                className={`h-full rounded-xl p-5 border border-t-[3px] flex flex-col justify-between hover-lift ${
+                  isExceeded
+                    ? 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/70 border-t-rose-500'
+                    : isWarning
+                    ? 'bg-amber-50/50 dark:bg-amber-950/15 border-amber-200 dark:border-amber-800/60 border-t-amber-500'
+                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 border-t-emerald-500'
+                }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">
                       #{idx + 1} · {sup.totalOperadores} colaboradores
                     </span>
-                    {isBest && (
+                    {isExceeded ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-rose-600 dark:text-rose-400">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Alerta
+                      </span>
+                    ) : isBest ? (
                       <span className="font-semibold text-[#006772] dark:text-[#2dd4bf]">
                         Menor ABS
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1.5 truncate">
@@ -388,13 +534,31 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                   </h3>
 
                   <div className="mt-4 flex items-baseline justify-between gap-2">
-                    <span className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+                    <span
+                      className={`text-2xl font-bold font-mono tabular-nums ${
+                        isExceeded
+                          ? 'text-rose-700 dark:text-rose-400'
+                          : isWarning
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-slate-900 dark:text-slate-100'
+                      }`}
+                    >
                       {formatPercent(sup.absPercent)}
                     </span>
-                    <span className={`text-xs font-semibold ${
-                      withinMeta ? 'text-[#006772] dark:text-[#2dd4bf]' : 'text-rose-600 dark:text-rose-400'
-                    }`}>
-                      {withinMeta ? 'Dentro da meta' : 'Acima da meta'}
+                    <span
+                      className={`text-xs font-semibold font-mono tabular-nums ${
+                        isExceeded
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : isWarning
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-emerald-700 dark:text-emerald-400'
+                      }`}
+                    >
+                      {isExceeded
+                        ? `Excedido (+${diffPp.toFixed(2)} p.p.)`
+                        : isWarning
+                        ? `Atenção (${diffPp.toFixed(2)} p.p.)`
+                        : `Dentro (${diffPp.toFixed(2)} p.p.)`}
                     </span>
                   </div>
 
@@ -402,7 +566,11 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                     <div
                       style={{ width: `${barPct}%` }}
                       className={`h-full rounded-full transition-all duration-300 ${
-                        withinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
+                        isExceeded
+                          ? 'bg-rose-500'
+                          : isWarning
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500 dark:bg-[#2dd4bf]'
                       }`}
                     />
                   </div>
@@ -578,6 +746,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           points3M={trendPoints3M}
           points6M={trendPoints6M}
           metaAbs={targetWfmAbs}
+          metaAbsByMonth={resolvedOperation.monthlyMetas}
           selectedMonthKey={selectedMonthKey}
           onSelectMonthKey={onSelectMonthKey}
           headerRight={

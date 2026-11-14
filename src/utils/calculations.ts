@@ -1,4 +1,4 @@
-import { DayRecord, Operator, OperatorMonthlyData, OperatorStats, OperationSummary, StatusType, SupervisorStats } from '../types/abs';
+import { DayRecord, Operation, Operator, OperatorMonthlyData, OperatorStats, OperationSummary, StatusType, SupervisorStats } from '../types/abs';
 
 /**
  * Calculates daily ABS matching Google Sheets Formula in Col D:
@@ -281,4 +281,23 @@ export function formatMinutesToHours(minutes: number): string {
 export function formatPercent(value: number): string {
   if (isNaN(value) || value === null || value === undefined) return '0.00%';
   return `${(value * 100).toFixed(2)}%`;
+}
+
+/**
+ * Resolves the effective ABS target for a specific month ('YYYY-MM'),
+ * falling back to the operation's default metaAbs (or 3.0%) when no monthly override is set.
+ */
+export function getOperationMetaForMonth(
+  operation: Pick<Operation, 'metaAbs' | 'monthlyMetas'> | undefined,
+  monthKey?: string
+): number {
+  if (
+    monthKey &&
+    operation?.monthlyMetas &&
+    typeof operation.monthlyMetas[monthKey] === 'number' &&
+    !isNaN(operation.monthlyMetas[monthKey])
+  ) {
+    return operation.monthlyMetas[monthKey];
+  }
+  return operation?.metaAbs || 0.03;
 }

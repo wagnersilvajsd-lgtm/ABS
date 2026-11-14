@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Operation, Operator, OperatorMonthlyData } from '../types/abs';
-import { calculateOperationSummary, formatMinutesToHours, formatPercent } from '../utils/calculations';
+import {
+  calculateOperationSummary,
+  formatMinutesToHours,
+  formatPercent,
+  getOperationMetaForMonth
+} from '../utils/calculations';
 import {
   AVAILABLE_YEARS,
   MONTH_NAMES_PT,
@@ -126,7 +131,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
       totalEscalados += c.minutosEscalados;
       if (c.operatorsCount > 0) {
         opsComEquipe += 1;
-        if (c.absGeral <= (c.op.metaAbs || 0.03)) {
+        if (c.absGeral <= getOperationMetaForMonth(c.op, selectedMonthKey)) {
           opsNaMeta += 1;
         }
       }
@@ -390,8 +395,9 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
         ) : (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
             {operationCards.map(({ op, supervisorsCount, operatorsCount, absGeral, isOpenForSetup }) => {
-              const metaLimit = op.metaAbs || 0.03;
+              const metaLimit = getOperationMetaForMonth(op, selectedMonthKey);
               const withinMeta = absGeral <= metaLimit;
+              const isNearLimit = !isOpenForSetup && withinMeta && absGeral >= metaLimit * 0.85;
               const diffPp = (absGeral - metaLimit) * 100;
               const showFallback = !op.logoUrl || brokenLogos[op.id];
               const accentHex = getOperationAccentHex(op.id, op.nome);
@@ -460,7 +466,9 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                           <span
                             className={`font-mono tabular-nums text-[11px] font-semibold ${
                               withinMeta
-                                ? 'text-[#006772] dark:text-[#2dd4bf]'
+                                ? isNearLimit
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : 'text-[#006772] dark:text-[#2dd4bf]'
                                 : 'text-rose-600 dark:text-rose-400'
                             }`}
                           >
@@ -492,8 +500,12 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                         <span className="text-slate-500 dark:text-slate-400 block">ABS Atual</span>
                         <span
                           className={`font-bold font-mono tabular-nums text-sm ${
-                            withinMeta
-                              ? 'text-[#006772] dark:text-[#2dd4bf]'
+                            isOpenForSetup
+                              ? 'text-slate-400'
+                              : withinMeta
+                              ? isNearLimit
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-[#006772] dark:text-[#2dd4bf]'
                               : 'text-rose-600 dark:text-rose-400'
                           }`}
                         >
@@ -645,7 +657,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {executiveStats.ranked.map((item, idx) => {
-                  const metaLimit = item.op.metaAbs || 0.03;
+                  const metaLimit = getOperationMetaForMonth(item.op, selectedMonthKey);
                   const withinMeta = item.absGeral <= metaLimit;
                   const diffPp = (item.absGeral - metaLimit) * 100;
                   const barPct = Math.min(100, (item.absGeral / (metaLimit * 2)) * 100);

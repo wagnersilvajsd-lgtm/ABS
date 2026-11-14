@@ -32,6 +32,7 @@ interface NavbarProps {
   onResetDefaults: () => void;
   onOpenExportImport: () => void;
   absGeral: number;
+  activeMetaAbs?: number;
   activeOperationName?: string;
   operations?: Operation[];
   selectedOperationId?: string;
@@ -68,6 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetDefaults,
   onOpenExportImport,
   absGeral,
+  activeMetaAbs = 0.03,
   activeOperationName = 'Operação CAERN',
   operations,
   selectedOperationId,
@@ -300,7 +302,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ))}
                 </select>
                 <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">|</span>
-                <span className="font-mono text-xs font-bold tabular-nums text-[#006772] dark:text-[#2dd4bf] whitespace-nowrap">
+                <span
+                  title={
+                    absGeral > activeMetaAbs
+                      ? `Alerta: ABS acima da meta mensal de ${(activeMetaAbs * 100).toFixed(1)}%`
+                      : `Dentro da meta mensal (≤ ${(activeMetaAbs * 100).toFixed(1)}%)`
+                  }
+                  className={`font-mono text-xs font-bold tabular-nums whitespace-nowrap flex items-center gap-1 ${
+                    absGeral > activeMetaAbs
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-[#006772] dark:text-[#2dd4bf]'
+                  }`}
+                >
+                  {absGeral > activeMetaAbs && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  )}
                   {(absGeral * 100).toFixed(2)}%
                 </span>
               </div>
@@ -308,7 +324,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 pr-2 border-r border-slate-200 dark:border-slate-800">
                 <span className="font-medium truncate max-w-[150px]">{activeOperationName}</span>
                 <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-                <span className="font-mono font-bold tabular-nums text-[#006772] dark:text-[#2dd4bf]">
+                <span
+                  className={`font-mono font-bold tabular-nums ${
+                    absGeral > activeMetaAbs
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-[#006772] dark:text-[#2dd4bf]'
+                  }`}
+                >
                   ABS {(absGeral * 100).toFixed(2)}%
                 </span>
               </div>
