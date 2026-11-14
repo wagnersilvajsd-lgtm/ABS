@@ -1,9 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Operator, OperatorMonthlyData, StatusType, DayRecord } from '../types/abs';
 import { STATUS_OPTIONS } from '../data/initialData';
-import { formatMonthLabel, getDaysInMonth, getWeekdayAbbr, isWeekendDate, parseMonthKey } from '../utils/calendar';
+import {
+  formatMonthLabel,
+  getDaysInMonth,
+  getDefaultMonthKey,
+  getWeekdayAbbr,
+  isWeekendDate,
+  parseMonthKey
+} from '../utils/calendar';
 import { calculateOperatorStats, formatPercent } from '../utils/calculations';
-import { Search, Filter, Calendar, Edit3, X, Check, Eraser } from 'lucide-react';
+import { Search, Filter, Calendar, Edit3, X, Check, Eraser, Maximize2, Minimize2 } from 'lucide-react';
 
 interface BaseApontamentosViewProps {
   operators: Operator[];
@@ -13,6 +20,8 @@ interface BaseApontamentosViewProps {
   selectedMonthKey: string;
   selectedPeriodDays?: number[] | null;
   onClearMonthAbs?: () => void;
+  isWide?: boolean;
+  onToggleWide?: () => void;
 }
 
 export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
@@ -22,11 +31,14 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
   onSelectOperatorForAudit,
   selectedMonthKey,
   selectedPeriodDays = null,
-  onClearMonthAbs
+  onClearMonthAbs,
+  isWide = false,
+  onToggleWide
 }) => {
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
+  const todayDay = selectedMonthKey === getDefaultMonthKey() ? new Date().getDate() : -1;
 
   const displayedDayNumbers = useMemo(() => {
     if (selectedPeriodDays && selectedPeriodDays.length > 0) {
@@ -93,34 +105,6 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
     setEditingCell(null);
   };
 
-  // Mass action: Apply status to all displayed operators on a specific day
-  const handleMassApplyDay = (diaNum: number, status: StatusType) => {
-    if (
-      !window.confirm(
-        `Deseja aplicar o status '${status}' no Dia ${diaNum} para todos os ${filteredOperators.length} operadores filtrados?`
-      )
-    ) {
-      return;
-    }
-
-    filteredOperators.forEach(op => {
-      const opData = monthlyData[op.id];
-      if (opData) {
-        const updated = opData.dias.map(d => {
-          if (d.dia === diaNum) {
-            return {
-              ...d,
-              status,
-              atraso: 0
-            };
-          }
-          return d;
-        });
-        onUpdateDays(op.id, updated);
-      }
-    });
-  };
-
   return (
     <div className="space-y-6">
 
@@ -136,13 +120,34 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 flex-wrap shrink-0">
             <div className="text-right">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Exibindo</span>
               <span className="text-sm font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf]">
                 {filteredOperators.length} operador(es)
               </span>
             </div>
+
+            {onToggleWide && (
+              <button
+                type="button"
+                onClick={onToggleWide}
+                title={isWide ? 'Voltar à largura padrão' : 'Expandir matriz para visualizar mais dias sem rolagem'}
+                className="h-9 px-3 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg btn-press whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                {isWide ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                    <span>Largura Padrão</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                    <span>Expandir Largura</span>
+                  </>
+                )}
+              </button>
+            )}
 
             {onClearMonthAbs && (
               <button
@@ -239,16 +244,23 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                 {displayedDayNumbers.map((dia) => {
                   const weekdayName = getWeekdayAbbr(year, month, dia);
                   const isWeekend = isWeekendDate(year, month, dia);
+                  const isToday = dia === todayDay;
                   return (
                     <th
                       key={dia}
                       className={`py-2 px-1 text-center min-w-[34px] border-r border-[#003e45]/70 font-mono tabular-nums ${
-                        isWeekend ? 'bg-amber-950/60 text-amber-300 font-bold' : ''
+                        isToday
+                          ? 'bg-[#006772] text-white ring-1 ring-inset ring-[#f0ad35]'
+                          : isWeekend
+                          ? 'bg-amber-950/60 text-amber-300 font-bold'
+                          : ''
                       }`}
-                      title={`Dia ${dia} (${weekdayName})`}
+                      title={isToday ? `Hoje · Dia ${dia} (${weekdayName})` : `Dia ${dia} (${weekdayName})`}
                     >
                       <div>{dia}</div>
-                      <div className="text-[8px] opacity-75 font-sans">{weekdayName}</div>
+                      <div className="text-[8px] opacity-80 font-sans">
+                        {isToday ? 'HOJE' : weekdayName}
+                      </div>
                     </th>
                   );
                 })}
@@ -347,7 +359,9 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                   : Math.max(0, op.jornadaMin - Math.min(120, op.jornadaMin))
                             })
                           }
-                          className="py-1 px-0.5 text-center border-r border-slate-100 dark:border-slate-800/80 cursor-pointer hover:ring-2 hover:ring-[#006772] hover:z-10 transition-all select-none"
+                          className={`py-1 px-0.5 text-center border-r border-slate-100 dark:border-slate-800/80 cursor-pointer hover:ring-2 hover:ring-[#006772] hover:z-10 transition-all select-none ${
+                            d.dia === todayDay ? 'bg-teal-50/60 dark:bg-teal-950/25' : ''
+                          }`}
                           title={`${op.nome} - Dia ${d.dia}: ${d.status} ${
                             isAtraso
                               ? `(${d.atraso} min)`

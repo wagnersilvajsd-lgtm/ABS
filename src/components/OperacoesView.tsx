@@ -336,7 +336,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                   src={activeOp.logoUrl}
                   alt={activeOp.nome || 'Operação'}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-contain rounded-lg"
+                  className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl"
                 />
               ) : (
                 <Building2 className="w-6 h-6 text-[#006772]" />
@@ -360,7 +360,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </div>
           </div>
 
-          {/* Symmetrical Action Toolbar */}
+          {/* Streamlined Action Toolbar (Operação & Liderança) */}
           <div className="flex items-center gap-2 flex-wrap shrink-0">
             <button
               type="button"
@@ -393,26 +393,6 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             >
               <UserCheck className="w-3.5 h-3.5" />
               <span>Novo Supervisor</span>
-            </button>
-
-            {onOpenBulkImport && (
-              <button
-                type="button"
-                onClick={onOpenBulkImport}
-                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
-                <span>Importar Planilha</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleOpenAddOperatorModal}
-              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Novo Operador</span>
             </button>
 
             <button
@@ -484,8 +464,8 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               opStats.absPercent <= (activeOp?.metaAbs || 0.03) ? 'text-teal-200' : 'text-amber-300'
             }`}>
               {opStats.absPercent <= (activeOp?.metaAbs || 0.03)
-                ? 'Dentro da meta contratual'
-                : 'Acima do teto de tolerância'}
+                ? `Dentro da meta (${(((opStats.absPercent - (activeOp?.metaAbs || 0.03)) * 100)).toFixed(2)} p.p.)`
+                : `Acima da meta (+${(((opStats.absPercent - (activeOp?.metaAbs || 0.03)) * 100)).toFixed(2)} p.p.)`}
             </p>
           </div>
           <div className="pt-3 border-t border-white/15 text-xs font-mono tabular-nums text-teal-200 flex items-center justify-between">
@@ -992,7 +972,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                         <img
                           src={newOpLogoUrl}
                           alt="Prévia da logo"
-                          className="w-full h-full object-contain rounded-lg"
+                          className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
                         />
                       ) : (
                         <ImageIcon className="w-5 h-5 text-slate-400" />
@@ -1139,7 +1119,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                           src={editOpLogoUrl}
                           alt="Logo da operação"
                           referrerPolicy="no-referrer"
-                          className="w-full h-full object-contain rounded-lg"
+                          className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
                         />
                       ) : (
                         <Building2 className="w-5 h-5 text-[#006772]" />
@@ -1267,7 +1247,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                       src={activeOp.logoUrl}
                       alt={activeOp.nome}
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-contain rounded"
+                      className="max-w-full max-h-full w-auto h-auto object-contain rounded-md"
                     />
                   ) : (
                     <Building2 className="w-5 h-5 text-[#006772]" />

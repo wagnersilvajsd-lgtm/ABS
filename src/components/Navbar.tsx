@@ -1,4 +1,5 @@
 import React from 'react';
+import { Operation } from '../types/abs';
 import {
   RotateCcw,
   Download,
@@ -32,6 +33,9 @@ interface NavbarProps {
   onOpenExportImport: () => void;
   absGeral: number;
   activeOperationName?: string;
+  operations?: Operation[];
+  selectedOperationId?: string;
+  onSelectOperation?: (id: string) => void;
   selectedMonthKey: string;
   onSelectMonthKey: (monthKey: string) => void;
   selectedPeriodDays?: number[] | null;
@@ -65,6 +69,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenExportImport,
   absGeral,
   activeOperationName = 'Operação CAERN',
+  operations,
+  selectedOperationId,
+  onSelectOperation,
   selectedMonthKey,
   onSelectMonthKey,
   selectedPeriodDays = null,
@@ -184,11 +191,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Symmetrical Workspace Control Strip */}
       <div className="bg-slate-50/90 dark:bg-slate-950/70 border-t border-slate-200/80 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-3">
-          {/* Left Side: Competência + Período + Real Calendar Metadata */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Left Side: Competência + Período */}
+          <div
+            className="flex items-center gap-2 flex-wrap"
+            title={`${totalDays} dias${month === 2 && totalDays === 29 ? ' (bissexto)' : ''} · ${saturdays.length} sáb / ${sundays.length} dom (${completeWeekendsCount} FDS)`}
+          >
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
               <CalendarDays className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
-              <span className="whitespace-nowrap">Competência:</span>
+              <span className="hidden sm:inline whitespace-nowrap">Mês:</span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -206,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 value={month}
                 onChange={(e) => onSelectMonthKey(formatMonthKey(year, parseInt(e.target.value, 10)))}
                 aria-label="Selecionar mês"
-                className="h-8 px-2.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
+                className="h-8 px-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
               >
                 {MONTH_NAMES_PT.map((name, idx) => (
                   <option key={name} value={idx + 1}>
@@ -219,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 value={year}
                 onChange={(e) => onSelectMonthKey(formatMonthKey(parseInt(e.target.value, 10), month))}
                 aria-label="Selecionar ano"
-                className="h-8 px-2.5 text-xs font-semibold font-mono tabular-nums bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[#006772] dark:text-[#2dd4bf] focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
+                className="h-8 px-2 text-xs font-semibold font-mono tabular-nums bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[#006772] dark:text-[#2dd4bf] focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30 cursor-pointer"
               >
                 {AVAILABLE_YEARS.map((y) => (
                   <option key={y} value={y}>
@@ -242,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectMonthKey(defaultMonthKey)}
-                  className="h-8 px-2.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-100 cursor-pointer whitespace-nowrap"
+                  className="h-8 px-2 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-100 cursor-pointer whitespace-nowrap"
                 >
                   Hoje
                 </button>
@@ -250,7 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {onApplyPeriod && (
-              <div className="sm:pl-2.5 sm:border-l border-slate-200 dark:border-slate-800">
+              <div className="sm:pl-2 sm:border-l border-slate-200 dark:border-slate-800">
                 <PeriodCalendarPopover
                   selectedMonthKey={selectedMonthKey}
                   selectedPeriodDays={selectedPeriodDays}
@@ -259,35 +269,50 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
               </div>
             )}
-
-            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pl-2.5 border-l border-slate-200 dark:border-slate-800 font-mono tabular-nums">
-              <span>{totalDays} dias{month === 2 && totalDays === 29 ? ' (bissexto)' : ''}</span>
-              <span aria-hidden="true">·</span>
-              <span>{saturdays.length} sáb / {sundays.length} dom ({completeWeekendsCount} FDS)</span>
-            </div>
           </div>
 
-          {/* Right Side: Active Operation Summary + Switch Operation + Visão + Transferências */}
-          <div className="flex items-center gap-3 flex-wrap">
+          {/* Right Side: Portal Home + Quick Operation Switcher + Visão + Transferências */}
+          <div className="flex items-center gap-2 flex-wrap">
             {onGoHome && (
               <button
                 type="button"
                 onClick={onGoHome}
-                title="Voltar à página inicial para escolher outra operação"
+                title="Voltar ao Portal de Operações"
                 className="h-8 px-2.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Trocar Operação</span>
+                <span className="hidden sm:inline">Portal</span>
               </button>
             )}
 
-            <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 pr-3 border-r border-slate-200 dark:border-slate-800">
-              <span className="font-medium truncate max-w-[160px]">{activeOperationName}</span>
-              <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
-              <span className="font-mono font-bold tabular-nums text-[#006772] dark:text-[#2dd4bf]">
-                ABS {(absGeral * 100).toFixed(2)}%
-              </span>
-            </div>
+            {operations && operations.length > 0 && onSelectOperation && selectedOperationId ? (
+              <div className="flex items-center gap-2 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5">
+                <select
+                  value={selectedOperationId}
+                  onChange={(e) => onSelectOperation(e.target.value)}
+                  aria-label="Trocar operação ativa"
+                  className="text-xs font-semibold bg-transparent text-slate-800 dark:text-slate-100 focus:outline-hidden cursor-pointer max-w-[140px] truncate"
+                >
+                  {operations.map(op => (
+                    <option key={op.id} value={op.id}>
+                      {op.nome}
+                    </option>
+                  ))}
+                </select>
+                <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">|</span>
+                <span className="font-mono text-xs font-bold tabular-nums text-[#006772] dark:text-[#2dd4bf] whitespace-nowrap">
+                  {(absGeral * 100).toFixed(2)}%
+                </span>
+              </div>
+            ) : (
+              <div className="hidden lg:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 pr-2 border-r border-slate-200 dark:border-slate-800">
+                <span className="font-medium truncate max-w-[150px]">{activeOperationName}</span>
+                <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
+                <span className="font-mono font-bold tabular-nums text-[#006772] dark:text-[#2dd4bf]">
+                  ABS {(absGeral * 100).toFixed(2)}%
+                </span>
+              </div>
+            )}
 
             {onChangeSupervisorView && (
               <div className="flex items-center gap-1.5 h-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5">

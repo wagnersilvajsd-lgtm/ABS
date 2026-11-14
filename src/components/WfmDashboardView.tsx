@@ -8,7 +8,7 @@ import {
   formatPercent
 } from '../utils/calculations';
 import { computeMonthlyTrend } from '../utils/history';
-import { exportOperationExcelReport, exportOperationPdfReport } from '../utils/reports';
+import { exportOperationExcelReport } from '../utils/reports';
 import { AbsTrendChart } from './AbsTrendChart';
 import { formatPeriodSummary } from './PeriodCalendarPopover';
 import {
@@ -17,7 +17,6 @@ import {
   Users,
   Award,
   AlertCircle,
-  FileText,
   FileSpreadsheet,
   Activity,
   ArrowUpRight,
@@ -198,36 +197,19 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
 
             <button
               type="button"
-              onClick={() =>
-                exportOperationExcelReport({
+              onClick={() => {
+                void exportOperationExcelReport({
                   operation: resolvedOperation,
                   operators,
                   monthlyData,
                   selectedMonthKey,
                   periodSummaryLabel
-                })
-              }
-              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+                });
+              }}
+              className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
-              <span>Relatório Excel</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                exportOperationPdfReport({
-                  operation: resolvedOperation,
-                  operators,
-                  monthlyData,
-                  selectedMonthKey,
-                  periodSummaryLabel
-                })
-              }
-              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-[#f0ad35]" />
-              <span>Relatório PDF</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#f0ad35]" />
+              <span>Relatório XLSX</span>
             </button>
           </div>
         </div>
@@ -246,7 +228,9 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                 {formatPercent(summary.absGeral)}
               </div>
               <p className={`text-xs mt-1 ${isTargetMet ? 'text-teal-200' : 'text-amber-300'}`}>
-                {isTargetMet ? 'Dentro da meta de 3.00%' : 'Acima da meta de 3.00%'}
+                {isTargetMet
+                  ? `Dentro da meta (${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`
+                  : `Acima da meta (+${((summary.absGeral - targetWfmAbs) * 100).toFixed(2)} p.p.)`}
               </p>
             </div>
             <div className="text-xs text-teal-200/90 border-t border-white/15 pt-3 font-mono tabular-nums">

@@ -1,14 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { Operation, Operator, OperatorMonthlyData } from '../types/abs';
 import { calculateOperationSummary, formatMinutesToHours, formatPercent } from '../utils/calculations';
-import { formatMonthLabel } from '../utils/calendar';
-import { exportMultiOperationExcelReport, exportMultiOperationPdfReport } from '../utils/reports';
+import {
+  AVAILABLE_YEARS,
+  MONTH_NAMES_PT,
+  formatMonthKey,
+  formatMonthLabel,
+  getNextMonthKey,
+  getPrevMonthKey,
+  parseMonthKey
+} from '../utils/calendar';
+import { exportMultiOperationExcelReport } from '../utils/reports';
 import {
   ArrowRight,
   Building2,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   FileSpreadsheet,
-  FileText,
   Image as ImageIcon,
   Moon,
   Plus,
@@ -17,11 +26,23 @@ import {
   Upload
 } from 'lucide-react';
 
+function getOperationAccentHex(opId: string, name: string): string {
+  const key = `${opId} ${name}`.toLowerCase();
+  if (key.includes('nascer')) return '#10b981';
+  if (key.includes('caema')) return '#0284c7';
+  if (key.includes('cagepa')) return '#0369a1';
+  if (key.includes('sebrae')) return '#2563eb';
+  if (key.includes('ses')) return '#0d9488';
+  if (key.includes('caern')) return '#006772';
+  return '#d89627';
+}
+
 interface HomeOperationsPortalProps {
   operations: Operation[];
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   selectedMonthKey: string;
+  onSelectMonthKey?: (monthKey: string) => void;
   isDark: boolean;
   setIsDark: (dark: boolean) => void;
   onEnterOperation: (operationId: string) => void;
@@ -33,6 +54,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
   operators,
   monthlyData,
   selectedMonthKey,
+  onSelectMonthKey,
   isDark,
   setIsDark,
   onEnterOperation,
@@ -51,6 +73,9 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
   const [newOpDesc, setNewOpDesc] = useState('');
 
   const monthLabel = formatMonthLabel(selectedMonthKey);
+  const { year, month } = parseMonthKey(selectedMonthKey);
+  const prevMonthKey = getPrevMonthKey(selectedMonthKey);
+  const nextMonthKey = getNextMonthKey(selectedMonthKey);
 
   // Per-operation consolidated summaries
   const operationCards = useMemo(() => {
@@ -214,12 +239,60 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <CalendarDays className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
-            <span>Portal de Operações WFM</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-semibold text-slate-700 dark:text-slate-300">{monthLabel}</span>
-          </div>
+          {onSelectMonthKey ? (
+            <div className="hidden md:flex items-center gap-1.5 text-xs">
+              <CalendarDays className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf] mr-0.5" />
+              <button
+                type="button"
+                disabled={!prevMonthKey}
+                onClick={() => prevMonthKey && onSelectMonthKey(prevMonthKey)}
+                title="Mês anterior"
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <select
+                value={month}
+                onChange={(e) => onSelectMonthKey(formatMonthKey(year, parseInt(e.target.value, 10)))}
+                aria-label="Selecionar mês no portal"
+                className="h-7 px-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-100 cursor-pointer"
+              >
+                {MONTH_NAMES_PT.map((name, idx) => (
+                  <option key={name} value={idx + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={year}
+                onChange={(e) => onSelectMonthKey(formatMonthKey(parseInt(e.target.value, 10), month))}
+                aria-label="Selecionar ano no portal"
+                className="h-7 px-2 text-xs font-semibold font-mono tabular-nums bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[#006772] dark:text-[#2dd4bf] cursor-pointer"
+              >
+                {AVAILABLE_YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={!nextMonthKey}
+                onClick={() => nextMonthKey && onSelectMonthKey(nextMonthKey)}
+                title="Próximo mês"
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <CalendarDays className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+              <span>Portal de Operações WFM</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">{monthLabel}</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -289,6 +362,147 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
           </div>
         </section>
 
+        {/* Operations Selection Grid (Primary Access Above Ranking) */}
+        {operationCards.length === 0 ? (
+          <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
+            <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
+            <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
+              Nenhuma operação cadastrada
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Cadastre uma nova operação para começar.
+            </p>
+          </section>
+        ) : (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+            {operationCards.map(({ op, supervisorsCount, operatorsCount, absGeral, isOpenForSetup }) => {
+              const metaLimit = op.metaAbs || 0.03;
+              const withinMeta = absGeral <= metaLimit;
+              const diffPp = (absGeral - metaLimit) * 100;
+              const showFallback = !op.logoUrl || brokenLogos[op.id];
+              const accentHex = getOperationAccentHex(op.id, op.nome);
+
+              return (
+                <article
+                  key={op.id}
+                  style={{ borderTopColor: accentHex, borderTopWidth: '3px' }}
+                  className={`h-full bg-white dark:bg-slate-900 rounded-xl border p-6 flex flex-col justify-between hover-lift ${
+                    isOpenForSetup
+                      ? 'border-dashed border-slate-300 dark:border-slate-700'
+                      : 'border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <div>
+                    {/* Logo + Operation Name & Client */}
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                        {showFallback ? (
+                          <Building2 className="w-7 h-7 text-[#006772]" />
+                        ) : (
+                          <img
+                            src={op.logoUrl}
+                            alt={op.nome}
+                            referrerPolicy="no-referrer"
+                            onError={() =>
+                              setBrokenLogos((prev) => ({ ...prev, [op.id]: true }))
+                            }
+                            className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {op.nome}
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                          {op.cliente}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Description & Unboxed Metadata */}
+                    <p className="mt-4 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2rem]">
+                      {op.descricao || 'Central Operacional e Controle de Absenteísmo WFM.'}
+                    </p>
+
+                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                      <span
+                        className={
+                          isOpenForSetup
+                            ? 'font-medium text-amber-700 dark:text-amber-400'
+                            : 'font-medium text-[#006772] dark:text-[#2dd4bf]'
+                        }
+                      >
+                        {isOpenForSetup ? 'Em aberto para cadastro' : 'Com equipe cadastrada'}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums">
+                        Meta ≤ {(metaLimit * 100).toFixed(1)}%
+                      </span>
+                      {!isOpenForSetup && operatorsCount > 0 && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span
+                            className={`font-mono tabular-nums text-[11px] font-semibold ${
+                              withinMeta
+                                ? 'text-[#006772] dark:text-[#2dd4bf]'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {diffPp <= 0
+                              ? `${diffPp.toFixed(2)} p.p.`
+                              : `+${diffPp.toFixed(2)} p.p.`}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Consolidated Metrics & Action */}
+                  <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block">Supervisores</span>
+                        <span className="font-bold font-mono tabular-nums text-sm text-slate-900 dark:text-slate-100">
+                          {supervisorsCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block">Colaboradores</span>
+                        <span className="font-bold font-mono tabular-nums text-sm text-slate-900 dark:text-slate-100">
+                          {operatorsCount}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-500 dark:text-slate-400 block">ABS Atual</span>
+                        <span
+                          className={`font-bold font-mono tabular-nums text-sm ${
+                            withinMeta
+                              ? 'text-[#006772] dark:text-[#2dd4bf]'
+                              : 'text-rose-600 dark:text-rose-400'
+                          }`}
+                        >
+                          {formatPercent(absGeral)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onEnterOperation(op.id)}
+                      className="w-full h-10 px-4 flex items-center justify-center gap-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg btn-press cursor-pointer"
+                    >
+                      <span>Abrir Operação</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        )}
+
         {/* Visão Executiva Multi-Operações & Ranking Comparativo */}
         <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200/70 dark:border-slate-800">
@@ -309,34 +523,18 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
             <div className="flex items-center gap-2 flex-wrap shrink-0">
               <button
                 type="button"
-                onClick={() =>
-                  exportMultiOperationExcelReport({
+                onClick={() => {
+                  void exportMultiOperationExcelReport({
                     operations,
                     operators,
                     monthlyData,
                     selectedMonthKey
-                  })
-                }
-                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+                  });
+                }}
+                className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
-                <span>Relatório Geral Excel</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  exportMultiOperationPdfReport({
-                    operations,
-                    operators,
-                    monthlyData,
-                    selectedMonthKey
-                  })
-                }
-                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5 text-[#f0ad35]" />
-                <span>Relatório Geral PDF</span>
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#f0ad35]" />
+                <span>Relatório Geral XLSX</span>
               </button>
             </div>
           </div>
@@ -405,7 +603,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                   <th className="py-2.5 px-4 text-right">Min. Escalados</th>
                   <th className="py-2.5 px-3 text-center">Meta</th>
                   <th className="py-2.5 px-4 text-right bg-[#003e45]">ABS</th>
-                  <th className="py-2.5 px-4">Situação</th>
+                  <th className="py-2.5 px-4">Situação / Desvio</th>
                   <th className="py-2.5 px-3 text-right">Acesso</th>
                 </tr>
               </thead>
@@ -413,6 +611,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                 {executiveStats.ranked.map((item, idx) => {
                   const metaLimit = item.op.metaAbs || 0.03;
                   const withinMeta = item.absGeral <= metaLimit;
+                  const diffPp = (item.absGeral - metaLimit) * 100;
                   const barPct = Math.min(100, (item.absGeral / (metaLimit * 2)) * 100);
 
                   return (
@@ -433,7 +632,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                                 src={item.op.logoUrl}
                                 alt={item.op.nome}
                                 referrerPolicy="no-referrer"
-                                className="w-full h-full object-contain"
+                                className="max-w-full max-h-full w-auto h-auto object-contain rounded-sm"
                               />
                             )}
                           </div>
@@ -492,11 +691,11 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                           </span>
                         ) : withinMeta ? (
                           <span className="text-[#006772] dark:text-[#2dd4bf] font-semibold">
-                            Dentro da meta
+                            Na meta <span className="font-mono text-[11px]">({diffPp.toFixed(2)} p.p.)</span>
                           </span>
                         ) : (
                           <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                            Acima da meta
+                            Acima <span className="font-mono text-[11px]">(+{diffPp.toFixed(2)} p.p.)</span>
                           </span>
                         )}
                       </td>
@@ -516,123 +715,6 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
             </table>
           </div>
         </section>
-
-        {/* Operations Selection Grid */}
-        {operationCards.length === 0 ? (
-          <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
-            <Building2 className="w-8 h-8 text-slate-400 mx-auto" />
-            <h2 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
-              Nenhuma operação cadastrada
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Cadastre uma nova operação para começar.
-            </p>
-          </section>
-        ) : (
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-            {operationCards.map(({ op, supervisorsCount, operatorsCount, absGeral, isOpenForSetup }) => {
-              const withinMeta = absGeral <= (op.metaAbs || 0.03);
-              const showFallback = !op.logoUrl || brokenLogos[op.id];
-
-              return (
-                <article
-                  key={op.id}
-                  className="h-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-between hover-lift"
-                >
-                  <div>
-                    {/* Logo + Operation Name & Client */}
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
-                        {showFallback ? (
-                          <Building2 className="w-7 h-7 text-[#006772]" />
-                        ) : (
-                          <img
-                            src={op.logoUrl}
-                            alt={op.nome}
-                            referrerPolicy="no-referrer"
-                            onError={() =>
-                              setBrokenLogos((prev) => ({ ...prev, [op.id]: true }))
-                            }
-                            className="w-full h-full object-contain rounded-lg"
-                          />
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
-                          {op.nome}
-                        </h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
-                          {op.cliente}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Description & Unboxed Metadata */}
-                    <p className="mt-4 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2rem]">
-                      {op.descricao || 'Central Operacional e Controle de Absenteísmo WFM.'}
-                    </p>
-
-                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <span
-                        className={
-                          isOpenForSetup
-                            ? 'font-medium text-amber-700 dark:text-amber-400'
-                            : 'font-medium text-[#006772] dark:text-[#2dd4bf]'
-                        }
-                      >
-                        {isOpenForSetup ? 'Em aberto para cadastro' : 'Com equipe cadastrada'}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-mono tabular-nums">
-                        Meta ≤ {((op.metaAbs || 0.03) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Consolidated Metrics & Action */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                    <div className="grid grid-cols-3 gap-3 text-xs">
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block">Supervisores</span>
-                        <span className="font-bold font-mono tabular-nums text-sm text-slate-900 dark:text-slate-100">
-                          {supervisorsCount}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block">Colaboradores</span>
-                        <span className="font-bold font-mono tabular-nums text-sm text-slate-900 dark:text-slate-100">
-                          {operatorsCount}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-slate-500 dark:text-slate-400 block">ABS Atual</span>
-                        <span
-                          className={`font-bold font-mono tabular-nums text-sm ${
-                            withinMeta
-                              ? 'text-[#006772] dark:text-[#2dd4bf]'
-                              : 'text-rose-600 dark:text-rose-400'
-                          }`}
-                        >
-                          {formatPercent(absGeral)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => onEnterOperation(op.id)}
-                      className="w-full h-10 px-4 flex items-center justify-center gap-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg btn-press cursor-pointer"
-                    >
-                      <span>Abrir Operação</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-        )}
       </main>
 
       {/* Footer */}
@@ -738,7 +820,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
                           src={newOpLogoUrl}
                           alt="Prévia da logo"
                           referrerPolicy="no-referrer"
-                          className="w-full h-full object-contain rounded-lg"
+                          className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
                         />
                       ) : (
                         <ImageIcon className="w-5 h-5 text-slate-400" />

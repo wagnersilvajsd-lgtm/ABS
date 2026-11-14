@@ -124,6 +124,7 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [isMatrixWide, setIsMatrixWide] = useState(false);
   const [profileOperatorId, setProfileOperatorId] = useState<string | null>(null);
   const [transferOperator, setTransferOperator] = useState<Operator | null>(null);
   const [deleteOperator, setDeleteOperator] = useState<Operator | null>(null);
@@ -1021,6 +1022,7 @@ export default function App() {
         operators={operators}
         monthlyData={filteredMonthlyData}
         selectedMonthKey={selectedMonthKey}
+        onSelectMonthKey={handleSelectMonthKey}
         isDark={isDark}
         setIsDark={setIsDark}
         onEnterOperation={handleEnterOperation}
@@ -1042,6 +1044,9 @@ export default function App() {
         onOpenExportImport={() => setIsExportModalOpen(true)}
         absGeral={globalSummary.absGeral}
         activeOperationName={activeOperation?.nome}
+        operations={operations}
+        selectedOperationId={selectedOperationId}
+        onSelectOperation={handleSelectOperation}
         selectedMonthKey={selectedMonthKey}
         onSelectMonthKey={handleSelectMonthKey}
         selectedPeriodDays={selectedPeriodDays}
@@ -1089,7 +1094,11 @@ export default function App() {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main
+        className={`flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-[max-width] duration-200 ${
+          activeTab === 'base-apontamentos' && isMatrixWide ? 'max-w-[1640px]' : 'max-w-7xl'
+        }`}
+      >
         {selectedPeriodDays && selectedPeriodDays.length > 0 && (
           <div className="mb-5 px-4 py-2.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fade-in">
             <div className="flex items-center gap-2 text-[#005059] dark:text-teal-200">
@@ -1192,6 +1201,8 @@ export default function App() {
             selectedMonthKey={selectedMonthKey}
             selectedPeriodDays={selectedPeriodDays}
             onClearMonthAbs={() => setIsClearMonthAbsConfirmOpen(true)}
+            isWide={isMatrixWide}
+            onToggleWide={() => setIsMatrixWide(w => !w)}
           />
         )}
 
