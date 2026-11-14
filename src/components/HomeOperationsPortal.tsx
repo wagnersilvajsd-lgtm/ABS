@@ -10,7 +10,13 @@ import {
   getPrevMonthKey,
   parseMonthKey
 } from '../utils/calendar';
-import { exportMultiOperationExcelReport } from '../utils/reports';
+import {
+  ExcelExportStyleConfig,
+  exportMultiOperationExcelReport,
+  loadExcelStyleConfig,
+  saveExcelStyleConfig
+} from '../utils/reports';
+import { ExcelStyleConfigModal } from './ExcelStyleConfigPanel';
 import {
   ArrowRight,
   Building2,
@@ -20,6 +26,7 @@ import {
   FileSpreadsheet,
   Image as ImageIcon,
   Moon,
+  Palette,
   Plus,
   Sun,
   Trophy,
@@ -61,8 +68,15 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
   onAddOperation
 }) => {
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+  const [excelStyle, setExcelStyle] = useState<ExcelExportStyleConfig>(() => loadExcelStyleConfig());
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [brokenLogos, setBrokenLogos] = useState<Record<string, boolean>>({});
+
+  const handleExcelStyleChange = (next: ExcelExportStyleConfig) => {
+    setExcelStyle(next);
+    saveExcelStyleConfig(next);
+  };
 
   // Form states for New Operation directly from portal
   const [newOpName, setNewOpName] = useState('');
@@ -524,11 +538,33 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  setExcelStyle(loadExcelStyleConfig());
+                  setIsStyleModalOpen(true);
+                }}
+                title="Escolher paleta de cores e estilo da planilha XLSX"
+                className="h-9 px-3 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+              >
+                <span
+                  className="w-3 h-3 rounded-xs border border-black/15"
+                  style={{ backgroundColor: excelStyle.headerColor }}
+                />
+                <span
+                  className="w-3 h-3 rounded-xs border border-black/15 -ml-1"
+                  style={{ backgroundColor: excelStyle.highlightColor }}
+                />
+                <Palette className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                <span>Estilo XLSX</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
                   void exportMultiOperationExcelReport({
                     operations,
                     operators,
                     monthlyData,
-                    selectedMonthKey
+                    selectedMonthKey,
+                    styleConfig: excelStyle
                   });
                 }}
                 className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
@@ -894,6 +930,22 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
           </div>
         </div>
       )}
+      <ExcelStyleConfigModal
+        isOpen={isStyleModalOpen}
+        onClose={() => setIsStyleModalOpen(false)}
+        styleConfig={excelStyle}
+        onStyleChange={handleExcelStyleChange}
+        title="Personalizar Estilo do Consolidado Multi-Operações"
+        onExportNow={() => {
+          void exportMultiOperationExcelReport({
+            operations,
+            operators,
+            monthlyData,
+            selectedMonthKey,
+            styleConfig: excelStyle
+          });
+        }}
+      />
     </div>
   );
 };

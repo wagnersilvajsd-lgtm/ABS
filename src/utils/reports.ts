@@ -7,6 +7,181 @@ import {
 } from './calculations';
 import { formatMonthLabel, getDaysInMonth, parseMonthKey } from './calendar';
 
+export interface ExcelExportStyleConfig {
+  presetId: string;
+  headerColor: string;
+  headerTextColor: string;
+  highlightColor: string;
+  zebraColor: string;
+  enableZebra: boolean;
+  highlightCriticalRows: boolean;
+  criticalRowColor: string;
+}
+
+export interface ExcelStylePreset {
+  id: string;
+  name: string;
+  description: string;
+  config: Omit<ExcelExportStyleConfig, 'presetId' | 'enableZebra' | 'highlightCriticalRows'>;
+}
+
+export const EXCEL_STYLE_PRESETS: ExcelStylePreset[] = [
+  {
+    id: 'jsd-teal',
+    name: 'JSD Corporativo',
+    description: 'Teal institucional e destaque suave',
+    config: {
+      headerColor: '#005059',
+      headerTextColor: '#FFFFFF',
+      highlightColor: '#E6F4F5',
+      zebraColor: '#F8FAFC',
+      criticalRowColor: '#FFF1F2'
+    }
+  },
+  {
+    id: 'navy-exec',
+    name: 'Executivo Marinho',
+    description: 'Azul marinho clássico para diretoria',
+    config: {
+      headerColor: '#1E3A8A',
+      headerTextColor: '#FFFFFF',
+      highlightColor: '#DBEAFE',
+      zebraColor: '#F8FAFC',
+      criticalRowColor: '#FFE4E6'
+    }
+  },
+  {
+    id: 'slate-amber',
+    name: 'Grafite & Ouro',
+    description: 'Cinza executivo com destaque âmbar',
+    config: {
+      headerColor: '#1E293B',
+      headerTextColor: '#FFFFFF',
+      highlightColor: '#FEF3C7',
+      zebraColor: '#F8FAFC',
+      criticalRowColor: '#FEE2E2'
+    }
+  },
+  {
+    id: 'emerald-pro',
+    name: 'Esmeralda Gestão',
+    description: 'Verde escuro com realce menta',
+    config: {
+      headerColor: '#064E3B',
+      headerTextColor: '#FFFFFF',
+      highlightColor: '#D1FAE5',
+      zebraColor: '#F0FDF4',
+      criticalRowColor: '#FFE4E6'
+    }
+  },
+  {
+    id: 'burgundy-board',
+    name: 'Vinho Diretoria',
+    description: 'Bordô sóbrio para apresentações',
+    config: {
+      headerColor: '#6B1D3B',
+      headerTextColor: '#FFFFFF',
+      highlightColor: '#FCE7F3',
+      zebraColor: '#FFF5F7',
+      criticalRowColor: '#FEE2E2'
+    }
+  }
+];
+
+export const DEFAULT_EXCEL_STYLE: ExcelExportStyleConfig = {
+  presetId: 'jsd-teal',
+  ...EXCEL_STYLE_PRESETS[0].config,
+  enableZebra: true,
+  highlightCriticalRows: false
+};
+
+const EXCEL_STYLE_STORAGE_KEY = 'jsd_wfm_excel_style_v1';
+
+export function loadExcelStyleConfig(): ExcelExportStyleConfig {
+  try {
+    const raw = localStorage.getItem(EXCEL_STYLE_STORAGE_KEY);
+    if (!raw) return DEFAULT_EXCEL_STYLE;
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_EXCEL_STYLE,
+      ...parsed
+    };
+  } catch {
+    return DEFAULT_EXCEL_STYLE;
+  }
+}
+
+export function saveExcelStyleConfig(config: ExcelExportStyleConfig): void {
+  try {
+    localStorage.setItem(EXCEL_STYLE_STORAGE_KEY, JSON.stringify(config));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function normalizeHex(hex: string, fallback: string): string {
+  const clean = (hex || '').trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{6}$/.test(clean)) return `#${clean.toUpperCase()}`;
+  return fallback;
+}
+
+function hexToArgb(hex: string, fallback = '#005059'): string {
+  const norm = normalizeHex(hex, fallback);
+  return `FF${norm.slice(1)}`;
+}
+
+function isDarkHex(hex: string): boolean {
+  const norm = normalizeHex(hex, '#FFFFFF').slice(1);
+  const r = parseInt(norm.slice(0, 2), 16);
+  const g = parseInt(norm.slice(2, 4), 16);
+  const b = parseInt(norm.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.56;
+}
+
+function darkenHex(hex: string, factor = 0.72): string {
+  const norm = normalizeHex(hex, '#005059').slice(1);
+  const r = Math.max(0, Math.min(255, Math.round(parseInt(norm.slice(0, 2), 16) * factor)));
+  const g = Math.max(0, Math.min(255, Math.round(parseInt(norm.slice(2, 4), 16) * factor)));
+  const b = Math.max(0, Math.min(255, Math.round(parseInt(norm.slice(4, 6), 16) * factor)));
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+}
+
+interface ResolvedExcelTheme {
+  headerBg: string;
+  headerText: string;
+  headerBorder: string;
+  highlightBg: string;
+  highlightText: string;
+  highlightBorder: string;
+  zebraBg: string;
+  enableZebra: boolean;
+  highlightCriticalRows: boolean;
+  criticalRowBg: string;
+}
+
+function resolveExcelTheme(styleConfig?: ExcelExportStyleConfig): ResolvedExcelTheme {
+  const cfg = styleConfig || loadExcelStyleConfig();
+  const headerHex = normalizeHex(cfg.headerColor, DEFAULT_EXCEL_STYLE.headerColor);
+  const headerTextHex = normalizeHex(cfg.headerTextColor, DEFAULT_EXCEL_STYLE.headerTextColor);
+  const highlightHex = normalizeHex(cfg.highlightColor, DEFAULT_EXCEL_STYLE.highlightColor);
+  const zebraHex = normalizeHex(cfg.zebraColor, DEFAULT_EXCEL_STYLE.zebraColor);
+  const criticalHex = normalizeHex(cfg.criticalRowColor, DEFAULT_EXCEL_STYLE.criticalRowColor);
+
+  return {
+    headerBg: hexToArgb(headerHex),
+    headerText: hexToArgb(headerTextHex),
+    headerBorder: hexToArgb(darkenHex(headerHex, 0.72)),
+    highlightBg: hexToArgb(highlightHex),
+    highlightText: isDarkHex(highlightHex) ? 'FFFFFFFF' : 'FF0F172A',
+    highlightBorder: hexToArgb(headerHex),
+    zebraBg: hexToArgb(zebraHex),
+    enableZebra: cfg.enableZebra,
+    highlightCriticalRows: cfg.highlightCriticalRows,
+    criticalRowBg: hexToArgb(criticalHex)
+  };
+}
+
 const COLORS = {
   TEAL_DARK: 'FF005059',
   TEAL_PRIMARY: 'FF006772',
@@ -70,7 +245,8 @@ function applyBanner(
   ws: ExcelJS.Worksheet,
   totalCols: number,
   title: string,
-  subtitle: string
+  subtitle: string,
+  theme: ResolvedExcelTheme
 ): void {
   const lastCol = getColLetter(totalCols);
 
@@ -79,8 +255,8 @@ function applyBanner(
   row1.height = 30;
   const titleCell = ws.getCell('A1');
   titleCell.value = title;
-  titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: COLORS.WHITE } };
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_DARK } };
+  titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: theme.headerText } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.headerBg } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
 
   ws.mergeCells(`A2:${lastCol}2`);
@@ -88,33 +264,43 @@ function applyBanner(
   row2.height = 20;
   const subCell = ws.getCell('A2');
   subCell.value = subtitle;
-  subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: COLORS.TEAL_DARK } };
-  subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_SOFT } };
+  subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: theme.highlightText } };
+  subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.highlightBg } };
   subCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
   subCell.border = {
-    bottom: { style: 'medium', color: { argb: COLORS.TEAL_PRIMARY } }
+    bottom: { style: 'medium', color: { argb: theme.highlightBorder } }
   };
 
   ws.getRow(3).height = 10;
 }
 
-function styleTableHeaderRow(row: ExcelJS.Row, colCount: number): void {
+function styleTableHeaderRow(
+  row: ExcelJS.Row,
+  colCount: number,
+  theme: ResolvedExcelTheme
+): void {
   row.height = 24;
   for (let c = 1; c <= colCount; c++) {
     const cell = row.getCell(c);
-    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.WHITE } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_DARK } };
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: theme.headerText } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.headerBg } };
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     cell.border = {
-      top: { style: 'thin', color: { argb: COLORS.BORDER_DARK } },
-      left: { style: 'thin', color: { argb: COLORS.BORDER_DARK } },
-      bottom: { style: 'medium', color: { argb: COLORS.BORDER_DARK } },
-      right: { style: 'thin', color: { argb: COLORS.BORDER_DARK } }
+      top: { style: 'thin', color: { argb: theme.headerBorder } },
+      left: { style: 'thin', color: { argb: theme.headerBorder } },
+      bottom: { style: 'medium', color: { argb: theme.headerBorder } },
+      right: { style: 'thin', color: { argb: theme.headerBorder } }
     };
   }
 }
 
-function styleAbsBadge(cell: ExcelJS.Cell, absDecimal: number, metaLimit: number, isEmpty = false): void {
+function styleAbsBadge(
+  cell: ExcelJS.Cell,
+  absDecimal: number,
+  metaLimit: number,
+  isEmpty = false,
+  theme?: ResolvedExcelTheme
+): void {
   cell.numFmt = '0.00%';
   cell.alignment = { vertical: 'middle', horizontal: 'right' };
   if (isEmpty) {
@@ -126,8 +312,17 @@ function styleAbsBadge(cell: ExcelJS.Cell, absDecimal: number, metaLimit: number
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.GREEN_SOFT } };
     cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.GREEN_TEXT } };
   } else if (absDecimal <= metaLimit) {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_SOFT } };
-    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.TEAL_DARK } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: theme ? theme.highlightBg : COLORS.TEAL_SOFT }
+    };
+    cell.font = {
+      name: 'Calibri',
+      size: 10,
+      bold: true,
+      color: { argb: theme ? theme.highlightText : COLORS.TEAL_DARK }
+    };
   } else {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.ROSE_SOFT } };
     cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.ROSE_TEXT } };
@@ -146,6 +341,20 @@ function styleStatusBadge(cell: ExcelJS.Cell, statusText: string): void {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.GOLD_SOFT } };
     cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.GOLD_TEXT } };
   }
+}
+
+function getRowBg(
+  idx: number,
+  isCritical: boolean,
+  theme: ResolvedExcelTheme
+): string {
+  if (theme.highlightCriticalRows && isCritical) {
+    return theme.criticalRowBg;
+  }
+  if (theme.enableZebra && idx % 2 === 1) {
+    return theme.zebraBg;
+  }
+  return COLORS.WHITE;
 }
 
 function autoFitColumns(ws: ExcelJS.Worksheet, minWidth = 10, maxWidth = 40, startRow = 4): void {
@@ -191,8 +400,10 @@ export async function exportOperationExcelReport(params: {
   monthlyData: Record<string, OperatorMonthlyData>;
   selectedMonthKey: string;
   periodSummaryLabel?: string;
+  styleConfig?: ExcelExportStyleConfig;
 }): Promise<void> {
-  const { operation, operators, monthlyData, selectedMonthKey, periodSummaryLabel } = params;
+  const { operation, operators, monthlyData, selectedMonthKey, periodSummaryLabel, styleConfig } = params;
+  const theme = resolveExcelTheme(styleConfig);
   const monthLabel = formatMonthLabel(selectedMonthKey);
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
@@ -209,13 +420,14 @@ export async function exportOperationExcelReport(params: {
   // ABA 1: RESUMO EXECUTIVO (KPIs + Tabela de Supervisões com Filtro)
   // =========================================================================
   const wsResumo = wb.addWorksheet('Resumo Executivo', {
-    properties: { tabColor: { argb: COLORS.TEAL_DARK } }
+    properties: { tabColor: { argb: theme.headerBg } }
   });
   applyBanner(
     wsResumo,
     6,
     `JSD TELECOM · RELATÓRIO GERENCIAL WFM — ${operation.nome.toUpperCase()}`,
-    `Cliente: ${operation.cliente}   |   Competência: ${monthLabel} (${periodSummaryLabel || 'Mês Integral'})   |   Meta ABS ≤ ${(metaLimit * 100).toFixed(1)}%   |   Gerado em: ${generatedStr}`
+    `Cliente: ${operation.cliente}   |   Competência: ${monthLabel} (${periodSummaryLabel || 'Mês Integral'})   |   Meta ABS ≤ ${(metaLimit * 100).toFixed(1)}%   |   Gerado em: ${generatedStr}`,
+    theme
   );
 
   // Bloco de Indicadores Consolidados (Linhas 4..10)
@@ -258,15 +470,15 @@ export async function exportOperationExcelReport(params: {
       cell.value = v;
       cell.border = THIN_BORDER;
       if (idx % 2 === 0) {
-        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.TEAL_DARK } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_SOFT } };
+        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: theme.highlightText } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.highlightBg } };
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
       } else {
         cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.TEXT_DARK } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.WHITE } };
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
         if (i === 0 && idx === 1) {
-          styleAbsBadge(cell, Number(v), metaLimit, operators.length === 0);
+          styleAbsBadge(cell, Number(v), metaLimit, operators.length === 0, theme);
         } else if (i === 1 && idx === 1) {
           styleStatusBadge(cell, String(v));
         } else if (typeof v === 'number') {
@@ -289,7 +501,7 @@ export async function exportOperationExcelReport(params: {
     'ABS (%)',
     'STATUS META'
   ];
-  styleTableHeaderRow(supHeaderRow, 6);
+  styleTableHeaderRow(supHeaderRow, 6, theme);
 
   const sortedSups = [...summary.supervisores].sort((a, b) => a.absPercent - b.absPercent);
   let supRowCursor = supHeaderRowNum;
@@ -314,7 +526,7 @@ export async function exportOperationExcelReport(params: {
       statusText
     ];
 
-    const zebraBg = idx % 2 === 1 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+    const zebraBg = getRowBg(idx, statusText === 'Acima da Meta', theme);
     for (let c = 1; c <= 6; c++) {
       const cell = r.getCell(c);
       cell.border = THIN_BORDER;
@@ -328,7 +540,7 @@ export async function exportOperationExcelReport(params: {
         cell.numFmt = '#,##0';
       }
     }
-    styleAbsBadge(r.getCell(5), sup.absPercent, metaLimit, sup.totalOperadores === 0);
+    styleAbsBadge(r.getCell(5), sup.absPercent, metaLimit, sup.totalOperadores === 0, theme);
     styleStatusBadge(r.getCell(6), statusText);
   });
 
@@ -360,11 +572,11 @@ export async function exportOperationExcelReport(params: {
   ];
   for (let c = 1; c <= 6; c++) {
     const cell = supTotalRow.getCell(c);
-    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.TEAL_DARK } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_SOFT } };
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: theme.highlightText } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.highlightBg } };
     cell.border = {
-      top: { style: 'medium', color: { argb: COLORS.TEAL_PRIMARY } },
-      bottom: { style: 'medium', color: { argb: COLORS.TEAL_PRIMARY } },
+      top: { style: 'medium', color: { argb: theme.highlightBorder } },
+      bottom: { style: 'medium', color: { argb: theme.highlightBorder } },
       left: { style: 'thin', color: { argb: COLORS.BORDER } },
       right: { style: 'thin', color: { argb: COLORS.BORDER } }
     };
@@ -394,7 +606,7 @@ export async function exportOperationExcelReport(params: {
   // ABA 2: COLABORADORES (Com filtros em todas as colunas + cores de meta)
   // =========================================================================
   const wsOps = wb.addWorksheet('Colaboradores', {
-    properties: { tabColor: { argb: COLORS.TEAL_PRIMARY } }
+    properties: { tabColor: { argb: theme.highlightBorder } }
   });
   const opHeaders = [
     'OPERADOR',
@@ -418,13 +630,14 @@ export async function exportOperationExcelReport(params: {
     wsOps,
     opHeaders.length,
     `DETALHAMENTO DE COLABORADORES · ${operation.nome.toUpperCase()}`,
-    `Competência: ${monthLabel} (${periodSummaryLabel || 'Mês Integral'})   |   Use os filtros no cabeçalho para filtrar por Supervisor, Situação ou ABS`
+    `Competência: ${monthLabel} (${periodSummaryLabel || 'Mês Integral'})   |   Use os filtros no cabeçalho para filtrar por Supervisor, Situação ou ABS`,
+    theme
   );
 
   const opsHeaderRowNum = 4;
   const opsHeaderRow = wsOps.getRow(opsHeaderRowNum);
   opsHeaderRow.values = opHeaders;
-  styleTableHeaderRow(opsHeaderRow, opHeaders.length);
+  styleTableHeaderRow(opsHeaderRow, opHeaders.length, theme);
 
   const sortedOperators = [...operators].sort((a, b) => {
     const stA = calculateOperatorStats((monthlyData[a.id] || { dias: [] }).dias, a.jornadaMin);
@@ -466,7 +679,7 @@ export async function exportOperationExcelReport(params: {
       statusText
     ];
 
-    const zebraBg = idx % 2 === 1 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+    const zebraBg = getRowBg(idx, statusText === 'Acima da Meta', theme);
     for (let c = 1; c <= opHeaders.length; c++) {
       const cell = r.getCell(c);
       cell.border = THIN_BORDER;
@@ -483,7 +696,7 @@ export async function exportOperationExcelReport(params: {
         cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.ROSE_TEXT } };
       }
     }
-    styleAbsBadge(r.getCell(15), st.absMensal, metaLimit);
+    styleAbsBadge(r.getCell(15), st.absMensal, metaLimit, false, theme);
     styleStatusBadge(r.getCell(16), statusText);
   });
 
@@ -511,13 +724,14 @@ export async function exportOperationExcelReport(params: {
     wsMatrix,
     matrixHeaders.length,
     `BASE MATRIZ DIÁRIA · ${operation.nome.toUpperCase()} (${monthLabel})`,
-    'Legenda de cores: Verde = OK  |  Vermelho = Falta / Suspensão  |  Azul = Atestado  |  Âmbar = Atraso / Declaração ABS  |  Ciano = BH / Abono Legal / Aniv.  |  Cinza = DSR'
+    'Legenda de cores: Verde = OK  |  Vermelho = Falta / Suspensão  |  Azul = Atestado  |  Âmbar = Atraso / Declaração ABS  |  Ciano = BH / Abono Legal / Aniv.  |  Cinza = DSR',
+    theme
   );
 
   const matrixHeaderRowNum = 4;
   const matrixHeaderRow = wsMatrix.getRow(matrixHeaderRowNum);
   matrixHeaderRow.values = matrixHeaders;
-  styleTableHeaderRow(matrixHeaderRow, matrixHeaders.length);
+  styleTableHeaderRow(matrixHeaderRow, matrixHeaders.length, theme);
 
   let matrixCursor = matrixHeaderRowNum;
   sortedOperators.forEach((op, idx) => {
@@ -569,7 +783,7 @@ export async function exportOperationExcelReport(params: {
     const r = wsMatrix.getRow(matrixCursor);
     r.height = 19;
     r.values = rowVals;
-    const zebraBg = idx % 2 === 1 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+    const zebraBg = getRowBg(idx, st.absMensal > metaLimit, theme);
 
     for (let c = 1; c <= 2; c++) {
       const cell = r.getCell(c);
@@ -580,7 +794,7 @@ export async function exportOperationExcelReport(params: {
     }
     const absCell = r.getCell(3);
     absCell.border = THIN_BORDER;
-    styleAbsBadge(absCell, st.absMensal, metaLimit);
+    styleAbsBadge(absCell, st.absMensal, metaLimit, false, theme);
 
     dayColors.forEach((dc, dIdx) => {
       const cell = r.getCell(4 + dIdx);
@@ -617,8 +831,10 @@ export async function exportMultiOperationExcelReport(params: {
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   selectedMonthKey: string;
+  styleConfig?: ExcelExportStyleConfig;
 }): Promise<void> {
-  const { operations, operators, monthlyData, selectedMonthKey } = params;
+  const { operations, operators, monthlyData, selectedMonthKey, styleConfig } = params;
+  const theme = resolveExcelTheme(styleConfig);
   const monthLabel = formatMonthLabel(selectedMonthKey);
   const generatedStr = new Date().toLocaleString('pt-BR');
 
@@ -648,7 +864,7 @@ export async function exportMultiOperationExcelReport(params: {
   // ABA 1: RANKING OPERAÇÕES (Com cores de status + filtros automáticos)
   // =========================================================================
   const wsRanking = wb.addWorksheet('Ranking Operações', {
-    properties: { tabColor: { argb: COLORS.TEAL_DARK } }
+    properties: { tabColor: { argb: theme.headerBg } }
   });
   const rankHeaders = [
     'POSIÇÃO',
@@ -668,13 +884,14 @@ export async function exportMultiOperationExcelReport(params: {
     wsRanking,
     rankHeaders.length,
     'JSD TELECOM · CONSOLIDADO EXECUTIVO MULTI-OPERAÇÕES',
-    `Competência: ${monthLabel}   |   ABS Consolidado: ${(globalAbs * 100).toFixed(2)}%   |   Gerado em: ${generatedStr}   |   Filtros ativos na linha de cabeçalho`
+    `Competência: ${monthLabel}   |   ABS Consolidado: ${(globalAbs * 100).toFixed(2)}%   |   Gerado em: ${generatedStr}   |   Filtros ativos na linha de cabeçalho`,
+    theme
   );
 
   const rankHeaderRowNum = 4;
   const rankHeaderRow = wsRanking.getRow(rankHeaderRowNum);
   rankHeaderRow.values = rankHeaders;
-  styleTableHeaderRow(rankHeaderRow, rankHeaders.length);
+  styleTableHeaderRow(rankHeaderRow, rankHeaders.length, theme);
 
   let rankCursor = rankHeaderRowNum;
   enriched.forEach(({ op, opOps, sups, summary }, idx) => {
@@ -703,7 +920,7 @@ export async function exportMultiOperationExcelReport(params: {
       status
     ];
 
-    const zebraBg = idx % 2 === 1 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+    const zebraBg = getRowBg(idx, status === 'Acima da Meta', theme);
     for (let c = 1; c <= rankHeaders.length; c++) {
       const cell = r.getCell(c);
       cell.border = THIN_BORDER;
@@ -721,7 +938,7 @@ export async function exportMultiOperationExcelReport(params: {
       if (c >= 4 && c <= 7) cell.numFmt = '#,##0';
       if (c === 9) cell.numFmt = '0.0%';
     }
-    styleAbsBadge(r.getCell(10), summary.absGeral, metaLimit, opOps.length === 0);
+    styleAbsBadge(r.getCell(10), summary.absGeral, metaLimit, opOps.length === 0, theme);
     styleStatusBadge(r.getCell(11), status);
   });
 
@@ -743,11 +960,11 @@ export async function exportMultiOperationExcelReport(params: {
   ];
   for (let c = 1; c <= rankHeaders.length; c++) {
     const cell = rankTotalRow.getCell(c);
-    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.TEAL_DARK } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TEAL_SOFT } };
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: theme.highlightText } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: theme.highlightBg } };
     cell.border = {
-      top: { style: 'medium', color: { argb: COLORS.TEAL_PRIMARY } },
-      bottom: { style: 'medium', color: { argb: COLORS.TEAL_PRIMARY } },
+      top: { style: 'medium', color: { argb: theme.highlightBorder } },
+      bottom: { style: 'medium', color: { argb: theme.highlightBorder } },
       left: { style: 'thin', color: { argb: COLORS.BORDER } },
       right: { style: 'thin', color: { argb: COLORS.BORDER } }
     };
@@ -776,7 +993,7 @@ export async function exportMultiOperationExcelReport(params: {
   // ABA 2: SUPERVISÕES (Todas as operações com filtro por Operação/Meta)
   // =========================================================================
   const wsSup = wb.addWorksheet('Supervisões', {
-    properties: { tabColor: { argb: COLORS.TEAL_PRIMARY } }
+    properties: { tabColor: { argb: theme.highlightBorder } }
   });
   const supHeaders = [
     'OPERAÇÃO',
@@ -791,12 +1008,13 @@ export async function exportMultiOperationExcelReport(params: {
     wsSup,
     supHeaders.length,
     'DESEMPENHO POR SUPERVISÃO — TODAS AS OPERAÇÕES',
-    `Competência: ${monthLabel}   |   Filtre por Operação, Supervisor ou Status Meta diretamente no cabeçalho`
+    `Competência: ${monthLabel}   |   Filtre por Operação, Supervisor ou Status Meta diretamente no cabeçalho`,
+    theme
   );
   const supHeaderRowNum = 4;
   const supHeaderRow = wsSup.getRow(supHeaderRowNum);
   supHeaderRow.values = supHeaders;
-  styleTableHeaderRow(supHeaderRow, supHeaders.length);
+  styleTableHeaderRow(supHeaderRow, supHeaders.length, theme);
 
   let supCursor = supHeaderRowNum;
   enriched.forEach(({ op, summary }) => {
@@ -820,7 +1038,7 @@ export async function exportMultiOperationExcelReport(params: {
         s.absPercent,
         status
       ];
-      const zebraBg = (supCursor - supHeaderRowNum) % 2 === 0 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+      const zebraBg = getRowBg(supCursor - supHeaderRowNum - 1, status === 'Acima da Meta', theme);
       for (let c = 1; c <= supHeaders.length; c++) {
         const cell = r.getCell(c);
         cell.border = THIN_BORDER;
@@ -832,7 +1050,7 @@ export async function exportMultiOperationExcelReport(params: {
         };
         if (c >= 3 && c <= 5) cell.numFmt = '#,##0';
       }
-      styleAbsBadge(r.getCell(6), s.absPercent, metaLimit, s.totalOperadores === 0);
+      styleAbsBadge(r.getCell(6), s.absPercent, metaLimit, s.totalOperadores === 0, theme);
       styleStatusBadge(r.getCell(7), status);
     });
   });
@@ -868,13 +1086,14 @@ export async function exportMultiOperationExcelReport(params: {
     wsOps,
     opHeaders.length,
     'BASE GERAL DE COLABORADORES · JSD TELECOM',
-    `Competência: ${monthLabel}   |   ${operators.length} colaborador(es) distribuído(s) entre as operações`
+    `Competência: ${monthLabel}   |   ${operators.length} colaborador(es) distribuído(s) entre as operações`,
+    theme
   );
 
   const opHeaderRowNum = 4;
   const opHeaderRow = wsOps.getRow(opHeaderRowNum);
   opHeaderRow.values = opHeaders;
-  styleTableHeaderRow(opHeaderRow, opHeaders.length);
+  styleTableHeaderRow(opHeaderRow, opHeaders.length, theme);
 
   let opCursor = opHeaderRowNum;
   enriched.forEach(({ op, opOps }) => {
@@ -898,7 +1117,7 @@ export async function exportMultiOperationExcelReport(params: {
         st.absMensal,
         status
       ];
-      const zebraBg = (opCursor - opHeaderRowNum) % 2 === 0 ? COLORS.SLATE_ZEBRA : COLORS.WHITE;
+      const zebraBg = getRowBg(opCursor - opHeaderRowNum - 1, status === 'Acima da Meta', theme);
       for (let c = 1; c <= opHeaders.length; c++) {
         const cell = r.getCell(c);
         cell.border = THIN_BORDER;
@@ -910,7 +1129,7 @@ export async function exportMultiOperationExcelReport(params: {
         };
         if (c >= 6 && c <= 8) cell.numFmt = '#,##0';
       }
-      styleAbsBadge(r.getCell(9), st.absMensal, metaLimit);
+      styleAbsBadge(r.getCell(9), st.absMensal, metaLimit, false, theme);
       styleStatusBadge(r.getCell(10), status);
     });
   });

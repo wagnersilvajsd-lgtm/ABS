@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Operation, Operator, OperatorMonthlyData, OperatorHistoryEvent, TransferRequest } from '../types/abs';
 import { calculateOperatorStats } from '../utils/calculations';
 import { formatMonthLabel, getDaysInMonth, parseMonthKey } from '../utils/calendar';
-import { exportOperationExcelReport } from '../utils/reports';
+import {
+  ExcelExportStyleConfig,
+  exportOperationExcelReport,
+  loadExcelStyleConfig,
+  saveExcelStyleConfig
+} from '../utils/reports';
+import { ExcelStyleConfigPanel } from './ExcelStyleConfigPanel';
 import { formatPeriodSummary } from './PeriodCalendarPopover';
-import { X, Download, Copy, Check, FileSpreadsheet, Upload, AlertCircle, Code } from 'lucide-react';
-import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleAppsScriptCode';
+import { X, Download, Copy, Check, FileSpreadsheet, Palette, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ExportImportModalProps {
   isOpen: boolean;
@@ -13,7 +18,7 @@ interface ExportImportModalProps {
   operation?: Operation;
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
-  onImportData: (
+  onImportData?: (
     operators: Operator[],
     monthlyData: Record<string, OperatorMonthlyData>,
     operatorHistory?: Record<string, OperatorHistoryEvent[]>,
@@ -31,7 +36,6 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   operation,
   operators,
   monthlyData,
-  onImportData,
   selectedMonthKey,
   selectedPeriodDays = null,
   operatorHistory,
@@ -40,10 +44,20 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
-  const [activeTab, setActiveTab] = useState<'export' | 'appscript' | 'import'>('export');
   const [copiedType, setCopiedType] = useState<string | null>(null);
-  const [importJsonText, setImportJsonText] = useState('');
-  const [importError, setImportError] = useState<string | null>(null);
+  const [excelStyle, setExcelStyle] = useState<ExcelExportStyleConfig>(() => loadExcelStyleConfig());
+  const [showStylePicker, setShowStylePicker] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setExcelStyle(loadExcelStyleConfig());
+    }
+  }, [isOpen]);
+
+  const handleExcelStyleChange = (next: ExcelExportStyleConfig) => {
+    setExcelStyle(next);
+    saveExcelStyleConfig(next);
+  };
 
   if (!isOpen) return null;
 
@@ -152,34 +166,9 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     document.body.removeChild(link);
   };
 
-  // Handle Import JSON
-  const handleProcessImport = () => {
-    try {
-      setImportError(null);
-      if (!importJsonText.trim()) {
-        setImportError('Insira o conteúdo JSON do backup.');
-        return;
-      }
-      const parsed = JSON.parse(importJsonText);
-      if (!parsed.operators || !parsed.monthlyData) {
-        setImportError('Formato inválido: o JSON deve conter "operators" e "monthlyData".');
-        return;
-      }
-      onImportData(
-        parsed.operators,
-        parsed.monthlyData,
-        parsed.operatorHistory,
-        parsed.transferRequests
-      );
-      onClose();
-    } catch (e: any) {
-      setImportError(`Erro ao processar JSON: ${e.message}`);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-backdrop-in">
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -187,10 +176,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             <FileSpreadsheet className="w-5 h-5 text-[#006772] dark:text-[#2dd4bf]" />
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Exportar / Importar Dados WFM
+                Exportar Dados e Relatórios WFM
               </h3>
               <p className="text-xs text-slate-500">
-                Compatibilidade direta com Google Sheets, Excel e arquivos CSV/JSON.
+                Compatibilidade direta com Excel (XLSX), Google Sheets e arquivos CSV/JSON.
               </p>
             </div>
           </div>
@@ -202,122 +191,86 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Tabs */}
-        <div className="px-6 pt-3 border-b border-slate-100 dark:border-slate-800 flex gap-4 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('export')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'export'
-                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Exportar &amp; Copiar Planilhas
-          </button>
-          <button
-            onClick={() => setActiveTab('appscript')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'appscript'
-                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            📜 Código Google Apps Script (.gs)
-          </button>
-          <button
-            onClick={() => setActiveTab('import')}
-            className={`pb-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'import'
-                ? 'border-[#006772] text-[#006772] dark:border-[#2dd4bf] dark:text-[#2dd4bf]'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Restaurar Backup (JSON)
-          </button>
-        </div>
-
         {/* Content */}
-        <div className="p-6">
-          {activeTab === 'appscript' ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Código Completo Refatorado (Google Apps Script)
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    100% testado, operações em lote (Batch), anti-timeout e regra de folgas flexíveis.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE).then(() => {
-                      setCopiedType('appscript');
-                      setTimeout(() => setCopiedType(null), 2500);
-                    });
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors shadow-2xs cursor-pointer"
-                >
-                  {copiedType === 'appscript' ? <Check className="w-3.5 h-3.5 text-teal-200" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedType === 'appscript' ? 'Código Copiado!' : 'Copiar Código .gs'}</span>
-                </button>
-              </div>
+        <div className="p-6 overflow-y-auto">
+          <div className="space-y-4">
 
-              <div className="relative">
-                <pre className="max-h-[380px] overflow-y-auto p-4 bg-slate-950 text-slate-200 text-[11px] font-mono rounded-xl border border-slate-800 select-all whitespace-pre leading-relaxed">
-                  {GOOGLE_APPS_SCRIPT_CODE}
-                </pre>
-              </div>
+              {/* Card 0: Relatório Gerencial XLSX (Cores & Filtros + Seletor de Paleta) */}
+              <div className="bg-teal-50/60 dark:bg-teal-950/30 p-4 rounded-xl border border-teal-200 dark:border-teal-800/70 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      Relatório Gerencial XLSX · {operation?.nome || 'Operação'} ({monthLabel})
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Planilha organizada em 3 abas com cores personalizadas, cabeçalho congelado e filtros automáticos.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowStylePicker((prev) => !prev)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-xs border border-black/15"
+                        style={{ backgroundColor: excelStyle.headerColor }}
+                      />
+                      <span
+                        className="w-3 h-3 rounded-xs border border-black/15 -ml-1"
+                        style={{ backgroundColor: excelStyle.highlightColor }}
+                      />
+                      <Palette className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                      <span>Estilo</span>
+                      {showStylePicker ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                    </button>
 
-              <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Cole este código no menu: <strong>Extensões &gt; Apps Script</strong> da sua planilha.</span>
-                <span>Fórmula D40: <code>(COUNTIF(&lt;&gt;folga) - COUNTIF("")) * D3</code></span>
-              </div>
-            </div>
-          ) : activeTab === 'export' ? (
-            <div className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const resolvedOp: Operation = operation || {
+                          id: 'caern',
+                          nome: 'Operação JSD',
+                          cliente: 'JSD Telecom',
+                          logoUrl: '/assets/aistudio/image_def6497f.png',
+                          metaAbs: 0.03,
+                          jornadaPadraoMin: 380,
+                          supervisores: []
+                        };
+                        const periodLabel =
+                          selectedPeriodDays && selectedPeriodDays.length > 0
+                            ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
+                            : undefined;
+                        void exportOperationExcelReport({
+                          operation: resolvedOp,
+                          operators,
+                          monthlyData,
+                          selectedMonthKey,
+                          periodSummaryLabel: periodLabel,
+                          styleConfig: excelStyle
+                        });
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#f0ad35]" />
+                      <span>Baixar XLSX</span>
+                    </button>
+                  </div>
+                </div>
 
-              {/* Card 0: Relatório Gerencial XLSX (Cores & Filtros) */}
-              <div className="bg-teal-50/60 dark:bg-teal-950/30 p-4 rounded-xl border border-teal-200 dark:border-teal-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Relatório Gerencial XLSX · {operation?.nome || 'Operação'} ({monthLabel})
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                    Planilha organizada em 3 abas com cores de status, cabeçalho congelado e filtros automáticos.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const resolvedOp: Operation = operation || {
-                        id: 'caern',
-                        nome: 'Operação JSD',
-                        cliente: 'JSD Telecom',
-                        logoUrl: '/assets/aistudio/image_def6497f.png',
-                        metaAbs: 0.03,
-                        jornadaPadraoMin: 380,
-                        supervisores: []
-                      };
-                      const periodLabel =
-                        selectedPeriodDays && selectedPeriodDays.length > 0
-                          ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
-                          : undefined;
-                      void exportOperationExcelReport({
-                        operation: resolvedOp,
-                        operators,
-                        monthlyData,
-                        selectedMonthKey,
-                        periodSummaryLabel: periodLabel
-                      });
-                    }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg transition-colors shadow-2xs cursor-pointer"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#f0ad35]" />
-                    <span>Baixar XLSX</span>
-                  </button>
-                </div>
+                {showStylePicker && (
+                  <div className="pt-3 border-t border-teal-200/70 dark:border-teal-800/60 animate-fade-in">
+                    <ExcelStyleConfigPanel
+                      value={excelStyle}
+                      onChange={handleExcelStyleChange}
+                      compact
+                    />
+                  </div>
+                )}
               </div>
               
               {/* Card 1: OPERADORES */}
@@ -396,40 +349,6 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               </div>
 
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Cole o código JSON do backup abaixo:
-                </label>
-                <textarea
-                  rows={8}
-                  value={importJsonText}
-                  onChange={(e) => setImportJsonText(e.target.value)}
-                  placeholder='{"exportedAt": "...", "operators": [...], "monthlyData": {...}}'
-                  className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-                />
-              </div>
-
-              {importError && (
-                <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{importError}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleProcessImport}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg shadow-xs cursor-pointer"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Processar e Restaurar Backup</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
       </div>

@@ -8,7 +8,13 @@ import {
   formatPercent
 } from '../utils/calculations';
 import { computeMonthlyTrend } from '../utils/history';
-import { exportOperationExcelReport } from '../utils/reports';
+import {
+  ExcelExportStyleConfig,
+  exportOperationExcelReport,
+  loadExcelStyleConfig,
+  saveExcelStyleConfig
+} from '../utils/reports';
+import { ExcelStyleConfigModal } from './ExcelStyleConfigPanel';
 import { AbsTrendChart } from './AbsTrendChart';
 import { formatPeriodSummary } from './PeriodCalendarPopover';
 import {
@@ -21,7 +27,8 @@ import {
   Activity,
   ArrowUpRight,
   ShieldCheck,
-  Calendar
+  Calendar,
+  Palette
 } from 'lucide-react';
 
 interface WfmDashboardViewProps {
@@ -46,9 +53,16 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
   selectedPeriodDays = null
 }) => {
   const [trendSupervisorFilter, setTrendSupervisorFilter] = useState<string>('todos');
+  const [excelStyle, setExcelStyle] = useState<ExcelExportStyleConfig>(() => loadExcelStyleConfig());
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
+
+  const handleExcelStyleChange = (next: ExcelExportStyleConfig) => {
+    setExcelStyle(next);
+    saveExcelStyleConfig(next);
+  };
 
   const displayedDayNumbers = useMemo(() => {
     if (selectedPeriodDays && selectedPeriodDays.length > 0) {
@@ -198,12 +212,34 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             <button
               type="button"
               onClick={() => {
+                setExcelStyle(loadExcelStyleConfig());
+                setIsStyleModalOpen(true);
+              }}
+              title="Escolher paleta de cores e estilo da planilha XLSX"
+              className="h-9 px-3 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+            >
+              <span
+                className="w-3 h-3 rounded-xs border border-black/15"
+                style={{ backgroundColor: excelStyle.headerColor }}
+              />
+              <span
+                className="w-3 h-3 rounded-xs border border-black/15 -ml-1"
+                style={{ backgroundColor: excelStyle.highlightColor }}
+              />
+              <Palette className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+              <span>Estilo XLSX</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
                 void exportOperationExcelReport({
                   operation: resolvedOperation,
                   operators,
                   monthlyData,
                   selectedMonthKey,
-                  periodSummaryLabel
+                  periodSummaryLabel,
+                  styleConfig: excelStyle
                 });
               }}
               className="h-9 px-4 flex items-center gap-2 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
@@ -564,6 +600,23 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
         />
       )}
 
+      <ExcelStyleConfigModal
+        isOpen={isStyleModalOpen}
+        onClose={() => setIsStyleModalOpen(false)}
+        styleConfig={excelStyle}
+        onStyleChange={handleExcelStyleChange}
+        title={`Personalizar Estilo XLSX · ${resolvedOperation.nome}`}
+        onExportNow={() => {
+          void exportOperationExcelReport({
+            operation: resolvedOperation,
+            operators,
+            monthlyData,
+            selectedMonthKey,
+            periodSummaryLabel,
+            styleConfig: excelStyle
+          });
+        }}
+      />
     </div>
   );
 };
