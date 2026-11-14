@@ -58,11 +58,11 @@ export const INITIAL_OPERATIONS: Operation[] = [
   {
     id: 'ses',
     nome: 'Operação SES',
-    cliente: 'SES (Secretaria de Estado de Saúde)',
-    logoUrl: '',
+    cliente: 'SES-PB (Secretaria de Estado da Saúde da Paraíba)',
+    logoUrl: '/assets/aistudio/image_1caca57d.png',
     metaAbs: 0.03,
     jornadaPadraoMin: 380,
-    descricao: 'Central de Atendimento e Regulação em Saúde — SES',
+    descricao: 'Central de Atendimento e Regulação em Saúde — Paraíba',
     supervisores: []
   }
 ];
