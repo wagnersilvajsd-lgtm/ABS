@@ -1,16 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { Operation, Operator, OperatorMonthlyData } from '../types/abs';
-import { calculateOperationSummary, formatPercent } from '../utils/calculations';
+import { calculateOperationSummary, formatMinutesToHours, formatPercent } from '../utils/calculations';
 import { formatMonthLabel } from '../utils/calendar';
+import { exportMultiOperationExcelReport, exportMultiOperationPdfReport } from '../utils/reports';
 import {
   ArrowRight,
   Building2,
   CalendarDays,
+  FileSpreadsheet,
+  FileText,
   Image as ImageIcon,
   Moon,
   Plus,
   Search,
   Sun,
+  Trophy,
   Upload
 } from 'lucide-react';
 
@@ -67,10 +71,47 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
         operatorsCount: opOperators.length,
         absGeral: summary.absGeral,
         minutosPerdidos: summary.totalMinutosPerdidos,
+        minutosEscalados: summary.totalMinutosEscalados,
         isOpenForSetup: supervisors.length === 0 && opOperators.length === 0
       };
     });
   }, [operations, operators, monthlyData]);
+
+  // Consolidated multi-operation totals and sorted ranking
+  const executiveStats = useMemo(() => {
+    let totalPerdidos = 0;
+    let totalEscalados = 0;
+    let opsComEquipe = 0;
+    let opsNaMeta = 0;
+
+    operationCards.forEach((c) => {
+      totalPerdidos += c.minutosPerdidos;
+      totalEscalados += c.minutosEscalados;
+      if (c.operatorsCount > 0) {
+        opsComEquipe += 1;
+        if (c.absGeral <= (c.op.metaAbs || 0.03)) {
+          opsNaMeta += 1;
+        }
+      }
+    });
+
+    const absConsolidado = totalEscalados > 0 ? totalPerdidos / totalEscalados : 0;
+
+    const ranked = [...operationCards].sort((a, b) => {
+      if (a.operatorsCount === 0 && b.operatorsCount > 0) return 1;
+      if (b.operatorsCount === 0 && a.operatorsCount > 0) return -1;
+      return a.absGeral - b.absGeral;
+    });
+
+    return {
+      totalPerdidos,
+      totalEscalados,
+      absConsolidado,
+      opsComEquipe,
+      opsNaMeta,
+      ranked
+    };
+  }, [operationCards]);
 
   // Global counts across all operations
   const totals = useMemo(() => {
@@ -276,6 +317,234 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
             <div className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
               {filteredCards.length} de {operations.length} operação(ões) exibida(s)
             </div>
+          </div>
+        </section>
+
+        {/* Visão Executiva Multi-Operações & Ranking Comparativo */}
+        <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200/70 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#005059] text-white flex items-center justify-center shrink-0">
+                <Trophy className="w-4 h-4 text-[#f0ad35]" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Visão Executiva Multi-Operações &amp; Ranking Comparativo
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Consolidado da JSD Telecom em {monthLabel} · Comparação direta entre todas as operações e exportação gerencial
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  exportMultiOperationExcelReport({
+                    operations,
+                    operators,
+                    monthlyData,
+                    selectedMonthKey
+                  })
+                }
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                <span>Relatório Geral Excel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  exportMultiOperationPdfReport({
+                    operations,
+                    operators,
+                    monthlyData,
+                    selectedMonthKey
+                  })
+                }
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-[#f0ad35]" />
+                <span>Relatório Geral PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 4-Column Consolidated Executive Strip */}
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+            <div className="bg-[#005059] text-white rounded-xl p-4 border border-[#003e45] flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-teal-100 uppercase tracking-wide">
+                ABS Geral Consolidado
+              </span>
+              <div className="text-2xl font-bold font-mono tabular-nums mt-2">
+                {formatPercent(executiveStats.absConsolidado)}
+              </div>
+              <span className="text-[11px] text-teal-200/90 mt-1">
+                Ponderado sobre todas as operações
+              </span>
+            </div>
+
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Minutos Perdidos Totais
+              </span>
+              <div className="text-xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-2">
+                {executiveStats.totalPerdidos.toLocaleString('pt-BR')} min
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums mt-1">
+                ≈ {formatMinutesToHours(executiveStats.totalPerdidos)} de ausência
+              </span>
+            </div>
+
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Minutos Escalados Totais
+              </span>
+              <div className="text-xl font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100 mt-2">
+                {executiveStats.totalEscalados.toLocaleString('pt-BR')} min
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums mt-1">
+                ≈ {formatMinutesToHours(executiveStats.totalEscalados)} previstos
+              </span>
+            </div>
+
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Operações na Meta
+              </span>
+              <div className="text-xl font-bold font-mono tabular-nums text-[#006772] dark:text-[#2dd4bf] mt-2">
+                {executiveStats.opsNaMeta} / {executiveStats.opsComEquipe} ativas
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                {operations.length - executiveStats.opsComEquipe} em aberto para cadastro
+              </span>
+            </div>
+          </div>
+
+          {/* Comparative Ranking Table */}
+          <div className="mt-5 overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-[#005059] text-white font-semibold text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-3 text-center w-12">Pos.</th>
+                  <th className="py-2.5 px-4">Operação</th>
+                  <th className="py-2.5 px-3 text-center">Superv.</th>
+                  <th className="py-2.5 px-3 text-center">Colab.</th>
+                  <th className="py-2.5 px-4 text-right">Min. Perdidos</th>
+                  <th className="py-2.5 px-4 text-right">Min. Escalados</th>
+                  <th className="py-2.5 px-3 text-center">Meta</th>
+                  <th className="py-2.5 px-4 text-right bg-[#003e45]">ABS</th>
+                  <th className="py-2.5 px-4">Situação</th>
+                  <th className="py-2.5 px-3 text-right">Acesso</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                {executiveStats.ranked.map((item, idx) => {
+                  const metaLimit = item.op.metaAbs || 0.03;
+                  const withinMeta = item.absGeral <= metaLimit;
+                  const barPct = Math.min(100, (item.absGeral / (metaLimit * 2)) * 100);
+
+                  return (
+                    <tr
+                      key={item.op.id}
+                      className="h-11 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      <td className="py-2 px-3 text-center font-mono tabular-nums text-slate-400 font-semibold">
+                        #{idx + 1}
+                      </td>
+                      <td className="py-2 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-md bg-white border border-slate-200 dark:border-slate-700 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            {!item.op.logoUrl || brokenLogos[item.op.id] ? (
+                              <Building2 className="w-3.5 h-3.5 text-[#006772]" />
+                            ) : (
+                              <img
+                                src={item.op.logoUrl}
+                                alt={item.op.nome}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-contain"
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate">
+                              {item.op.nome}
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                              {item.op.cliente}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                        {item.supervisorsCount}
+                      </td>
+                      <td className="py-2 px-3 text-center font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                        {item.operatorsCount}
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono tabular-nums text-rose-600 dark:text-rose-400 font-semibold">
+                        {item.minutosPerdidos.toLocaleString('pt-BR')}m
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                        {item.minutosEscalados.toLocaleString('pt-BR')}m
+                      </td>
+                      <td className="py-2 px-3 text-center font-mono tabular-nums text-slate-500 dark:text-slate-400">
+                        {(metaLimit * 100).toFixed(1)}%
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono tabular-nums font-bold">
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className={
+                              item.operatorsCount === 0
+                                ? 'text-slate-400'
+                                : withinMeta
+                                ? 'text-[#006772] dark:text-[#2dd4bf]'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }
+                          >
+                            {formatPercent(item.absGeral)}
+                          </span>
+                          <div className="w-16 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              style={{ width: `${item.operatorsCount === 0 ? 0 : barPct}%` }}
+                              className={`h-full rounded-full ${
+                                withinMeta ? 'bg-[#006772] dark:bg-[#2dd4bf]' : 'bg-rose-500'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2 px-4">
+                        {item.isOpenForSetup || item.operatorsCount === 0 ? (
+                          <span className="text-amber-700 dark:text-amber-400 font-medium">
+                            Em aberto
+                          </span>
+                        ) : withinMeta ? (
+                          <span className="text-[#006772] dark:text-[#2dd4bf] font-semibold">
+                            Dentro da meta
+                          </span>
+                        ) : (
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                            Acima da meta
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onEnterOperation(item.op.id)}
+                          className="text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] hover:underline cursor-pointer whitespace-nowrap"
+                        >
+                          Abrir →
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
 

@@ -52,6 +52,7 @@ import { TransferInboxModal } from './components/TransferInboxModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { EditOperatorModal } from './components/EditOperatorModal';
 import { EditSupervisorModal } from './components/EditSupervisorModal';
+import { BulkImportOperatorsModal } from './components/BulkImportOperatorsModal';
 import { formatPeriodSummary } from './components/PeriodCalendarPopover';
 import { BellRing, CheckCircle2, X, RotateCcw, CalendarRange, Eraser } from 'lucide-react';
 
@@ -122,6 +123,7 @@ export default function App() {
   // Modal & Toast states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [profileOperatorId, setProfileOperatorId] = useState<string | null>(null);
   const [transferOperator, setTransferOperator] = useState<Operator | null>(null);
   const [deleteOperator, setDeleteOperator] = useState<Operator | null>(null);
@@ -308,6 +310,70 @@ export default function App() {
     });
     setSelectedOperatorId(newOperator.id);
     saveStoredSelectedOperatorId(newOperator.id);
+  };
+
+  // Handler to bulk-import multiple operators and automatically register new supervisors
+  const handleBulkAddOperators = (
+    newOperators: Operator[],
+    newMonthlyDataMap: Record<string, OperatorMonthlyData>
+  ) => {
+    if (newOperators.length === 0) return;
+    const targetOpId = newOperators[0].operacaoId || activeOperation?.id || 'caern';
+
+    const importedSups = Array.from(
+      new Set(
+        newOperators
+          .map(op => op.supervisor.trim().toUpperCase())
+          .filter(Boolean)
+      )
+    );
+
+    if (importedSups.length > 0) {
+      setOperations(prev => {
+        let changed = false;
+        const updated = prev.map(op => {
+          if (op.id !== targetOpId) return op;
+          const list = op.supervisores ? [...op.supervisores] : [];
+          importedSups.forEach(supName => {
+            if (!list.some(s => s.toLowerCase().trim() === supName.toLowerCase())) {
+              list.push(supName);
+              changed = true;
+            }
+          });
+          return changed ? { ...op, supervisores: list } : op;
+        });
+        if (changed) {
+          saveStoredOperations(updated);
+        }
+        return changed ? updated : prev;
+      });
+    }
+
+    setOperators(prev => {
+      const updated = [...prev, ...newOperators];
+      saveStoredOperators(updated);
+      return updated;
+    });
+
+    setMonthlyDataByMonth(prev => {
+      const monthMap = prev[selectedMonthKey] ? { ...prev[selectedMonthKey] } : { ...monthlyData };
+      Object.assign(monthMap, newMonthlyDataMap);
+      const updated = {
+        ...prev,
+        [selectedMonthKey]: monthMap
+      };
+      saveStoredMonthlyDataByMonth(updated);
+      return updated;
+    });
+
+    if (!selectedOperatorId && newOperators[0]) {
+      setSelectedOperatorId(newOperators[0].id);
+      saveStoredSelectedOperatorId(newOperators[0].id);
+    }
+
+    showActionToast(
+      `${newOperators.length} colaborador(es) importado(s) para ${activeOperation?.nome || 'a operação'}!`
+    );
   };
 
   // Delete operator permanently (operators list, monthly data, history, pending transfers)
@@ -1075,6 +1141,7 @@ export default function App() {
             onOpenEditOperator={(op) => setEditOperator(op)}
             onOpenEditSupervisor={(name, linkedCount) => setEditSupervisorTarget({ name, linkedCount })}
             operatorHistoryCounts={operatorHistoryCounts}
+            onOpenBulkImport={() => setIsBulkImportModalOpen(true)}
           />
         )}
         
@@ -1084,6 +1151,8 @@ export default function App() {
             currentOperatorId={selectedOperatorId}
             onSelectOperator={handleSelectOperator}
             monthlyData={filteredMonthlyData}
+            monthlyDataByMonth={monthlyDataByMonth}
+            onSelectMonthKey={handleSelectMonthKey}
             onUpdateDays={handleUpdateDays}
             onSave={handleSaveCurrent}
             onResetOperatorMonth={handleResetOperatorMonth}
@@ -1103,6 +1172,7 @@ export default function App() {
             monthlyData={filteredMonthlyData}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             onAddOperator={() => setIsAddOperatorModalOpen(true)}
+            onOpenBulkImport={() => setIsBulkImportModalOpen(true)}
             onOpenProfile={(op) => setProfileOperatorId(op.id)}
             onOpenTransfer={(op) => setTransferOperator(op)}
             onOpenDelete={(op) => setDeleteOperator(op)}
@@ -1127,8 +1197,11 @@ export default function App() {
 
         {activeTab === 'painel-wfm' && (
           <WfmDashboardView
+            operation={activeOperation}
             operators={activeOperationOperators}
             monthlyData={filteredMonthlyData}
+            monthlyDataByMonth={monthlyDataByMonth}
+            onSelectMonthKey={handleSelectMonthKey}
             onSelectOperatorForAudit={handleSelectOperatorForAudit}
             selectedMonthKey={selectedMonthKey}
             selectedPeriodDays={selectedPeriodDays}
@@ -1146,6 +1219,19 @@ export default function App() {
         existingSupervisors={currentSupervisors}
         activeOperationId={activeOperation?.id}
         selectedMonthKey={selectedMonthKey}
+      />
+
+      {/* Bulk Import Operators Modal (Excel / CSV / Paste) */}
+      <BulkImportOperatorsModal
+        isOpen={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        operationId={activeOperation?.id || 'caern'}
+        operationName={activeOperation?.nome || 'Operação'}
+        defaultJornadaMin={activeOperation?.jornadaPadraoMin || 380}
+        existingOperators={activeOperationOperators}
+        existingSupervisors={currentSupervisors}
+        selectedMonthKey={selectedMonthKey}
+        onBulkAddOperators={handleBulkAddOperators}
       />
 
       {/* Operator Profile & Pedagogical Scale Modal */}
@@ -1301,10 +1387,12 @@ export default function App() {
       <ExportImportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+        operation={activeOperation}
         operators={activeOperationOperators}
         monthlyData={monthlyData}
         onImportData={handleImportData}
         selectedMonthKey={selectedMonthKey}
+        selectedPeriodDays={selectedPeriodDays}
         operatorHistory={operatorHistory}
         transferRequests={transferRequests}
       />

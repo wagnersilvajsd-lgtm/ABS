@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Operator, OperatorMonthlyData } from '../types/abs';
+import React, { useMemo, useState } from 'react';
+import { Operation, Operator, OperatorMonthlyData } from '../types/abs';
 import { formatMonthLabel, getDaysInMonth, getWeekdayAbbr, isWeekendDate, parseMonthKey } from '../utils/calendar';
 import {
   calculateOperationSummary,
@@ -7,6 +7,10 @@ import {
   formatMinutesToHours,
   formatPercent
 } from '../utils/calculations';
+import { computeMonthlyTrend } from '../utils/history';
+import { exportOperationExcelReport, exportOperationPdfReport } from '../utils/reports';
+import { AbsTrendChart } from './AbsTrendChart';
+import { formatPeriodSummary } from './PeriodCalendarPopover';
 import {
   TrendingDown,
   Clock,
@@ -14,6 +18,7 @@ import {
   Award,
   AlertCircle,
   FileText,
+  FileSpreadsheet,
   Activity,
   ArrowUpRight,
   ShieldCheck,
@@ -21,20 +26,27 @@ import {
 } from 'lucide-react';
 
 interface WfmDashboardViewProps {
+  operation?: Operation;
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
+  monthlyDataByMonth?: Record<string, Record<string, OperatorMonthlyData>>;
+  onSelectMonthKey?: (monthKey: string) => void;
   onSelectOperatorForAudit: (operatorId: string) => void;
   selectedMonthKey: string;
   selectedPeriodDays?: number[] | null;
 }
 
 export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
+  operation,
   operators,
   monthlyData,
+  monthlyDataByMonth,
+  onSelectMonthKey,
   onSelectOperatorForAudit,
   selectedMonthKey,
   selectedPeriodDays = null
 }) => {
+  const [trendSupervisorFilter, setTrendSupervisorFilter] = useState<string>('todos');
   const { year, month } = parseMonthKey(selectedMonthKey);
   const totalDays = getDaysInMonth(year, month);
   const monthLabel = formatMonthLabel(selectedMonthKey);
@@ -122,7 +134,43 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
     return [...summary.supervisores].sort((a, b) => a.absPercent - b.absPercent);
   }, [summary.supervisores]);
 
-  const targetWfmAbs = 0.03; // 3.00% meta solicitada de ABS WFM
+  const resolvedOperation: Operation = useMemo(
+    () =>
+      operation || {
+        id: 'caern',
+        nome: 'Operação Ativa',
+        cliente: 'JSD Telecom',
+        logoUrl: '/assets/aistudio/image_def6497f.png',
+        metaAbs: 0.03,
+        jornadaPadraoMin: 380,
+        supervisores: supervisorsList
+      },
+    [operation, supervisorsList]
+  );
+
+  const trendTargetOperators = useMemo(() => {
+    if (trendSupervisorFilter === 'todos') return operators;
+    return operators.filter(
+      op => op.supervisor.toLowerCase().trim() === trendSupervisorFilter.toLowerCase().trim()
+    );
+  }, [operators, trendSupervisorFilter]);
+
+  const trendPoints3M = useMemo(() => {
+    if (!monthlyDataByMonth) return [];
+    return computeMonthlyTrend(selectedMonthKey, 3, trendTargetOperators, monthlyDataByMonth);
+  }, [selectedMonthKey, trendTargetOperators, monthlyDataByMonth]);
+
+  const trendPoints6M = useMemo(() => {
+    if (!monthlyDataByMonth) return [];
+    return computeMonthlyTrend(selectedMonthKey, 6, trendTargetOperators, monthlyDataByMonth);
+  }, [selectedMonthKey, trendTargetOperators, monthlyDataByMonth]);
+
+  const periodSummaryLabel =
+    selectedPeriodDays && selectedPeriodDays.length > 0
+      ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
+      : undefined;
+
+  const targetWfmAbs = resolvedOperation.metaAbs || 0.03;
   const isTargetMet = summary.absGeral <= targetWfmAbs;
 
   return (
@@ -133,18 +181,54 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200/70 dark:border-slate-800">
           <div>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-slate-100">
-              Painel Executivo WFM
+              Painel Executivo WFM · {resolvedOperation.nome}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Consolidado ponderado em minutos ({monthLabel}) · Capacidade operacional, lideranças e desvios críticos
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-xs shrink-0">
-            <span className="text-slate-500 dark:text-slate-400">Meta operacional:</span>
-            <span className="font-mono tabular-nums font-bold text-[#006772] dark:text-[#2dd4bf]">
-              ABS &le; 3.00%
-            </span>
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            <div className="flex items-center gap-1.5 text-xs mr-1">
+              <span className="text-slate-500 dark:text-slate-400">Meta:</span>
+              <span className="font-mono tabular-nums font-bold text-[#006772] dark:text-[#2dd4bf]">
+                ABS &le; {(targetWfmAbs * 100).toFixed(1)}%
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                exportOperationExcelReport({
+                  operation: resolvedOperation,
+                  operators,
+                  monthlyData,
+                  selectedMonthKey,
+                  periodSummaryLabel
+                })
+              }
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg btn-press whitespace-nowrap cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+              <span>Relatório Excel</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                exportOperationPdfReport({
+                  operation: resolvedOperation,
+                  operators,
+                  monthlyData,
+                  selectedMonthKey,
+                  periodSummaryLabel
+                })
+              }
+              className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg btn-press whitespace-nowrap cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#f0ad35]" />
+              <span>Relatório PDF</span>
+            </button>
           </div>
         </div>
 
@@ -461,6 +545,40 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Historical Evolution Chart (3M / 6M by Operation or Supervisor) */}
+      {monthlyDataByMonth && (
+        <AbsTrendChart
+          title={
+            trendSupervisorFilter === 'todos'
+              ? `Evolução Histórica de ABS · ${resolvedOperation.nome}`
+              : `Evolução Histórica · Supervisão ${trendSupervisorFilter}`
+          }
+          subtitle="Comparativo mês a mês para identificar tendência de melhora ou reincidência de desvios"
+          points3M={trendPoints3M}
+          points6M={trendPoints6M}
+          metaAbs={targetWfmAbs}
+          selectedMonthKey={selectedMonthKey}
+          onSelectMonthKey={onSelectMonthKey}
+          headerRight={
+            supervisorsList.length > 0 ? (
+              <select
+                value={trendSupervisorFilter}
+                onChange={(e) => setTrendSupervisorFilter(e.target.value)}
+                aria-label="Filtrar evolução histórica por supervisão"
+                className="h-8 px-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 font-medium cursor-pointer"
+              >
+                <option value="todos">Toda a Operação ({operators.length})</option>
+                {supervisorsList.map((sup) => (
+                  <option key={sup} value={sup}>
+                    Sup: {sup}
+                  </option>
+                ))}
+              </select>
+            ) : null
+          }
+        />
+      )}
 
     </div>
   );

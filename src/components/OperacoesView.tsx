@@ -24,7 +24,8 @@ import {
   Trash2,
   Upload,
   Image as ImageIcon,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface OperacoesViewProps {
@@ -45,6 +46,7 @@ interface OperacoesViewProps {
   onOpenEditOperator: (operator: Operator) => void;
   onOpenEditSupervisor: (supervisorName: string, linkedCount: number) => void;
   operatorHistoryCounts?: Record<string, number>;
+  onOpenBulkImport?: () => void;
 }
 
 export const OperacoesView: React.FC<OperacoesViewProps> = ({
@@ -64,7 +66,8 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   onOpenDelete,
   onOpenEditOperator,
   onOpenEditSupervisor,
-  operatorHistoryCounts = {}
+  operatorHistoryCounts = {},
+  onOpenBulkImport
 }) => {
   // Modal states
   const [isAddOpModalOpen, setIsAddOpModalOpen] = useState(false);
@@ -392,6 +395,17 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               <span>Novo Supervisor</span>
             </button>
 
+            {onOpenBulkImport && (
+              <button
+                type="button"
+                onClick={onOpenBulkImport}
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                <span>Importar Planilha</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleOpenAddOperatorModal}
@@ -694,6 +708,17 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               ))}
             </select>
 
+            {onOpenBulkImport && (
+              <button
+                type="button"
+                onClick={onOpenBulkImport}
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Importar Planilha</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleOpenAddOperatorModal}
@@ -730,14 +755,26 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                         <p>
                           Nenhum colaborador cadastrado ainda em <strong>{activeOp?.nome}</strong>.
                         </p>
-                        <button
-                          type="button"
-                          onClick={handleOpenAddOperatorModal}
-                          className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors cursor-pointer"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                          <span>Adicionar Primeiro Operador</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={handleOpenAddOperatorModal}
+                            className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg transition-colors cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Adicionar Primeiro Operador</span>
+                          </button>
+                          {onOpenBulkImport && (
+                            <button
+                              type="button"
+                              onClick={onOpenBulkImport}
+                              className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              <span>Importar em Lote (Excel / CSV)</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       'Nenhum colaborador encontrado nesta operação com os filtros aplicados.'

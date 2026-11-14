@@ -20,7 +20,8 @@ import {
   ArrowRightLeft,
   Trash2,
   Edit2,
-  Eraser
+  Eraser,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface OperatorsListViewProps {
@@ -35,6 +36,7 @@ interface OperatorsListViewProps {
   onOpenEditSupervisor?: (supervisorName: string, linkedCount: number) => void;
   onClearMonthAbs?: () => void;
   operatorHistoryCounts?: Record<string, number>;
+  onOpenBulkImport?: () => void;
 }
 
 type SortField = 'nome' | 'supervisor' | 'entrada' | 'minutosPerdidos' | 'minutosEscalados' | 'absMensal';
@@ -50,7 +52,8 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
   onOpenEditOperator,
   onOpenEditSupervisor,
   onClearMonthAbs,
-  operatorHistoryCounts = {}
+  operatorHistoryCounts = {},
+  onOpenBulkImport
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('todos');
@@ -215,6 +218,17 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
               </button>
             )}
 
+            {onOpenBulkImport && (
+              <button
+                type="button"
+                onClick={onOpenBulkImport}
+                className="h-9 px-3.5 flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800/60 rounded-lg btn-press whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Importar Planilha</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onAddOperator}
@@ -357,7 +371,33 @@ export const OperatorsListView: React.FC<OperatorsListViewProps> = ({
               {sortedOperators.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-10 text-center text-slate-500 dark:text-slate-400">
-                    Nenhum operador encontrado com os filtros aplicados.
+                    {operators.length === 0 ? (
+                      <div className="space-y-3">
+                        <p>Nenhum colaborador cadastrado ainda nesta operação.</p>
+                        <div className="flex items-center justify-center gap-2.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={onAddOperator}
+                            className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>Adicionar Operador</span>
+                          </button>
+                          {onOpenBulkImport && (
+                            <button
+                              type="button"
+                              onClick={onOpenBulkImport}
+                              className="h-9 px-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#006772] dark:text-[#2dd4bf] bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 hover:bg-teal-100 rounded-lg cursor-pointer"
+                            >
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              <span>Importar Planilha (Excel / CSV)</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      'Nenhum operador encontrado com os filtros aplicados.'
+                    )}
                   </td>
                 </tr>
               ) : (

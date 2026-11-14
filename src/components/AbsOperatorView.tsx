@@ -23,6 +23,8 @@ import {
   formatMinutesToHours,
   formatPercent
 } from '../utils/calculations';
+import { computeMonthlyTrend } from '../utils/history';
+import { AbsTrendChart } from './AbsTrendChart';
 import {
   Save,
   Eraser,
@@ -52,6 +54,8 @@ interface AbsOperatorViewProps {
   onResetOperatorMonth: (operatorId: string) => void;
   onApply6x1Schedule: (operatorId: string, mode?: WeekendFolgaMode) => void;
   selectedMonthKey: string;
+  monthlyDataByMonth?: Record<string, Record<string, OperatorMonthlyData>>;
+  onSelectMonthKey?: (monthKey: string) => void;
   onOpenProfile?: (operator: Operator) => void;
   onOpenTransfer?: (operator: Operator) => void;
   onOpenEditOperator?: (operator: Operator) => void;
@@ -69,6 +73,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
   onResetOperatorMonth,
   onApply6x1Schedule,
   selectedMonthKey,
+  monthlyDataByMonth,
+  onSelectMonthKey,
   onOpenProfile,
   onOpenTransfer,
   onOpenEditOperator,
@@ -1484,6 +1490,19 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         </div>
 
       </section>
+
+      {/* Historical Evolution Chart for the Selected Operator */}
+      {operator && monthlyDataByMonth && (
+        <AbsTrendChart
+          title={`Evolução Histórica do Colaborador · ${operator.nome}`}
+          subtitle={`Acompanhamento mês a mês (${operator.supervisor}) para identificar quedas ou reincidências`}
+          points3M={computeMonthlyTrend(selectedMonthKey, 3, [operator], monthlyDataByMonth)}
+          points6M={computeMonthlyTrend(selectedMonthKey, 6, [operator], monthlyDataByMonth)}
+          metaAbs={0.03}
+          selectedMonthKey={selectedMonthKey}
+          onSelectMonthKey={onSelectMonthKey}
+        />
+      )}
 
     </div>
   );

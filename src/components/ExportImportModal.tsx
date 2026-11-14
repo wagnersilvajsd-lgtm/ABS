@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Operator, OperatorMonthlyData, OperatorHistoryEvent, TransferRequest } from '../types/abs';
+import { Operation, Operator, OperatorMonthlyData, OperatorHistoryEvent, TransferRequest } from '../types/abs';
 import { calculateOperatorStats } from '../utils/calculations';
 import { formatMonthLabel, getDaysInMonth, parseMonthKey } from '../utils/calendar';
-import { X, Download, Copy, Check, FileSpreadsheet, Upload, AlertCircle, Code } from 'lucide-react';
+import { exportOperationExcelReport, exportOperationPdfReport } from '../utils/reports';
+import { formatPeriodSummary } from './PeriodCalendarPopover';
+import { X, Download, Copy, Check, FileSpreadsheet, FileText, Upload, AlertCircle, Code } from 'lucide-react';
 import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleAppsScriptCode';
 
 interface ExportImportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  operation?: Operation;
   operators: Operator[];
   monthlyData: Record<string, OperatorMonthlyData>;
   onImportData: (
@@ -17,6 +20,7 @@ interface ExportImportModalProps {
     transferRequests?: TransferRequest[]
   ) => void;
   selectedMonthKey: string;
+  selectedPeriodDays?: number[] | null;
   operatorHistory?: Record<string, OperatorHistoryEvent[]>;
   transferRequests?: TransferRequest[];
 }
@@ -24,10 +28,12 @@ interface ExportImportModalProps {
 export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   isOpen,
   onClose,
+  operation,
   operators,
   monthlyData,
   onImportData,
   selectedMonthKey,
+  selectedPeriodDays = null,
   operatorHistory,
   transferRequests
 }) => {
@@ -270,6 +276,78 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             </div>
           ) : activeTab === 'export' ? (
             <div className="space-y-4">
+
+              {/* Card 0: Relatórios Gerenciais Prontos (PDF & Excel) */}
+              <div className="bg-teal-50/60 dark:bg-teal-950/30 p-4 rounded-xl border border-teal-200 dark:border-teal-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Relatório Gerencial Pronto · {operation?.nome || 'Operação'} ({monthLabel})
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Documento formatado para diretoria ou cliente com gráficos, resumo por supervisão e tabela completa.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const resolvedOp: Operation = operation || {
+                        id: 'caern',
+                        nome: 'Operação JSD',
+                        cliente: 'JSD Telecom',
+                        logoUrl: '/assets/aistudio/image_def6497f.png',
+                        metaAbs: 0.03,
+                        jornadaPadraoMin: 380,
+                        supervisores: []
+                      };
+                      const periodLabel =
+                        selectedPeriodDays && selectedPeriodDays.length > 0
+                          ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
+                          : undefined;
+                      exportOperationExcelReport({
+                        operation: resolvedOp,
+                        operators,
+                        monthlyData,
+                        selectedMonthKey,
+                        periodSummaryLabel: periodLabel
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#006772] dark:text-[#2dd4bf]" />
+                    <span>Excel (.xlsx)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const resolvedOp: Operation = operation || {
+                        id: 'caern',
+                        nome: 'Operação JSD',
+                        cliente: 'JSD Telecom',
+                        logoUrl: '/assets/aistudio/image_def6497f.png',
+                        metaAbs: 0.03,
+                        jornadaPadraoMin: 380,
+                        supervisores: []
+                      };
+                      const periodLabel =
+                        selectedPeriodDays && selectedPeriodDays.length > 0
+                          ? formatPeriodSummary(selectedPeriodDays, selectedMonthKey)
+                          : undefined;
+                      exportOperationPdfReport({
+                        operation: resolvedOp,
+                        operators,
+                        monthlyData,
+                        selectedMonthKey,
+                        periodSummaryLabel: periodLabel
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#005059] hover:bg-[#003e45] rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-[#f0ad35]" />
+                    <span>PDF Executivo</span>
+                  </button>
+                </div>
+              </div>
               
               {/* Card 1: OPERADORES */}
               <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
