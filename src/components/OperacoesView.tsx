@@ -328,12 +328,16 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-5 border-b border-slate-200/70 dark:border-slate-800">
           <div className="flex items-center gap-4 min-w-0">
             <div className="w-14 h-14 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1.5 shrink-0 flex items-center justify-center overflow-hidden">
-              <img
-                src={activeOp?.logoUrl || '/assets/aistudio/image_def6497f.png'}
-                alt={activeOp?.nome || 'Operação'}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-contain rounded-lg"
-              />
+              {activeOp?.logoUrl ? (
+                <img
+                  src={activeOp.logoUrl}
+                  alt={activeOp.nome || 'Operação'}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              ) : (
+                <Building2 className="w-6 h-6 text-[#006772]" />
+              )}
             </div>
 
             <div className="min-w-0">
@@ -1093,11 +1097,16 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shrink-0 overflow-hidden">
-                      <img
-                        src={editOpLogoUrl || '/assets/aistudio/image_def6497f.png'}
-                        alt="Logo da operação"
-                        className="w-full h-full object-contain rounded-lg"
-                      />
+                      {editOpLogoUrl ? (
+                        <img
+                          src={editOpLogoUrl}
+                          alt="Logo da operação"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-contain rounded-lg"
+                        />
+                      ) : (
+                        <Building2 className="w-5 h-5 text-[#006772]" />
+                      )}
                     </div>
                     <div className="flex-1 flex flex-wrap items-center gap-2">
                       <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#006772] hover:bg-[#005059] rounded-lg cursor-pointer transition-colors">
@@ -1215,11 +1224,18 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               </p>
 
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                <img
-                  src={activeOp.logoUrl || '/assets/aistudio/image_def6497f.png'}
-                  alt={activeOp.nome}
-                  className="w-11 h-11 object-contain rounded-lg bg-white p-1 border border-slate-200 dark:border-slate-700 shrink-0"
-                />
+                <div className="w-11 h-11 rounded-lg bg-white p-1 border border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center overflow-hidden">
+                  {activeOp.logoUrl ? (
+                    <img
+                      src={activeOp.logoUrl}
+                      alt={activeOp.nome}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain rounded"
+                    />
+                  ) : (
+                    <Building2 className="w-5 h-5 text-[#006772]" />
+                  )}
+                </div>
                 <div className="min-w-0">
                   <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
                     {activeOp.nome}

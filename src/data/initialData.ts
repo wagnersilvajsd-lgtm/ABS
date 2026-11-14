@@ -54,6 +54,16 @@ export const INITIAL_OPERATIONS: Operation[] = [
     jornadaPadraoMin: 380,
     descricao: 'Central de Relacionamento e Suporte ao Empreendedor',
     supervisores: []
+  },
+  {
+    id: 'ses',
+    nome: 'Operação SES',
+    cliente: 'SES (Secretaria de Estado de Saúde)',
+    logoUrl: '',
+    metaAbs: 0.03,
+    jornadaPadraoMin: 380,
+    descricao: 'Central de Atendimento e Regulação em Saúde — SES',
+    supervisores: []
   }
 ];
 
