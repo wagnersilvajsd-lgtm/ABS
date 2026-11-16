@@ -9,7 +9,9 @@ import {
   INITIAL_OPERATORS,
   INITIAL_OPERATIONS,
   INITIAL_CAEMA_OPERATORS,
-  CAEMA_SUPERVISORES
+  CAEMA_SUPERVISORES,
+  INITIAL_REDE_NASCER_OPERATORS,
+  REDE_NASCER_SUPERVISORES
 } from '../data/initialData';
 import {
   getDefaultMonthKey,
@@ -36,6 +38,8 @@ const OPERATIONS_SES_REMOVED_V5_KEY = 'abs_wfm_ops_ses_removed_v5';
 const OPERATORS_SES_REMOVED_V5_KEY = 'abs_wfm_operators_ses_removed_v5';
 const CAEMA_SUPERVISORS_SEEDED_V6_KEY = 'abs_wfm_caema_sups_seeded_v6';
 const CAEMA_OPERATORS_SEEDED_V6_KEY = 'abs_wfm_caema_ops_seeded_v6';
+const REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_sups_seeded_v7';
+const REDE_NASCER_OPERATORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_ops_seeded_v7';
 
 const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
 
@@ -129,6 +133,23 @@ export function loadStoredOperations(): Operation[] {
           localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
         }
 
+        if (localStorage.getItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY) !== 'true') {
+          list = list.map((op: Operation) => {
+            if (op.id !== 'rede-nascer') return op;
+            const existingSups = op.supervisores ? [...op.supervisores] : [];
+            const lowerSet = new Set(existingSups.map(s => s.toLowerCase().trim()));
+            REDE_NASCER_SUPERVISORES.forEach(sup => {
+              if (!lowerSet.has(sup.toLowerCase().trim())) {
+                existingSups.push(sup);
+                lowerSet.add(sup.toLowerCase().trim());
+                changed = true;
+              }
+            });
+            return { ...op, supervisores: existingSups };
+          });
+          localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
+        }
+
         if (changed) {
           saveStoredOperations(list);
         }
@@ -141,6 +162,7 @@ export function loadStoredOperations(): Operation[] {
   localStorage.setItem(OPS_SEEDED_V4_KEY, 'true');
   localStorage.setItem(OPERATIONS_SES_REMOVED_V5_KEY, 'true');
   localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
+  localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
   return INITIAL_OPERATIONS;
 }
 
@@ -219,6 +241,22 @@ export function loadStoredOperators(): Operator[] {
           }
           localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
         }
+        if (localStorage.getItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY) !== 'true') {
+          const existingIdSet = new Set(normalized.map(o => o.id));
+          const existingRnNames = new Set(
+            normalized
+              .filter(o => o.operacaoId === 'rede-nascer')
+              .map(o => o.nome.toLowerCase().trim())
+          );
+          const additions = INITIAL_REDE_NASCER_OPERATORS.filter(
+            op => !existingIdSet.has(op.id) && !existingRnNames.has(op.nome.toLowerCase().trim())
+          );
+          if (additions.length > 0) {
+            normalized = [...normalized, ...additions];
+            saveStoredOperators(normalized);
+          }
+          localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
+        }
         return normalized;
       }
     }
@@ -227,6 +265,7 @@ export function loadStoredOperators(): Operator[] {
   }
   localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
   localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
+  localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
   return INITIAL_OPERATORS;
 }
 
@@ -421,6 +460,8 @@ export function resetToDefaults(): {
   localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
   localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
   localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
+  localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
+  localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);
