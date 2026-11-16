@@ -5,7 +5,12 @@ import {
   OperatorHistoryEvent,
   TransferRequest
 } from '../types/abs';
-import { INITIAL_OPERATORS, INITIAL_OPERATIONS } from '../data/initialData';
+import {
+  INITIAL_OPERATORS,
+  INITIAL_OPERATIONS,
+  INITIAL_CAEMA_OPERATORS,
+  CAEMA_SUPERVISORES
+} from '../data/initialData';
 import {
   getDefaultMonthKey,
   parseMonthKey,
@@ -27,6 +32,10 @@ const TRANSFERS_STORAGE_KEY = 'abs_wfm_transfers_v1';
 const ACTIVE_SUPERVISOR_VIEW_KEY = 'abs_wfm_active_supervisor_view_v1';
 const SAMPLE_CLEANED_FLAG_KEY = 'abs_wfm_clean_start_v1';
 const OPS_SEEDED_V4_KEY = 'abs_wfm_ops_seeded_v4';
+const OPERATIONS_SES_REMOVED_V5_KEY = 'abs_wfm_ops_ses_removed_v5';
+const OPERATORS_SES_REMOVED_V5_KEY = 'abs_wfm_operators_ses_removed_v5';
+const CAEMA_SUPERVISORS_SEEDED_V6_KEY = 'abs_wfm_caema_sups_seeded_v6';
+const CAEMA_OPERATORS_SEEDED_V6_KEY = 'abs_wfm_caema_ops_seeded_v6';
 
 const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
 
@@ -81,38 +90,57 @@ export function loadStoredOperations(): Operation[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        let list: Operation[] = parsed;
+        let changed = false;
+
         if (localStorage.getItem(OPS_SEEDED_V4_KEY) !== 'true') {
-          let changed = false;
-          const updatedParsed = parsed.map((op: Operation) => {
-            if (op.id === 'ses' && !op.logoUrl) {
-              changed = true;
-              return {
-                ...op,
-                logoUrl: '/assets/aistudio/image_1caca57d.png',
-                cliente:
-                  op.cliente === 'SES (Secretaria de Estado de Saúde)'
-                    ? 'SES-PB (Secretaria de Estado da Saúde da Paraíba)'
-                    : op.cliente
-              };
-            }
-            return op;
-          });
-          const existingIds = new Set(updatedParsed.map((op: Operation) => op.id));
+          const existingIds = new Set(list.map((op: Operation) => op.id));
           const additions = INITIAL_OPERATIONS.filter(op => !existingIds.has(op.id));
-          const merged = additions.length > 0 ? [...updatedParsed, ...additions] : updatedParsed;
-          localStorage.setItem(OPS_SEEDED_V4_KEY, 'true');
-          if (additions.length > 0 || changed) {
-            saveStoredOperations(merged);
+          if (additions.length > 0) {
+            list = [...list, ...additions];
+            changed = true;
           }
-          return merged;
+          localStorage.setItem(OPS_SEEDED_V4_KEY, 'true');
         }
-        return parsed;
+
+        if (localStorage.getItem(OPERATIONS_SES_REMOVED_V5_KEY) !== 'true') {
+          const filtered = list.filter((op: Operation) => op.id !== 'ses');
+          if (filtered.length !== list.length) {
+            list = filtered.length > 0 ? filtered : INITIAL_OPERATIONS;
+            changed = true;
+          }
+          localStorage.setItem(OPERATIONS_SES_REMOVED_V5_KEY, 'true');
+        }
+
+        if (localStorage.getItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY) !== 'true') {
+          list = list.map((op: Operation) => {
+            if (op.id !== 'caema') return op;
+            const existingSups = op.supervisores ? [...op.supervisores] : [];
+            const lowerSet = new Set(existingSups.map(s => s.toLowerCase().trim()));
+            CAEMA_SUPERVISORES.forEach(sup => {
+              if (!lowerSet.has(sup.toLowerCase().trim())) {
+                existingSups.push(sup);
+                lowerSet.add(sup.toLowerCase().trim());
+                changed = true;
+              }
+            });
+            return { ...op, supervisores: existingSups };
+          });
+          localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
+        }
+
+        if (changed) {
+          saveStoredOperations(list);
+        }
+        return list;
       }
     }
   } catch (e) {
     console.error('Failed to load operations from storage', e);
   }
   localStorage.setItem(OPS_SEEDED_V4_KEY, 'true');
+  localStorage.setItem(OPERATIONS_SES_REMOVED_V5_KEY, 'true');
+  localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
   return INITIAL_OPERATIONS;
 }
 
@@ -127,7 +155,7 @@ export function saveStoredOperations(operations: Operation[]): void {
 export function loadStoredSelectedOperationId(): string {
   try {
     const saved = localStorage.getItem(SELECTED_OPERATION_STORAGE_KEY);
-    if (saved) return saved;
+    if (saved && saved !== 'ses') return saved;
   } catch (e) {}
   return INITIAL_OPERATIONS[0]?.id || 'caern';
 }
@@ -163,15 +191,42 @@ export function loadStoredOperators(): Operator[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((op: Operator) => ({
+        let normalized: Operator[] = parsed.map((op: Operator) => ({
           ...op,
           operacaoId: op.operacaoId || 'caern'
         }));
+        if (localStorage.getItem(OPERATORS_SES_REMOVED_V5_KEY) !== 'true') {
+          const filtered = normalized.filter((op: Operator) => op.operacaoId !== 'ses');
+          if (filtered.length !== normalized.length) {
+            normalized = filtered;
+            saveStoredOperators(normalized);
+          }
+          localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
+        }
+        if (localStorage.getItem(CAEMA_OPERATORS_SEEDED_V6_KEY) !== 'true') {
+          const existingIdSet = new Set(normalized.map(o => o.id));
+          const existingCaemaNames = new Set(
+            normalized
+              .filter(o => o.operacaoId === 'caema')
+              .map(o => o.nome.toLowerCase().trim())
+          );
+          const additions = INITIAL_CAEMA_OPERATORS.filter(
+            op => !existingIdSet.has(op.id) && !existingCaemaNames.has(op.nome.toLowerCase().trim())
+          );
+          if (additions.length > 0) {
+            normalized = [...normalized, ...additions];
+            saveStoredOperators(normalized);
+          }
+          localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
+        }
+        return normalized;
       }
     }
   } catch (e) {
     console.error('Failed to load operators from storage', e);
   }
+  localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
+  localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
   return INITIAL_OPERATORS;
 }
 
@@ -362,6 +417,10 @@ export function resetToDefaults(): {
 
   localStorage.setItem(SAMPLE_CLEANED_FLAG_KEY, 'true');
   localStorage.setItem(OPS_SEEDED_V4_KEY, 'true');
+  localStorage.setItem(OPERATIONS_SES_REMOVED_V5_KEY, 'true');
+  localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
+  localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
+  localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);

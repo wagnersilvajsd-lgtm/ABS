@@ -44,7 +44,6 @@ function getOperationAccentHex(opId: string, name: string): string {
   if (key.includes('caema')) return '#0284c7';
   if (key.includes('cagepa')) return '#0369a1';
   if (key.includes('sebrae')) return '#2563eb';
-  if (key.includes('ses')) return '#0d9488';
   if (key.includes('caern')) return '#006772';
   return '#d89627';
 }

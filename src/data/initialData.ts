@@ -33,7 +33,11 @@ export const INITIAL_OPERATIONS: Operation[] = [
     metaAbs: 0.03,
     jornadaPadraoMin: 380,
     descricao: 'Central de Atendimento ao Cliente e Suporte Operacional — Maranhão',
-    supervisores: []
+    supervisores: [
+      'YASMIN ADRIANE SANTOS LEITE',
+      'MIKAELA STEFANY DA SILVA VICENTE',
+      'RENATHA DA COSTA LOPES'
+    ]
   },
   {
     id: 'cagepa',
@@ -53,16 +57,6 @@ export const INITIAL_OPERATIONS: Operation[] = [
     metaAbs: 0.03,
     jornadaPadraoMin: 380,
     descricao: 'Central de Relacionamento e Suporte ao Empreendedor',
-    supervisores: []
-  },
-  {
-    id: 'ses',
-    nome: 'Operação SES',
-    cliente: 'SES-PB (Secretaria de Estado da Saúde da Paraíba)',
-    logoUrl: '/assets/aistudio/image_1caca57d.png',
-    metaAbs: 0.03,
-    jornadaPadraoMin: 380,
-    descricao: 'Central de Atendimento e Regulação em Saúde — Paraíba',
     supervisores: []
   }
 ];
@@ -114,16 +108,62 @@ export const INITIAL_OPERATORS_RAW = [
   ['JÉSSICA MARIA DE SOUZA FELIX', "MATHEUS D' ALMEIDA MARTINS", '18:00:00', '00:20:00']
 ];
 
-export const INITIAL_OPERATORS: Operator[] = INITIAL_OPERATORS_RAW.map((row, idx) => ({
-  id: `op-${idx + 1}`,
+export const CAEMA_SUPERVISORES = [
+  'YASMIN ADRIANE SANTOS LEITE',
+  'MIKAELA STEFANY DA SILVA VICENTE',
+  'RENATHA DA COSTA LOPES'
+];
+
+export const INITIAL_CAEMA_OPERATORS_RAW = [
+  ['STHEPHANY BARBOSA DOS SANTOS SILVA', 'YASMIN ADRIANE SANTOS LEITE', '00:00:00', '06:20:00'],
+  ['VANESSA LUCENA FRANÇA', 'YASMIN ADRIANE SANTOS LEITE', '00:00:00', '06:20:00'],
+  ['ALLAN DAYVID ALVES DOS SANTOS', 'YASMIN ADRIANE SANTOS LEITE', '06:00:00', '12:20:00'],
+  ['ITAUANY HELOISA DA SILVA GONÇALVES', 'YASMIN ADRIANE SANTOS LEITE', '06:00:00', '12:20:00'],
+  ['LUANA YONARA DA CONCEIÇÃO LUCENA', 'YASMIN ADRIANE SANTOS LEITE', '06:00:00', '12:20:00'],
+  ['BIANCA DE OLIVEIRA BEZERRA', 'YASMIN ADRIANE SANTOS LEITE', '08:00:00', '14:20:00'],
+  ['CELINE LAYLLA ARAÚJO LIMA', 'YASMIN ADRIANE SANTOS LEITE', '08:00:00', '14:20:00'],
+  ['HEMILLY BEATRIZ SANTOS DE OLIVEIRA', 'YASMIN ADRIANE SANTOS LEITE', '09:00:00', '15:20:00'],
+  ['DEYANE PONTES DE SOUZA', 'MIKAELA STEFANY DA SILVA VICENTE', '10:00:00', '16:20:00'],
+  ['ELIZAMA FELIX DOS SANTOS', 'MIKAELA STEFANY DA SILVA VICENTE', '10:00:00', '16:20:00'],
+  ['KEILA JAÍRA DA SILVA VIEIRA', 'MIKAELA STEFANY DA SILVA VICENTE', '10:00:00', '16:20:00'],
+  ['DEYSY DANNYELE', 'MIKAELA STEFANY DA SILVA VICENTE', '11:00:00', '17:20:00'],
+  ['MARIA CLARA DOS SANTOS', 'MIKAELA STEFANY DA SILVA VICENTE', '12:00:00', '18:20:00'],
+  ['TÁTILLA INÁCIO TRINDADE', 'MIKAELA STEFANY DA SILVA VICENTE', '12:00:00', '18:20:00'],
+  ['ALLANNA GABRIELE DOS SANTOS PEREIRA', 'MIKAELA STEFANY DA SILVA VICENTE', '13:00:00', '19:20:00'],
+  ['FLAVIA DA SILVA BENICIO', 'RENATHA DA COSTA LOPES', '14:00:00', '20:20:00'],
+  ['MARIA DO SOCORRO MACHADO DE ARAÚJO', 'RENATHA DA COSTA LOPES', '14:00:00', '20:20:00'],
+  ['ESTEFANY LUIZE DA SILVA', 'RENATHA DA COSTA LOPES', '15:00:00', '21:20:00'],
+  ['FRANCIELLE PEREIRA DE LIRA', 'RENATHA DA COSTA LOPES', '15:00:00', '21:20:00'],
+  ['JENIFFER DA SILVA FEITOZA', 'RENATHA DA COSTA LOPES', '15:00:00', '21:20:00'],
+  ['KARLA CRISTINA DA SILVA CAVALCANTI', 'RENATHA DA COSTA LOPES', '17:00:00', '23:20:00'],
+  ['DAVI MANOEL MARINHO DA SILVA', 'RENATHA DA COSTA LOPES', '18:00:00', '00:20:00'],
+  ['GEISI MILLA NASCIMENTO DOS SANTOS', 'RENATHA DA COSTA LOPES', '18:00:00', '00:20:00']
+];
+
+export const INITIAL_CAEMA_OPERATORS: Operator[] = INITIAL_CAEMA_OPERATORS_RAW.map((row, idx) => ({
+  id: `caema-op-${idx + 1}`,
   nome: row[0],
   supervisor: row[1],
   entrada: row[2],
   saida: row[3],
-  jornadaMin: 380, // 6 horas e 20 minutos
-  offDayOfWeek: (idx % 6) + 1, // Folga semanal escalonada no regime 6x1
-  operacaoId: 'caern',
+  jornadaMin: 380,
+  offDayOfWeek: (idx % 6) + 1,
+  operacaoId: 'caema',
 }));
+
+export const INITIAL_OPERATORS: Operator[] = [
+  ...INITIAL_OPERATORS_RAW.map((row, idx) => ({
+    id: `op-${idx + 1}`,
+    nome: row[0],
+    supervisor: row[1],
+    entrada: row[2],
+    saida: row[3],
+    jornadaMin: 380, // 6 horas e 20 minutos
+    offDayOfWeek: (idx % 6) + 1, // Folga semanal escalonada no regime 6x1
+    operacaoId: 'caern',
+  })),
+  ...INITIAL_CAEMA_OPERATORS
+];
 
 export const SUPERVISORES_LIST = [
   'THAYS DA SILVA CUNHA',
