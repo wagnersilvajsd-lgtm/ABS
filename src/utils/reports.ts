@@ -725,7 +725,7 @@ export async function exportOperationExcelReport(params: {
     wsMatrix,
     matrixHeaders.length,
     `BASE MATRIZ DIÁRIA · ${operation.nome.toUpperCase()} (${monthLabel})`,
-    'Legenda de cores: Verde = OK  |  Vermelho = Falta / Suspensão  |  Azul = Atestado  |  Âmbar = Atraso / Declaração ABS  |  Ciano = BH / Abono Legal / Aniv.  |  Cinza = DSR',
+    'Legenda de cores: Verde = OK  |  Vermelho = Falta / Suspensão  |  Azul = Atestado  |  Âmbar = Atraso / Declaração ABS  |  Ciano = BH / Abono Legal / Aniv. / Afast.  |  Cinza = DSR',
     theme
   );
 
@@ -766,6 +766,9 @@ export async function exportOperationExcelReport(params: {
       } else if (rec.status === 'folga_aniversario') {
         rowVals.push('ANIV');
         dayColors.push({ bg: COLORS.CYAN_SOFT, fg: COLORS.CYAN_TEXT });
+      } else if (rec.status === 'afastamento') {
+        rowVals.push('AFAST');
+        dayColors.push({ bg: 'EDE9FE', fg: '5B21B6' });
       } else if (rec.status === 'falta') {
         rowVals.push('FALTA');
         dayColors.push({ bg: COLORS.ROSE_SOFT, fg: COLORS.ROSE_TEXT, bold: true });

@@ -281,6 +281,11 @@ export const STATUS_OPTIONS: { value: StatusType; label: string; desc: string }[
     label: 'Folga Aniversário',
     desc: 'Folga comemorativa de aniversário (não gera ABS)'
   },
+  {
+    value: 'afastamento',
+    label: 'Afastamento',
+    desc: 'Afastamento médico/licença (não gera ABS)'
+  },
   { value: 'atestado', label: 'Atestado Médico', desc: 'Ausência justificada (380 min perdidos)' },
   { value: 'falta', label: 'Falta Injustificada', desc: 'Ausência não justificada (380 min perdidos)' },
   { value: 'folga', label: 'Folga Escalar (DSR)', desc: 'Descanso remunerado (não entra no cálculo)' },

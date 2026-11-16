@@ -730,6 +730,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
             <span>Atest.: {summary.totalAtestados}d</span>
             <span>Decl. ABS: {summary.totalDiasAbono}d</span>
             <span>BH/Aniv.: {summary.totalDiasAbonoLegal + summary.totalBancoHorasIntegral + summary.totalFolgaAniversario}d</span>
+            <span>Afast.: {summary.totalAfastamentos}d</span>
           </div>
         </div>
       </section>

@@ -214,6 +214,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-cyan-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">AL</span> Abono Legal BH</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-indigo-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">BH</span> BH Integral</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-emerald-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">AN</span> Aniversário</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-violet-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">AF</span> Afastamento</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-rose-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">F</span> Falta</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-blue-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">A</span> Atestado</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-purple-600 text-white font-mono text-[9px] font-bold flex items-center justify-center">S</span> Suspensão</span>
@@ -337,6 +338,7 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                       const isAbonoLegal = d.status === 'abono_legal';
                       const isBhIntegral = d.status === 'banco_horas_integral';
                       const isAniversario = d.status === 'folga_aniversario';
+                      const isAfastamento = d.status === 'afastamento';
                       const isFalta = d.status === 'falta';
                       const isAtestado = d.status === 'atestado';
                       const isSuspensao = d.status === 'suspensão';
@@ -373,6 +375,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                               ? '(Banco de Horas Integral — sem ABS)'
                               : isAniversario
                               ? '(Folga Aniversário — sem ABS)'
+                              : isAfastamento
+                              ? '(Afastamento — sem ABS)'
                               : ''
                           } (Clique para alterar)`}
                         >
@@ -390,6 +394,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                                 ? 'bg-indigo-600 text-white'
                                 : isAniversario
                                 ? 'bg-emerald-600 text-white'
+                                : isAfastamento
+                                ? 'bg-violet-600 text-white'
                                 : isFalta
                                 ? 'bg-rose-600 text-white'
                                 : isAtestado
@@ -411,6 +417,8 @@ export const BaseApontamentosView: React.FC<BaseApontamentosViewProps> = ({
                               ? 'BH'
                               : isAniversario
                               ? 'AN'
+                              : isAfastamento
+                              ? 'AF'
                               : isFalta
                               ? 'F'
                               : isAtestado

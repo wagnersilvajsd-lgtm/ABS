@@ -13,7 +13,12 @@ export function calculateDayAbs(
   jornadaMin: number = 380,
   abonoMin: number = 0
 ): number | null {
-  if (status === 'folga' || status === 'folga_aniversario' || status === 'banco_horas_integral') {
+  if (
+    status === 'folga' ||
+    status === 'folga_aniversario' ||
+    status === 'banco_horas_integral' ||
+    status === 'afastamento'
+  ) {
     return null; // Não pontua e não gera ABS
   }
   if (status === 'dia ok') {
@@ -60,13 +65,14 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
   let minutosAbonoLegal = 0;
   let countFolgaAniversario = 0;
   let countBancoHorasIntegral = 0;
+  let countAfastamento = 0;
   let minutosEscalados = 0;
   let diasTrabalhadosParciais = 0;
 
   for (const d of dias) {
     const status = (d.status || '').trim().toLowerCase();
 
-    // Status vazio, folga DSR, folga aniversário ou banco de horas integral NÃO entra em minutos escalados e NÃO gera ABS
+    // Status vazio, folga DSR, folga aniversário, afastamento ou banco de horas integral NÃO entra em minutos escalados e NÃO gera ABS
     if (status === 'folga' || !status) {
       countFolga++;
       continue;
@@ -79,6 +85,11 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
 
     if (status === 'banco_horas_integral') {
       countBancoHorasIntegral++;
+      continue;
+    }
+
+    if (status === 'afastamento') {
+      countAfastamento++;
       continue;
     }
 
@@ -154,7 +165,8 @@ export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 3
     diasAbonoLegal: countAbonoLegal,
     minutosAbonoLegal,
     diasFolgaAniversario: countFolgaAniversario,
-    diasBancoHorasIntegral: countBancoHorasIntegral
+    diasBancoHorasIntegral: countBancoHorasIntegral,
+    diasAfastamento: countAfastamento
   };
 }
 
@@ -213,6 +225,7 @@ export function calculateOperationSummary(
   let totalMinutosAbonoLegal = 0;
   let totalFolgaAniversario = 0;
   let totalBancoHorasIntegral = 0;
+  let totalAfastamentos = 0;
 
   operators.forEach(op => {
     const opData = monthlyData[op.id];
@@ -229,6 +242,7 @@ export function calculateOperationSummary(
       totalMinutosAbonoLegal += stats.minutosAbonoLegal;
       totalFolgaAniversario += stats.diasFolgaAniversario;
       totalBancoHorasIntegral += stats.diasBancoHorasIntegral;
+      totalAfastamentos += stats.diasAfastamento;
       // Extract delay minutes specifically
       opData.dias.forEach(d => {
         if (d.status === 'dia ok/atraso') {
@@ -259,6 +273,7 @@ export function calculateOperationSummary(
     totalMinutosAbonoLegal,
     totalFolgaAniversario,
     totalBancoHorasIntegral,
+    totalAfastamentos,
     supervisores: supervisorStatsList
   };
 }

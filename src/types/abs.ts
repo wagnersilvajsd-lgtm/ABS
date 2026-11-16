@@ -5,6 +5,7 @@ export type StatusType =
   | 'abono_legal' // Saída antecipada programada com banco de horas (NÃO gera ABS)
   | 'banco_horas_integral' // Dia integral em banco de horas (NÃO gera ABS)
   | 'folga_aniversario' // Folga aniversário (NÃO gera ABS)
+  | 'afastamento' // Afastamento médico/licença (NÃO gera ABS)
   | 'atestado'
   | 'falta'
   | 'folga'
@@ -107,6 +108,7 @@ export interface OperatorStats {
   minutosAbonoLegal: number;
   diasFolgaAniversario: number;
   diasBancoHorasIntegral: number;
+  diasAfastamento: number;
 }
 
 export interface SupervisorStats {
@@ -133,5 +135,6 @@ export interface OperationSummary {
   totalMinutosAbonoLegal: number;
   totalFolgaAniversario: number;
   totalBancoHorasIntegral: number;
+  totalAfastamentos: number;
   supervisores: SupervisorStats[];
 }

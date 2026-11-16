@@ -334,7 +334,11 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         d.status === 'folga_aniversario'
     ).length;
     const folgas = dias.filter(
-      d => d.status === 'folga' || d.status === 'folga_aniversario' || d.status === 'banco_horas_integral'
+      d =>
+        d.status === 'folga' ||
+        d.status === 'folga_aniversario' ||
+        d.status === 'banco_horas_integral' ||
+        d.status === 'afastamento'
     ).length;
     const fds = dias.filter(d => isWeekendDate(year, month, d.dia)).length;
     return { desvios, faltas, abonos, folgas, fds };
@@ -367,7 +371,11 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
     }
     if (dayFilter === 'folgas') {
       return dias.filter(
-        d => d.status === 'folga' || d.status === 'folga_aniversario' || d.status === 'banco_horas_integral'
+        d =>
+          d.status === 'folga' ||
+          d.status === 'folga_aniversario' ||
+          d.status === 'banco_horas_integral' ||
+          d.status === 'afastamento'
       );
     }
     if (dayFilter === 'fds') {
@@ -401,6 +409,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
         return 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/40';
       case 'folga_aniversario':
         return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40';
+      case 'afastamento':
+        return 'bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300 border-violet-200 dark:border-violet-800/40';
       case 'falta':
         return 'bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800/40';
       case 'atestado':
@@ -754,9 +764,11 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             </div>
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-slate-400"></span>DSR
+                <span className="w-2 h-2 rounded-full bg-slate-400"></span>DSR/Afast.
               </span>
-              <strong className="font-mono tabular-nums">{operatorStats.diasFolga}d</strong>
+              <strong className="font-mono tabular-nums">
+                {operatorStats.diasFolga + operatorStats.diasAfastamento}d
+              </strong>
             </div>
           </div>
         </div>
@@ -865,6 +877,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
             if (d.status === 'abono_legal') dotColor = 'bg-cyan-500';
             if (d.status === 'banco_horas_integral') dotColor = 'bg-indigo-500';
             if (d.status === 'folga_aniversario') dotColor = 'bg-emerald-500';
+            if (d.status === 'afastamento') dotColor = 'bg-violet-500';
             if (d.status === 'falta') dotColor = 'bg-rose-500';
             if (d.status === 'atestado') dotColor = 'bg-blue-500';
             if (d.status === 'suspensão') dotColor = 'bg-purple-500';
@@ -879,6 +892,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                 ? `Dia ${d.dia} (${weekdayName}) — Banco de Horas Integral (sem ABS)`
                 : d.status === 'folga_aniversario'
                 ? `Dia ${d.dia} (${weekdayName}) — Folga Aniversário (sem ABS)`
+                : d.status === 'afastamento'
+                ? `Dia ${d.dia} (${weekdayName}) — Afastamento (sem ABS)`
                 : `Dia ${d.dia} (${weekdayName}) — Status: ${d.status}${d.atraso > 0 ? ` (${d.atraso} min)` : ''}`;
 
             return (
@@ -1120,6 +1135,8 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         ? 'bg-indigo-50/35 dark:bg-indigo-950/20'
                         : d.status === 'folga_aniversario'
                         ? 'bg-emerald-50/35 dark:bg-emerald-950/20'
+                        : d.status === 'afastamento'
+                        ? 'bg-violet-50/35 dark:bg-violet-950/20'
                         : d.status === 'falta'
                         ? 'bg-rose-50/30 dark:bg-rose-950/20'
                         : d.status === 'dia ok/atraso'
@@ -1242,6 +1259,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                         <span className="inline-block px-2.5 py-1 text-[11px] font-mono font-semibold rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
                           Folga Aniversário (sem ABS)
                         </span>
+                      ) : d.status === 'afastamento' ? (
+                        <span className="inline-block px-2.5 py-1 text-[11px] font-mono font-semibold rounded bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
+                          Afastamento (sem ABS)
+                        </span>
                       ) : (
                         <div className="flex items-center justify-center gap-1">
                           <input
@@ -1317,6 +1338,10 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                       ) : d.status === 'folga_aniversario' ? (
                         <span className="text-emerald-600 dark:text-emerald-300 font-normal" title="Folga Aniversário não gera ABS">
                           — (aniv.)
+                        </span>
+                      ) : d.status === 'afastamento' ? (
+                        <span className="text-violet-600 dark:text-violet-300 font-normal" title="Afastamento não gera ABS">
+                          — (afast.)
                         </span>
                       ) : dailyAbs === null ? (
                         <span className="text-slate-400 font-normal" title="Folga não pontua e não distorce o cálculo">
@@ -1402,6 +1427,19 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
                           }`}
                         >
                           Aniv.
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetRowQuick(d.dia, 'afastamento', 0)}
+                          title="Afastamento médico/licença (não gera ABS)"
+                          className={`px-2 py-1 text-[10px] rounded transition-colors cursor-pointer ${
+                            d.status === 'afastamento'
+                              ? 'bg-violet-700 text-white font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-100 dark:hover:bg-violet-950/60'
+                          }`}
+                        >
+                          Afast.
                         </button>
 
                         <button
