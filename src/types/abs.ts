@@ -25,7 +25,7 @@ export interface Operation {
   logoUrl?: string;
   metaAbs: number; // e.g. 0.03 (3.00%)
   monthlyMetas?: Record<string, number>; // per-month overrides keyed by 'YYYY-MM', e.g. { '2026-11': 0.035 }
-  jornadaPadraoMin: number; // typically 380 min (6h20)
+  jornadaPadraoMin: number; // typically 370 min/dia (base ABS)
   descricao?: string;
   supervisores: string[];
 }
@@ -36,7 +36,7 @@ export interface Operator {
   supervisor: string;
   entrada: string;
   saida: string;
-  jornadaMin: number; // typically 380 min (6h20)
+  jornadaMin: number; // typically 370 min/dia (base ABS)
   offDayOfWeek: number; // 1 = Dom, 2 = Seg, ..., 7 = Sáb
   operacaoId?: string; // id da operação vinculada (ex: 'caern')
 }

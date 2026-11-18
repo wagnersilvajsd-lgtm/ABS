@@ -154,7 +154,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
         cliente: 'JSD Telecom',
         logoUrl: '/assets/aistudio/image_def6497f.png',
         metaAbs: 0.03,
-        jornadaPadraoMin: 380,
+        jornadaPadraoMin: 370,
         supervisores: supervisorsList
       },
     [operation, supervisorsList]
@@ -436,7 +436,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
               </p>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-700/80 pt-3 font-mono tabular-nums">
-              Base: 380 min/dia útil
+              Base: {resolvedOperation.jornadaPadraoMin || 370} min/dia útil
             </div>
           </div>
 
@@ -617,14 +617,15 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
-              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-rose-500" /> &gt; 380m</span>
-              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-amber-500" /> ≤ 380m</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-rose-500" /> &gt; {resolvedOperation.jornadaPadraoMin || 370}m</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-amber-500" /> ≤ {resolvedOperation.jornadaPadraoMin || 370}m</span>
               <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-xs bg-teal-300 dark:bg-teal-900" /> 0m</span>
             </div>
           </div>
 
           <div className="mt-6 flex items-end justify-between gap-1 h-48 pt-6 px-1">
             {dailyLossCurve.days.map((item) => {
+              const baseJornada = resolvedOperation.jornadaPadraoMin || 370;
               const heightPercent = Math.max(
                 4,
                 Math.round((item.minutosPerdidos / dailyLossCurve.maxLoss) * 100)
@@ -644,7 +645,7 @@ export const WfmDashboardView: React.FC<WfmDashboardViewProps> = ({
                     style={{ height: `${heightPercent}%` }}
                     className={`w-full max-w-[14px] rounded-t transition-colors animate-bar-up ${
                       hasLoss
-                        ? item.minutosPerdidos > 380
+                        ? item.minutosPerdidos > baseJornada
                           ? 'bg-rose-500 hover:bg-rose-600'
                           : 'bg-amber-500 hover:bg-amber-600'
                         : 'bg-teal-200 dark:bg-teal-900/60'

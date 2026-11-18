@@ -24,7 +24,7 @@ export const EditOperatorModal: React.FC<EditOperatorModalProps> = ({
   const [nome, setNome] = useState('');
   const [entrada, setEntrada] = useState('08:00:00');
   const [saida, setSaida] = useState('14:20:00');
-  const [jornadaMin, setJornadaMin] = useState(380);
+  const [jornadaMin, setJornadaMin] = useState(370);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export const EditOperatorModal: React.FC<EditOperatorModalProps> = ({
       setNome(operator.nome);
       setEntrada(operator.entrada);
       setSaida(operator.saida);
-      setJornadaMin(operator.jornadaMin || 380);
+      setJornadaMin(operator.jornadaMin || 370);
       setError(null);
     }
   }, [operator, isOpen]);
@@ -73,7 +73,7 @@ export const EditOperatorModal: React.FC<EditOperatorModalProps> = ({
       nome: trimmedNome,
       entrada: entrada.trim() || operator.entrada,
       saida: saida.trim() || operator.saida,
-      jornadaMin: Number(jornadaMin) || operator.jornadaMin || 380
+      jornadaMin: Number(jornadaMin) || operator.jornadaMin || 370
     });
     onClose();
   };
@@ -176,7 +176,7 @@ export const EditOperatorModal: React.FC<EditOperatorModalProps> = ({
                 min="60"
                 max="600"
                 value={jornadaMin}
-                onChange={(e) => setJornadaMin(parseInt(e.target.value, 10) || 380)}
+                onChange={(e) => setJornadaMin(parseInt(e.target.value, 10) || 370)}
                 className="w-full h-9 px-2.5 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
               />
             </div>

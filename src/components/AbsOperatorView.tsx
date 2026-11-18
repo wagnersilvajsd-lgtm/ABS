@@ -153,7 +153,7 @@ export const AbsOperatorView: React.FC<AbsOperatorViewProps> = ({
 
   // Real-time calculations
   const operatorStats = useMemo(() => {
-    return calculateOperatorStats(dias, operator?.jornadaMin || 380);
+    return calculateOperatorStats(dias, operator?.jornadaMin || 370);
   }, [dias, operator?.jornadaMin]);
 
   // Supervisor ABS

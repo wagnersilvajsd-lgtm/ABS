@@ -29,7 +29,7 @@ export const TransferOperatorModal: React.FC<TransferOperatorModalProps> = ({
   const [customSupervisor, setCustomSupervisor] = useState('');
   const [toEntrada, setToEntrada] = useState('08:00:00');
   const [toSaida, setToSaida] = useState('14:20:00');
-  const [toJornadaMin, setToJornadaMin] = useState(380);
+  const [toJornadaMin, setToJornadaMin] = useState(370);
   const [reason, setReason] = useState('Readequação de turno / balanceamento de equipe');
   const [error, setError] = useState<string | null>(null);
 
@@ -231,7 +231,7 @@ export const TransferOperatorModal: React.FC<TransferOperatorModalProps> = ({
                   min="60"
                   max="600"
                   value={toJornadaMin}
-                  onChange={(e) => setToJornadaMin(parseInt(e.target.value, 10) || 380)}
+                  onChange={(e) => setToJornadaMin(parseInt(e.target.value, 10) || 370)}
                   className="w-full h-9 px-2.5 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
                 />
               </div>

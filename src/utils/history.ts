@@ -60,7 +60,7 @@ export function computeMonthlyTrend(
         const rawOpData = storedMonth[op.id];
         if (!rawOpData) return;
         const normalized = normalizeOperatorMonthlyDays(rawOpData, op.id, year, month, idx);
-        const st = calculateOperatorStats(normalized.dias, op.jornadaMin || 380);
+        const st = calculateOperatorStats(normalized.dias, op.jornadaMin || 370);
         minutosPerdidos += st.minutosPerdidos;
         minutosEscalados += st.minutosEscalados;
         ocorrencias +=

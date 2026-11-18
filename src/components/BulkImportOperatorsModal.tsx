@@ -77,7 +77,7 @@ export const BulkImportOperatorsModal: React.FC<BulkImportOperatorsModalProps> =
   onClose,
   operationId,
   operationName,
-  defaultJornadaMin = 380,
+  defaultJornadaMin = 370,
   existingOperators,
   existingSupervisors,
   selectedMonthKey,
@@ -229,9 +229,9 @@ export const BulkImportOperatorsModal: React.FC<BulkImportOperatorsModalProps> =
   const handleDownloadTemplate = () => {
     const templateRows = [
       ['OPERADOR', 'SUPERVISOR', 'ENTRADA', 'SAIDA', 'JORNADA'],
-      ['CARLOS EDUARDO DA SILVA', 'FERNANDA ALVES PEREIRA', '08:00:00', '14:20:00', 380],
-      ['MARIANA OLIVEIRA SANTOS', 'FERNANDA ALVES PEREIRA', '08:00:00', '14:20:00', 380],
-      ['LUCAS HENRIQUE COSTA', 'RAFAEL MENDES LIMA', '14:00:00', '20:20:00', 380]
+      ['CARLOS EDUARDO DA SILVA', 'FERNANDA ALVES PEREIRA', '08:00:00', '14:20:00', 370],
+      ['MARIANA OLIVEIRA SANTOS', 'FERNANDA ALVES PEREIRA', '08:00:00', '14:20:00', 370],
+      ['LUCAS HENRIQUE COSTA', 'RAFAEL MENDES LIMA', '14:00:00', '20:20:00', 370]
     ];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(templateRows);
@@ -247,9 +247,9 @@ export const BulkImportOperatorsModal: React.FC<BulkImportOperatorsModalProps> =
     setRawText(
       [
         'OPERADOR\tSUPERVISOR\tENTRADA\tSAIDA\tJORNADA',
-        'CARLOS EDUARDO DA SILVA\tFERNANDA ALVES PEREIRA\t08:00:00\t14:20:00\t380',
-        'MARIANA OLIVEIRA SANTOS\tFERNANDA ALVES PEREIRA\t08:00:00\t14:20:00\t380',
-        'LUCAS HENRIQUE COSTA\tRAFAEL MENDES LIMA\t14:00:00\t20:20:00\t380'
+        'CARLOS EDUARDO DA SILVA\tFERNANDA ALVES PEREIRA\t08:00:00\t14:20:00\t370',
+        'MARIANA OLIVEIRA SANTOS\tFERNANDA ALVES PEREIRA\t08:00:00\t14:20:00\t370',
+        'LUCAS HENRIQUE COSTA\tRAFAEL MENDES LIMA\t14:00:00\t20:20:00\t370'
       ].join('\n')
     );
   };
@@ -381,7 +381,7 @@ export const BulkImportOperatorsModal: React.FC<BulkImportOperatorsModalProps> =
                   setRawText(e.target.value);
                 }}
                 placeholder={
-                  'OPERADOR\tSUPERVISOR\tENTRADA\tSAIDA\tJORNADA\nCARLOS EDUARDO DA SILVA\tFERNANDA ALVES\t08:00\t14:20\t380'
+                  'OPERADOR\tSUPERVISOR\tENTRADA\tSAIDA\tJORNADA\nCARLOS EDUARDO DA SILVA\tFERNANDA ALVES\t08:00\t14:20\t370'
                 }
                 className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
               />

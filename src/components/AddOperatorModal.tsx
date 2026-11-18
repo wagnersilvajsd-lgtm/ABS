@@ -10,6 +10,7 @@ interface AddOperatorModalProps {
   existingSupervisors: string[];
   activeOperationId?: string;
   selectedMonthKey?: string;
+  defaultJornadaMin?: number;
 }
 
 export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
@@ -18,7 +19,8 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   onAddOperator,
   existingSupervisors,
   activeOperationId = 'caern',
-  selectedMonthKey
+  selectedMonthKey,
+  defaultJornadaMin = 370
 }) => {
   const activeMonthKey = selectedMonthKey || getDefaultMonthKey();
   const { year, month } = parseMonthKey(activeMonthKey);
@@ -30,13 +32,14 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
   const [customSupervisorName, setCustomSupervisorName] = useState('');
   const [entrada, setEntrada] = useState('08:00:00');
   const [saida, setSaida] = useState('14:20:00');
-  const [jornadaMin, setJornadaMin] = useState(380);
+  const [jornadaMin, setJornadaMin] = useState(defaultJornadaMin);
   const [folgaFdsType, setFolgaFdsType] = useState<WeekendFolgaMode>('auto');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
+    setJornadaMin(defaultJornadaMin || 370);
     if (existingSupervisors.length === 0) {
       setIsCustomSupervisor(true);
       setSupervisor('');
@@ -44,7 +47,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
       setIsCustomSupervisor(false);
       setSupervisor(prev => (prev && existingSupervisors.includes(prev) ? prev : existingSupervisors[0]));
     }
-  }, [isOpen, activeOperationId, existingSupervisors]);
+  }, [isOpen, activeOperationId, existingSupervisors, defaultJornadaMin]);
 
   if (!isOpen) return null;
 
@@ -94,7 +97,7 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
       supervisor: finalSupervisor,
       entrada: entrada.trim(),
       saida: saida.trim(),
-      jornadaMin: Number(jornadaMin) || 380,
+      jornadaMin: Number(jornadaMin) || defaultJornadaMin || 370,
       offDayOfWeek: folgaFdsType.includes('sab') ? 7 : 1,
       operacaoId: activeOperationId
     };
@@ -256,11 +259,11 @@ export const AddOperatorModal: React.FC<AddOperatorModalProps> = ({
                 min="60"
                 max="600"
                 value={jornadaMin}
-                onChange={(e) => setJornadaMin(parseInt(e.target.value) || 380)}
+                onChange={(e) => setJornadaMin(parseInt(e.target.value) || defaultJornadaMin || 370)}
                 className="w-full h-10 px-3 text-xs font-mono font-bold bg-teal-50 dark:bg-teal-950/30 border border-teal-300 dark:border-teal-800 rounded-lg text-teal-950 dark:text-teal-200 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
               />
               <span className="text-[10px] text-slate-400 mt-0.5 block">
-                Padrão 380 min (6h20min)
+                Padrão {defaultJornadaMin || 370} min/dia (cálculo ABS)
               </span>
             </div>
 

@@ -7,7 +7,7 @@ export const INITIAL_OPERATIONS: Operation[] = [
     cliente: 'CAERN (Companhia de Águas e Esgotos do RN)',
     logoUrl: '/assets/aistudio/image_d97c0630.png',
     metaAbs: 0.03, // 3.00%
-    jornadaPadraoMin: 380,
+    jornadaPadraoMin: 370,
     descricao: 'Central Integrada de Atendimento ao Cidadão - Suporte Operacional e Emergências',
     supervisores: [
       'THAYS DA SILVA CUNHA',
@@ -21,7 +21,7 @@ export const INITIAL_OPERATIONS: Operation[] = [
     cliente: 'Rede Nascer em Goiás',
     logoUrl: '/assets/aistudio/image_d824c8b7.png',
     metaAbs: 0.03,
-    jornadaPadraoMin: 380,
+    jornadaPadraoMin: 370,
     descricao: 'Atendimento e acolhimento integrado — Rede Nascer em Goiás',
     supervisores: [
       'THALITA PEREIRA VIEIRA',
@@ -35,7 +35,7 @@ export const INITIAL_OPERATIONS: Operation[] = [
     cliente: 'CAEMA (Companhia de Saneamento Ambiental do Maranhão)',
     logoUrl: '/assets/aistudio/image_418e7775.png',
     metaAbs: 0.03,
-    jornadaPadraoMin: 380,
+    jornadaPadraoMin: 370,
     descricao: 'Central de Atendimento ao Cliente e Suporte Operacional — Maranhão',
     supervisores: [
       'YASMIN ADRIANE SANTOS LEITE',
@@ -49,7 +49,7 @@ export const INITIAL_OPERATIONS: Operation[] = [
     cliente: 'CAGEPA (Companhia de Água e Esgotos da Paraíba)',
     logoUrl: '/assets/aistudio/image_e94b598a.png',
     metaAbs: 0.03,
-    jornadaPadraoMin: 380,
+    jornadaPadraoMin: 370,
     descricao: 'Central de Atendimento ao Cidadão e Serviços Operacionais — Paraíba',
     supervisores: []
   },
@@ -59,7 +59,7 @@ export const INITIAL_OPERATIONS: Operation[] = [
     cliente: 'SEBRAE (Serviço de Apoio às Micro e Pequenas Empresas)',
     logoUrl: '/assets/aistudio/image_a4fc1e66.png',
     metaAbs: 0.03,
-    jornadaPadraoMin: 380,
+    jornadaPadraoMin: 370,
     descricao: 'Central de Relacionamento e Suporte ao Empreendedor',
     supervisores: []
   }
@@ -178,11 +178,12 @@ export const INITIAL_CAEMA_OPERATORS_RAW = [
 function calcShiftMinutes(entrada: string, saida: string): number {
   const [eh, em] = entrada.split(':').map(Number);
   const [sh, sm] = saida.split(':').map(Number);
-  if (Number.isNaN(eh) || Number.isNaN(sh)) return 380;
+  if (Number.isNaN(eh) || Number.isNaN(sh)) return 370;
   const start = eh * 60 + (em || 0);
   const end = sh * 60 + (sm || 0);
   const diff = end >= start ? end - start : 1440 - start + end;
-  return diff > 0 ? diff : 380;
+  if (diff <= 0) return 370;
+  return diff === 380 ? 370 : diff;
 }
 
 export const INITIAL_CAEMA_OPERATORS: Operator[] = INITIAL_CAEMA_OPERATORS_RAW.map((row, idx) => ({
@@ -294,7 +295,7 @@ export const SUPERVISORES_LIST = [
 ];
 
 export const STATUS_OPTIONS: { value: StatusType; label: string; desc: string }[] = [
-  { value: 'dia ok', label: 'Dia OK', desc: 'Presença integral (380 min escalados, 0 perdidos)' },
+  { value: 'dia ok', label: 'Dia OK', desc: 'Presença integral (370 min escalados, 0 perdidos)' },
   { value: 'dia ok/atraso', label: 'Dia OK / Atraso', desc: 'Presença com atraso em minutos (gera ABS)' },
   {
     value: 'abono',
@@ -321,10 +322,10 @@ export const STATUS_OPTIONS: { value: StatusType; label: string; desc: string }[
     label: 'Afastamento',
     desc: 'Afastamento médico/licença (não gera ABS)'
   },
-  { value: 'atestado', label: 'Atestado Médico', desc: 'Ausência justificada (380 min perdidos)' },
-  { value: 'falta', label: 'Falta Injustificada', desc: 'Ausência não justificada (380 min perdidos)' },
+  { value: 'atestado', label: 'Atestado Médico', desc: 'Ausência justificada (370 min perdidos)' },
+  { value: 'falta', label: 'Falta Injustificada', desc: 'Ausência não justificada (370 min perdidos)' },
   { value: 'folga', label: 'Folga Escalar (DSR)', desc: 'Descanso remunerado (não entra no cálculo)' },
-  { value: 'suspensão', label: 'Suspensão Disciplinar', desc: 'Penalidade disciplinar (380 min perdidos)' }
+  { value: 'suspensão', label: 'Suspensão Disciplinar', desc: 'Penalidade disciplinar (370 min perdidos)' }
 ];
 
 export function generateInitialMonthlyData(operators: Operator[]): Record<string, OperatorMonthlyData> {

@@ -1232,6 +1232,7 @@ export default function App() {
         existingSupervisors={currentSupervisors}
         activeOperationId={activeOperation?.id}
         selectedMonthKey={selectedMonthKey}
+        defaultJornadaMin={activeOperation?.jornadaPadraoMin || 370}
       />
 
       {/* Bulk Import Operators Modal (Excel / CSV / Paste) */}
@@ -1240,7 +1241,7 @@ export default function App() {
         onClose={() => setIsBulkImportModalOpen(false)}
         operationId={activeOperation?.id || 'caern'}
         operationName={activeOperation?.nome || 'Operação'}
-        defaultJornadaMin={activeOperation?.jornadaPadraoMin || 380}
+        defaultJornadaMin={activeOperation?.jornadaPadraoMin || 370}
         existingOperators={activeOperationOperators}
         existingSupervisors={currentSupervisors}
         selectedMonthKey={selectedMonthKey}
@@ -1417,7 +1418,7 @@ export default function App() {
             JSD Telecom · Sistema Automatizado de Controle de Absenteísmo (ABS) em Minutos · WFM
           </span>
           <span className="font-mono text-[11px] text-slate-400">
-            Calendário Real 2025–2030 · Regra CLT 36h / 380 min diários
+            Calendário Real 2025–2030 · Regra CLT 36h / 370 min diários
           </span>
         </div>
       </footer>

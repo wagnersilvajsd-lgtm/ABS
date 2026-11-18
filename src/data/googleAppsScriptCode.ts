@@ -169,7 +169,7 @@ function configurarAbaOperadores(sheet) {
   for (let i = 0; i < numRows; i++) {
     const row = 2 + i;
     formulas.push([
-      '=380',
+      '=370',
       '=IFERROR(VLOOKUP(A' + row + ', BASE_APONTAMENTOS!A:C, 2, FALSE), 0)',
       '=IFERROR(VLOOKUP(A' + row + ', BASE_APONTAMENTOS!A:C, 3, FALSE), 0)',
       '=IFERROR(F' + row + '/G' + row + ', 0)'
@@ -239,18 +239,18 @@ function configurarAbaBaseApontamentos(sheet, sheetOp) {
         diasValores.push('dia ok/atraso');
         diasValores.push(35);
         totalPerdido += 35;
-        totalEscalado += 380;
+        totalEscalado += 370;
       } else if (opIdx === 0 && d === 12) {
         // Exemplo operador 1 (Liliane): falta no dia 12
         diasValores.push('falta');
         diasValores.push(0);
-        totalPerdido += 380;
-        totalEscalado += 380;
+        totalPerdido += 370;
+        totalEscalado += 370;
       } else {
         // Dia normal trabalhado
         diasValores.push('dia ok');
         diasValores.push(0);
-        totalEscalado += 380;
+        totalEscalado += 370;
       }
     }
 
@@ -294,7 +294,7 @@ function configurarAbaAbsOperador(sheet, sheetOp) {
     .setHorizontalAlignment('center');
 
   sheet.getRange('C3').setValue('JORNADA PREVISTA (MINUTOS):').setFontWeight('bold').setFontSize(9);
-  sheet.getRange('D3').setFormula('=IFERROR(VLOOKUP(B1, OPERADORES!A:E, 5, FALSE), 380)')
+  sheet.getRange('D3').setFormula('=IFERROR(VLOOKUP(B1, OPERADORES!A:E, 5, FALSE), 370)')
     .setFontWeight('bold')
     .setFontColor('#1e4620')
     .setBackground('#e6f4ea')
@@ -477,7 +477,7 @@ function salvarApontamentosAtuais() {
   // Leitura em lote do cabeçalho B1:D4 (Operador e Jornada Prevista)
   const cabecalho = sheetAbs.getRange('B1:D4').getValues();
   const nomeOperador = cabecalho[0][0]; // B1
-  const jpd = Number(cabecalho[2][2]) || 380; // D3 (Linha 3, Coluna D = index 2,2)
+  const jpd = Number(cabecalho[2][2]) || 370; // D3 (Linha 3, Coluna D = index 2,2)
 
   if (!nomeOperador) return;
 
@@ -523,7 +523,7 @@ function salvarApontamentosAtuais() {
       // Soma atraso em minutos (limitado à jornada integral)
       totalPerdido += Math.min(jpd, Math.max(0, atraso));
     } else if (status === 'falta' || status === 'atestado' || status === 'suspensão') {
-      // Falta, Atestado ou Suspensão = Perda integral da jornada de 380 minutos
+      // Falta, Atestado ou Suspensão = Perda integral da jornada de 370 minutos
       totalPerdido += jpd;
     }
   }
@@ -676,7 +676,7 @@ function adicionarNovoOperador() {
   const nextRowOp = sheetOp.getLastRow() + 1;
   sheetOp.getRange(nextRowOp, 1, 1, 4).setValues([[nome, supervisor, entrada, saida]]);
   sheetOp.getRange(nextRowOp, 5, 1, 4).setFormulas([[
-    '=380',
+    '=370',
     '=IFERROR(VLOOKUP(A' + nextRowOp + ', BASE_APONTAMENTOS!A:C, 2, FALSE), 0)',
     '=IFERROR(VLOOKUP(A' + nextRowOp + ', BASE_APONTAMENTOS!A:C, 3, FALSE), 0)',
     '=IFERROR(F' + nextRowOp + '/G' + nextRowOp + ', 0)'
@@ -695,7 +695,7 @@ function adicionarNovoOperador() {
     diasSerializados.push(folgas.indexOf(d) !== -1 ? 'folga' : 'dia ok');
     diasSerializados.push(0);
   }
-  const payloadBase = [nome, 0, 10260, ...diasSerializados];
+  const payloadBase = [nome, 0, 9990, ...diasSerializados];
   sheetBase.getRange(nextRowBase, 1, 1, payloadBase.length).setValues([payloadBase]);
 
   // 6. Atualiza a validação do menu suspenso em B1 da aba ABS OPERADOR

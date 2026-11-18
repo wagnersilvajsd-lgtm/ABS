@@ -238,7 +238,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
                           cliente: 'JSD Telecom',
                           logoUrl: '/assets/aistudio/image_def6497f.png',
                           metaAbs: 0.03,
-                          jornadaPadraoMin: 380,
+                          jornadaPadraoMin: 370,
                           supervisores: []
                         };
                         const periodLabel =

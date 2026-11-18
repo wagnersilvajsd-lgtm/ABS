@@ -43,6 +43,8 @@ const REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_sups_seeded_v
 const REDE_NASCER_OPERATORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_ops_seeded_v7';
 const CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY = 'abs_wfm_caema_ops_batch2_seeded_v8';
 const CAERN_OPERATORS_BATCH2_SEEDED_V9_KEY = 'abs_wfm_caern_ops_batch2_seeded_v9';
+const OPS_JORNADA_370_V10_KEY = 'abs_wfm_ops_jornada_370_v10';
+const OPERATORS_JORNADA_370_V10_KEY = 'abs_wfm_operators_jornada_370_v10';
 
 const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
 
@@ -153,6 +155,17 @@ export function loadStoredOperations(): Operation[] {
           localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
         }
 
+        if (localStorage.getItem(OPS_JORNADA_370_V10_KEY) !== 'true') {
+          list = list.map((op: Operation) => {
+            if (!op.jornadaPadraoMin || op.jornadaPadraoMin === 380) {
+              changed = true;
+              return { ...op, jornadaPadraoMin: 370 };
+            }
+            return op;
+          });
+          localStorage.setItem(OPS_JORNADA_370_V10_KEY, 'true');
+        }
+
         if (changed) {
           saveStoredOperations(list);
         }
@@ -166,6 +179,7 @@ export function loadStoredOperations(): Operation[] {
   localStorage.setItem(OPERATIONS_SES_REMOVED_V5_KEY, 'true');
   localStorage.setItem(CAEMA_SUPERVISORS_SEEDED_V6_KEY, 'true');
   localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
+  localStorage.setItem(OPS_JORNADA_370_V10_KEY, 'true');
   return INITIAL_OPERATIONS;
 }
 
@@ -287,6 +301,20 @@ export function loadStoredOperators(): Operator[] {
           }
           localStorage.setItem(CAERN_OPERATORS_BATCH2_SEEDED_V9_KEY, 'true');
         }
+        if (localStorage.getItem(OPERATORS_JORNADA_370_V10_KEY) !== 'true') {
+          let updatedAny = false;
+          normalized = normalized.map((op: Operator) => {
+            if (!op.jornadaMin || op.jornadaMin === 380) {
+              updatedAny = true;
+              return { ...op, jornadaMin: 370 };
+            }
+            return op;
+          });
+          if (updatedAny) {
+            saveStoredOperators(normalized);
+          }
+          localStorage.setItem(OPERATORS_JORNADA_370_V10_KEY, 'true');
+        }
         return normalized;
       }
     }
@@ -298,6 +326,7 @@ export function loadStoredOperators(): Operator[] {
   localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
   localStorage.setItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY, 'true');
   localStorage.setItem(CAERN_OPERATORS_BATCH2_SEEDED_V9_KEY, 'true');
+  localStorage.setItem(OPERATORS_JORNADA_370_V10_KEY, 'true');
   return INITIAL_OPERATORS;
 }
 
@@ -496,6 +525,8 @@ export function resetToDefaults(): {
   localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
   localStorage.setItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY, 'true');
   localStorage.setItem(CAERN_OPERATORS_BATCH2_SEEDED_V9_KEY, 'true');
+  localStorage.setItem(OPS_JORNADA_370_V10_KEY, 'true');
+  localStorage.setItem(OPERATORS_JORNADA_370_V10_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);

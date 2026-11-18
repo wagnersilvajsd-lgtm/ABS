@@ -10,7 +10,7 @@ import { DayRecord, Operation, Operator, OperatorMonthlyData, OperatorStats, Ope
 export function calculateDayAbs(
   status: StatusType,
   atraso: number,
-  jornadaMin: number = 380,
+  jornadaMin: number = 370,
   abonoMin: number = 0
 ): number | null {
   if (
@@ -51,7 +51,7 @@ export function calculateDayAbs(
  * - 'abono_legal' (Saída Antecipada Programada com BH): NÃO gera ABS (0 min perdidos, apenas horas logadas em Escalados).
  * - 'folga', 'folga_aniversario', 'banco_horas_integral': NÃO geram ABS e NÃO entram em Minutos Escalados.
  */
-export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 380): OperatorStats {
+export function calculateOperatorStats(dias: DayRecord[], jornadaMin: number = 370): OperatorStats {
   let minutosAtraso = 0;
   let minutosAbonoFaltante = 0;
   let countFalta = 0;

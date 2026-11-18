@@ -110,7 +110,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   const [newOpClient, setNewOpClient] = useState('');
   const [newOpLogoUrl, setNewOpLogoUrl] = useState('');
   const [newOpMetaAbs, setNewOpMetaAbs] = useState('3.0');
-  const [newOpJornada, setNewOpJornada] = useState('380');
+  const [newOpJornada, setNewOpJornada] = useState('370');
   const [newOpDesc, setNewOpDesc] = useState('');
 
   // Form states for Edit Operation
@@ -118,6 +118,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   const [editOpClient, setEditOpClient] = useState('');
   const [editOpLogoUrl, setEditOpLogoUrl] = useState('');
   const [editOpMetaAbs, setEditOpMetaAbs] = useState('3.0');
+  const [editOpJornada, setEditOpJornada] = useState('370');
   const [editOpDesc, setEditOpDesc] = useState('');
 
   // Form states for New Supervisor
@@ -130,7 +131,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
   const [newOpOperatorCustomSup, setNewOpOperatorCustomSup] = useState('');
   const [newOpOperatorEntrada, setNewOpOperatorEntrada] = useState('08:00:00');
   const [newOpOperatorSaida, setNewOpOperatorSaida] = useState('14:20:00');
-  const [newOpOperatorJornada, setNewOpOperatorJornada] = useState('380');
+  const [newOpOperatorJornada, setNewOpOperatorJornada] = useState('370');
 
   // Currently active operation
   const activeOp = useMemo(() => {
@@ -236,7 +237,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
     let escalados = 0;
     opOperators.forEach(op => {
       const data = monthlyData[op.id] || { operatorId: op.id, dias: [] };
-      const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 380);
+      const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 370);
       perdidos += st.minutosPerdidos;
       escalados += st.minutosEscalados;
     });
@@ -338,6 +339,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
     setEditOpClient(activeOp.cliente);
     setEditOpLogoUrl(activeOp.logoUrl || '');
     setEditOpMetaAbs(((activeOp.metaAbs || 0.03) * 100).toFixed(1));
+    setEditOpJornada(String(activeOp.jornadaPadraoMin || 370));
     setEditOpDesc(activeOp.descricao || '');
     setIsEditOpModalOpen(true);
   };
@@ -352,6 +354,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       cliente: editOpClient.trim() || activeOp.cliente,
       logoUrl: editOpLogoUrl.trim() || '/assets/aistudio/image_def6497f.png',
       metaAbs: (parseFloat(editOpMetaAbs) || 3.0) / 100,
+      jornadaPadraoMin: parseInt(editOpJornada, 10) || activeOp.jornadaPadraoMin || 370,
       descricao: editOpDesc.trim()
     };
     onUpdateOperation(updated);
@@ -367,7 +370,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       cliente: newOpClient.trim() || 'JSD Telecom',
       logoUrl: newOpLogoUrl.trim() || '/assets/aistudio/image_def6497f.png',
       metaAbs: (parseFloat(newOpMetaAbs) || 3.0) / 100,
-      jornadaPadraoMin: parseInt(newOpJornada) || 380,
+      jornadaPadraoMin: parseInt(newOpJornada) || 370,
       descricao: newOpDesc.trim() || 'Central Operacional e Atendimento',
       supervisores: []
     });
@@ -393,7 +396,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
     setNewOpOperatorSup(activeSupervisors[0] || '');
     setNewOpOperatorCustomSup('');
     setIsNewOpOperatorCustomSup(activeSupervisors.length === 0);
-    setNewOpOperatorJornada(String(activeOp?.jornadaPadraoMin || 380));
+    setNewOpOperatorJornada(String(activeOp?.jornadaPadraoMin || 370));
     setIsAddOperatorModalOpen(true);
   };
 
@@ -411,7 +414,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
       supervisor: chosenSupervisor,
       entrada: newOpOperatorEntrada.trim(),
       saida: newOpOperatorSaida.trim(),
-      jornadaMin: parseInt(newOpOperatorJornada) || activeOp.jornadaPadraoMin || 380,
+      jornadaMin: parseInt(newOpOperatorJornada) || activeOp.jornadaPadraoMin || 370,
       offDayOfWeek: 1,
       operacaoId: activeOp.id
     });
@@ -448,7 +451,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                   Meta {hasCustomMonthMeta ? activeMonthLabel : 'ABS'} ≤ {(activeMetaLimit * 100).toFixed(1)}%
                 </span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">Jornada {activeOp?.jornadaPadraoMin || 380} min</span>
+                <span className="font-mono tabular-nums">Jornada {activeOp?.jornadaPadraoMin || 370} min</span>
               </div>
               <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight mt-0.5 truncate">
                 {activeOp?.nome || 'Operação CAERN'}
@@ -622,7 +625,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
             </p>
           </div>
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-mono tabular-nums text-slate-500 dark:text-slate-400">
-            Jornada padrão: {activeOp?.jornadaPadraoMin || 380} min/dia
+            Jornada padrão: {activeOp?.jornadaPadraoMin || 370} min/dia
           </div>
         </div>
 
@@ -1130,7 +1133,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
               ) : (
                 filteredOperators.map((op, idx) => {
                   const data = monthlyData[op.id] || { operatorId: op.id, dias: [] };
-                  const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 380);
+                  const st = calculateOperatorStats(data.dias, op.jornadaMin || activeOp?.jornadaPadraoMin || 370);
                   const isHigh = st.absMensal > activeMetaLimit;
                   const historyCount = operatorHistoryCounts[op.id] || 0;
 
@@ -1323,7 +1326,7 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                     onChange={(e) => setNewOpJornada(e.target.value)}
                     className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">380 min (6h20)</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Padrão 370 min/dia</span>
                 </div>
               </div>
 
@@ -1458,19 +1461,34 @@ export const OperacoesView: React.FC<OperacoesViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
-                  Meta ABS (%):
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.5"
-                  max="20"
-                  value={editOpMetaAbs}
-                  onChange={(e) => setEditOpMetaAbs(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
+                    Meta ABS (%):
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.5"
+                    max="20"
+                    value={editOpMetaAbs}
+                    onChange={(e) => setEditOpMetaAbs(e.target.value)}
+                    className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 uppercase tracking-wide">
+                    Jornada Diária (min):
+                  </label>
+                  <input
+                    type="number"
+                    min="60"
+                    max="600"
+                    value={editOpJornada}
+                    onChange={(e) => setEditOpJornada(e.target.value)}
+                    className="w-full h-10 px-3 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[#006772]/30"
+                  />
+                </div>
               </div>
 
               <div>

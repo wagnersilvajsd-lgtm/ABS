@@ -87,7 +87,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
   const [newOpClient, setNewOpClient] = useState('');
   const [newOpLogoUrl, setNewOpLogoUrl] = useState('');
   const [newOpMetaAbs, setNewOpMetaAbs] = useState('3.0');
-  const [newOpJornada, setNewOpJornada] = useState('380');
+  const [newOpJornada, setNewOpJornada] = useState('370');
   const [newOpDesc, setNewOpDesc] = useState('');
 
   const monthLabel = formatMonthLabel(selectedMonthKey);
@@ -229,7 +229,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
       cliente: newOpClient.trim() || 'JSD Telecom',
       logoUrl: newOpLogoUrl.trim() || '/assets/aistudio/image_def6497f.png',
       metaAbs: (parseFloat(newOpMetaAbs) || 3.0) / 100,
-      jornadaPadraoMin: parseInt(newOpJornada, 10) || 380,
+      jornadaPadraoMin: parseInt(newOpJornada, 10) || 370,
       descricao: newOpDesc.trim() || 'Central Operacional e Atendimento',
       supervisores: []
     });
@@ -771,7 +771,7 @@ export const HomeOperationsPortal: React.FC<HomeOperationsPortalProps> = ({
             JSD Telecom · Sistema Automatizado de Controle de Absenteísmo (ABS) · WFM
           </span>
           <span className="font-mono text-[11px] text-slate-400">
-            Calendário Real 2025–2030 · Regra CLT 36h / 380 min diários
+            Calendário Real 2025–2030 · Regra CLT 36h / 370 min diários
           </span>
         </div>
       </footer>
