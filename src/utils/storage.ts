@@ -40,6 +40,7 @@ const CAEMA_SUPERVISORS_SEEDED_V6_KEY = 'abs_wfm_caema_sups_seeded_v6';
 const CAEMA_OPERATORS_SEEDED_V6_KEY = 'abs_wfm_caema_ops_seeded_v6';
 const REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_sups_seeded_v7';
 const REDE_NASCER_OPERATORS_SEEDED_V7_KEY = 'abs_wfm_rede_nascer_ops_seeded_v7';
+const CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY = 'abs_wfm_caema_ops_batch2_seeded_v8';
 
 const SAMPLE_SEEDED_OPERATOR_IDS = new Set(['op-1', 'op-6', 'op-16', 'op-31', 'op-35']);
 
@@ -257,6 +258,22 @@ export function loadStoredOperators(): Operator[] {
           }
           localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
         }
+        if (localStorage.getItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY) !== 'true') {
+          const existingIdSet = new Set(normalized.map(o => o.id));
+          const existingCaemaNames = new Set(
+            normalized
+              .filter(o => o.operacaoId === 'caema')
+              .map(o => o.nome.toLowerCase().trim())
+          );
+          const additions = INITIAL_CAEMA_OPERATORS.filter(
+            op => !existingIdSet.has(op.id) && !existingCaemaNames.has(op.nome.toLowerCase().trim())
+          );
+          if (additions.length > 0) {
+            normalized = [...normalized, ...additions];
+            saveStoredOperators(normalized);
+          }
+          localStorage.setItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY, 'true');
+        }
         return normalized;
       }
     }
@@ -266,6 +283,7 @@ export function loadStoredOperators(): Operator[] {
   localStorage.setItem(OPERATORS_SES_REMOVED_V5_KEY, 'true');
   localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
   localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
+  localStorage.setItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY, 'true');
   return INITIAL_OPERATORS;
 }
 
@@ -462,6 +480,7 @@ export function resetToDefaults(): {
   localStorage.setItem(CAEMA_OPERATORS_SEEDED_V6_KEY, 'true');
   localStorage.setItem(REDE_NASCER_SUPERVISORS_SEEDED_V7_KEY, 'true');
   localStorage.setItem(REDE_NASCER_OPERATORS_SEEDED_V7_KEY, 'true');
+  localStorage.setItem(CAEMA_OPERATORS_BATCH2_SEEDED_V8_KEY, 'true');
   saveStoredOperations(initialOperations);
   saveStoredOperators(initialOps);
   saveStoredMonthlyDataByMonth(initialByMonth);
